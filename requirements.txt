@@ -1,0 +1,9 @@
+pandas
+numpy
+pillow
+tk
+torch
+pyyaml
+torchvision
+gym==0.26.2
+timm
