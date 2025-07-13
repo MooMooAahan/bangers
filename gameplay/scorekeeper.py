@@ -4,6 +4,12 @@ import pandas as pd
 MAP_ACTION_STR_TO_INT = {s.value:i for i,s in enumerate(ActionState)}
 MAP_ACTION_INT_TO_STR = [s.value for s in ActionState]
 
+# Score for each type of person at the end of the game
+score_healthy = 10
+score_injured = 5
+score_zombie = -20
+score_killed = -10
+
 class ScoreKeeper(object):
     def __init__(self, shift_len, capacity):
         
@@ -186,10 +192,10 @@ class ScoreKeeper(object):
         Calculate the final score based on saved/killed and also on time remaining
         """
         score = 0
-        score += self.ambulance["healthy"] * 10
-        score += self.ambulance["injured"] * 5
-        score -= self.ambulance["zombie"] * 20
-        score += self.scorekeeper["killed"] * -10
+        score += self.ambulance["healthy"] * score_healthy
+        score += self.ambulance["injured"] * score_injured
+        score += self.ambulance["zombie"] * score_zombie
+        score += self.scorekeeper["killed"] * score_killed
         score += self.remaining_time
         return score
     
