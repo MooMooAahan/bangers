@@ -19,6 +19,11 @@ class UI(object):
         self.root.geometry(str(w) + 'x' + str(h))
         self.root.resizable(False, False)
 
+        # Time management variables
+        self.total_time = 720  # 12 hours in minutes
+        self.elapsed_time = 0  # Start at 0 elapsed time
+        self.scorekeeper = scorekeeper  # Store scorekeeper reference
+        
         self.humanoid = data_parser.get_random()
         
         self.log = log
@@ -26,25 +31,29 @@ class UI(object):
             self.machine_interface = HeuristicInterface(self.root, w, h)
 
         #  Add buttons and logo
-        user_buttons = [("Skip", lambda: [scorekeeper.skip(self.humanoid),
+        user_buttons = [("Skip", lambda: [self.add_elapsed_time(15),
+                                          scorekeeper.skip(self.humanoid),
                                           self.update_ui(scorekeeper),
                                           self.get_next(
                                               data_fp,
                                               data_parser,
                                               scorekeeper)]),
-                        ("Squish", lambda: [scorekeeper.squish(self.humanoid),
+                        ("Squish", lambda: [self.add_elapsed_time(5),
+                                            scorekeeper.squish(self.humanoid),
                                             self.update_ui(scorekeeper),
                                             self.get_next(
                                                 data_fp,
                                                 data_parser,
                                                 scorekeeper)]),
-                        ("Save", lambda: [scorekeeper.save(self.humanoid),
+                        ("Save", lambda: [self.add_elapsed_time(30),
+                                          scorekeeper.save(self.humanoid),
                                           self.update_ui(scorekeeper),
                                           self.get_next(
                                               data_fp,
                                               data_parser,
                                               scorekeeper)]),
-                        ("Scram", lambda: [scorekeeper.scram(self.humanoid),
+                        ("Scram", lambda: [self.add_elapsed_time(120),
+                                           scorekeeper.scram(self.humanoid),
                                            self.update_ui(scorekeeper),
                                            self.get_next(
                                                data_fp,
@@ -67,8 +76,10 @@ class UI(object):
         self.root.bind("<Delete>", self.game_viewer.delete_photo)
 
         # Display the countdown
-        init_h = (12 - (math.floor(scorekeeper.remaining_time / 60.0)))
-        init_m = 60 - (scorekeeper.remaining_time % 60)
+        # At start, no time has elapsed, so clock should be at 12 o'clock
+        init_h = 12
+        init_m = 0
+        
         self.clock = Clock(self.root, w, h, init_h, init_m)
 
         # Display ambulance capacity
@@ -76,11 +87,28 @@ class UI(object):
 
         self.root.mainloop()
 
-    def update_ui(self, scorekeeper):
-        h = (12 - (math.floor(scorekeeper.remaining_time / 60.0)))
-        m = 60 - (scorekeeper.remaining_time % 60)
-        self.clock.update_time(h, m)
+    def add_elapsed_time(self, minutes):
+        """Add elapsed time and update scorekeeper's remaining time"""
+        self.elapsed_time += minutes
+        remaining_time = self.total_time - self.elapsed_time
+        # Update the scorekeeper's remaining time
+        self.scorekeeper.remaining_time = remaining_time
 
+    def update_ui(self, scorekeeper):     
+        # Convert elapsed_time to clock positions
+        # elapsed_time mod 60 gives us the minute position
+        # elapsed_time / 60 gives us the hour position
+        hours_elapsed = math.floor(self.elapsed_time / 60.0)
+        minutes_elapsed = self.elapsed_time % 60
+        
+        # Convert to 12-hour clock format (1-12)
+        # 0 hours = 12 o'clock, 1 hour = 1 o'clock, etc.
+        h = (hours_elapsed % 12)
+        if h == 0:
+            h = 12
+        m = minutes_elapsed
+        
+        self.clock.update_time(h, m)
         self.capacity_meter.update_fill(scorekeeper.get_current_capacity())
 
     def on_resize(self, event):
@@ -89,9 +117,10 @@ class UI(object):
 
     def get_next(self, data_fp, data_parser, scorekeeper):
         remaining = len(data_parser.unvisited)
+        remaining_time = self.total_time - self.elapsed_time
 
-        # Ran out of humanoids? Disable skip/save/squish
-        if remaining == 0 or scorekeeper.remaining_time <= 0:
+        # Ran out of humanoids or time? End game
+        if remaining == 0 or remaining_time <= 0:
             if self.log:
                 scorekeeper.save_log()
             self.capacity_meter.update_fill(0)
@@ -104,5 +133,10 @@ class UI(object):
             fp = join(data_fp, self.humanoid.fp)
             self.game_viewer.create_photo(fp)
 
-        # Disable button(s) if options are no longer possible
-        self.button_menu.disable_buttons(scorekeeper.remaining_time, remaining, scorekeeper.at_capacity())
+        # Disable buttons that would exceed time limit
+        self.disable_buttons_if_insufficient_time(remaining_time, remaining, scorekeeper.at_capacity())
+
+    def disable_buttons_if_insufficient_time(self, remaining_time, remaining_humanoids, at_capacity):
+        """Disable buttons based on remaining time and other constraints"""
+        # Use the existing ButtonMenu.disable_buttons method
+        self.button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity)

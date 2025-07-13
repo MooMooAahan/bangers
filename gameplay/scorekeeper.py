@@ -130,7 +130,7 @@ class ScoreKeeper(object):
             action_dict['squish'] = False
             action_dict['skip'] = False
         if self.at_capacity():
-            action_dict['save'] - False
+            action_dict['save'] = False
         return [action_dict[s.value] for s in ActionState]
         
     # do_action or return false if not possible

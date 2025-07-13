@@ -13,6 +13,8 @@ class ButtonMenu(object):
         create_menu(self.buttons)
 
     def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity):
+        for button in self.buttons:
+            button.config(state="normal")
         if remaining_humanoids == 0 or remaining_time <= 0:
             for i in range(0, len(self.buttons)):
                 self.buttons[i].config(state="disabled")
