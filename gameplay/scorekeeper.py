@@ -21,6 +21,10 @@ class ScoreKeeper(object):
         self.logger = []
         self.all_logs = []
         
+        self.correct_saves = 0
+        self.false_saves = 0
+
+        
         self.reset()
         
     def reset(self):
@@ -81,10 +85,13 @@ class ScoreKeeper(object):
         self.remaining_time -= ActionCost.SAVE.value
         if humanoid.is_zombie():
             self.ambulance["zombie"] += 1
+            self.false_saves += 1
         elif humanoid.is_injured():
+            self.correct_saves += 1
             self.ambulance["injured"] += 1
         else:
             self.ambulance["healthy"] += 1
+            self.correct_saves += 1
 
     def squish(self, humanoid):
         """
@@ -203,7 +210,8 @@ class ScoreKeeper(object):
         """
         Calculate the accuracy of saved actions: correct human saves vs total saves
         """
-        
+        total_saves = self.correct_saves + self.false_saves
+        return self.correct_saves / total_saves if total_saves > 0 else 0
     
     
     @staticmethod
