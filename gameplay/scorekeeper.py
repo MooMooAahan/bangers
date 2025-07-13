@@ -181,6 +181,25 @@ class ScoreKeeper(object):
         self.scram()
         return self.scorekeeper
     
+    def get_final_score(self):
+        """
+        Calculate the final score based on saved/killed and also on time remaining
+        """
+        score = 0
+        score += self.ambulance["healthy"] * 10
+        score += self.ambulance["injured"] * 5
+        score -= self.ambulance["zombie"] * 20
+        score += self.scorekeeper["killed"] * -10
+        score += self.remaining_time
+        return score
+    
+    def get_accuracy(self):
+        """
+        Calculate the accuracy of saved actions: correct human saves vs total saves
+        """
+        
+    
+    
     @staticmethod
     def get_action_idx(class_string):
         return MAP_ACTION_STR_TO_INT[class_string]
