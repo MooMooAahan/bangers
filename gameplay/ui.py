@@ -38,6 +38,9 @@ class UI(object):
                                               data_fp,
                                               data_parser,
                                               scorekeeper)]),
+                        ("Inspect", lambda: [self.add_elapsed_time(15),
+                                             self.update_ui(scorekeeper),
+                                             self.check_game_end(data_fp, data_parser, scorekeeper)]),
                         ("Squish", lambda: [self.add_elapsed_time(5),
                                             scorekeeper.squish(self.humanoid),
                                             self.update_ui(scorekeeper),
@@ -136,7 +139,20 @@ class UI(object):
         # Disable buttons that would exceed time limit
         self.disable_buttons_if_insufficient_time(remaining_time, remaining, scorekeeper.at_capacity())
 
+    def check_game_end(self, data_fp, data_parser, scorekeeper):
+        """Check if game should end due to time running out"""
+        remaining_time = self.total_time - self.elapsed_time
+        if remaining_time <= 0:
+            if self.log:
+                scorekeeper.save_log()
+            self.capacity_meter.update_fill(0)
+            self.game_viewer.delete_photo(None)
+            self.game_viewer.display_score(scorekeeper.get_score())
+            # Disable all buttons when game ends
+            self.disable_buttons_if_insufficient_time(0, 0, False)
+
     def disable_buttons_if_insufficient_time(self, remaining_time, remaining_humanoids, at_capacity):
         """Disable buttons based on remaining time and other constraints"""
         # Use the existing ButtonMenu.disable_buttons method
+        # Note: ButtonMenu now handles Skip (index 0), Inspect (index 1), Squish (index 2), Save (index 3)
         self.button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity)
