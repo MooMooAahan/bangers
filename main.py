@@ -61,8 +61,6 @@ class Main(object):
             self.scorekeeper = simon.scorekeeper
             if log:
                 self.scorekeeper.save_log()
-            print("Final Score:", self.scorekeeper.get_final_score())
-            print("Accuracy:", round(self.scorekeeper.get_accuracy() * 100, 2), "%")
             print("RL equiv reward:",self.scorekeeper.get_cumulative_reward())
             print(self.scorekeeper.get_score())
         else: # Launch UI gameplay
