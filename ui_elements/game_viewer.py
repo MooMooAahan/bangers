@@ -22,10 +22,15 @@ class GameViewer(object):
         self.photo = display_photo(fp, self.canvas.winfo_width(), self.canvas.winfo_height())
         self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags='photo')
 
-    def display_score(self, score):
+    def display_score(self, score,final_score=None, accuracy=None):
         tk.Label(self.canvas, text="FINAL SCORE", font=("Arial", 30)).pack(anchor=tk.NW)
         tk.Label(self.canvas, text="Killed {}".format(score["killed"]), font=("Arial", 15)).pack(anchor=tk.NW)
         tk.Label(self.canvas, text="Saved {}".format(score["saved"]), font=("Arial", 15)).pack(anchor=tk.NW)
+        if final_score is not None:
+            tk.Label(self.canvas, text="Final Score: {}".format(final_score), font=("Arial", 15)).pack(anchor=tk.NW)
+        if accuracy is not None:
+            tk.Label(self.canvas, text="Accuracy: {:.2f}%".format(accuracy), font=("Arial", 15)).pack(anchor=tk.NW)
+
 
 
 def display_photo(img_path, w, h):
