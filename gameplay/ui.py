@@ -9,14 +9,25 @@ from ui_elements.machine_menu import MachineMenu
 from os.path import join
 
 
+import math
+import tkinter as tk
+from ui_elements.button_menu import ButtonMenu
+from ui_elements.capacity_meter import CapacityMeter
+from ui_elements.clock import Clock
+from endpoints.heuristic_interface import HeuristicInterface
+from ui_elements.game_viewer import GameViewer
+from ui_elements.machine_menu import MachineMenu
+from os.path import join
+
+
 class UI(object):
     def __init__(self, data_parser, scorekeeper, data_fp, suggest, log):
-        #  Base window setup
+        # Base window setup
         capacity = 10
         w, h = 1280, 800
         self.root = tk.Tk()
         self.root.title("Beaverworks SGAI 2023 - Dead or Alive")
-        self.root.geometry(str(w) + 'x' + str(h))
+        self.root.geometry(f"{w}x{h}")
         self.root.resizable(False, False)
 
         # Time management variables
@@ -25,8 +36,8 @@ class UI(object):
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         
         self.humanoid = data_parser.get_random()
-        
         self.log = log
+
         if suggest:
             self.machine_interface = HeuristicInterface(self.root, w, h)
 
@@ -65,16 +76,15 @@ class UI(object):
         self.button_menu = ButtonMenu(self.root, user_buttons)
 
         if suggest:
-            machine_buttons = [("Suggest", lambda: [self.machine_interface.suggest(self.humanoid)]),
-                               ("Act", lambda: [self.machine_interface.act(scorekeeper, self.humanoid),
-                                                self.update_ui(scorekeeper),
-                                                self.get_next(
-                                                    data_fp,
-                                                    data_parser,
-                                                    scorekeeper)])]
+            machine_buttons = [
+                ("Suggest", lambda: [self.machine_interface.suggest(self.humanoid)]),
+                ("Act", lambda: [self.machine_interface.act(scorekeeper, self.humanoid),
+                                 self.update_ui(scorekeeper),
+                                 self.get_next(data_fp, data_parser, scorekeeper)])
+            ]
             self.machine_menu = MachineMenu(self.root, machine_buttons)
 
-        #  Display central photo
+        # Display central photo
         self.game_viewer = GameViewer(self.root, w, h, data_fp, self.humanoid)
         self.root.bind("<Delete>", self.game_viewer.delete_photo)
 
@@ -97,6 +107,27 @@ class UI(object):
         # Update the scorekeeper's remaining time
         self.scorekeeper.remaining_time = remaining_time
 
+    def show_rules(self):
+        rules_text = (
+            "Game Rules:\n"
+            "- The goal is to finish the ambulance route by the end of the day\n"
+            "- Choose an action: Skip when presented with fiqure ahead.\n"
+            "- The goal is to save as many humans and squash  the zombies.\n"
+            "- Your choices affect your score \n"
+            "- The game ends when your tasks are completed or the day ends"
+        )
+
+        rules_window = tk.Toplevel(self.root)
+        rules_window.title("Game Rules")
+        rules_window.geometry("400x300")
+        rules_window.resizable(False, False)
+
+        label = tk.Label(rules_window, text=rules_text, justify="left", padx=10, pady=10, font=("Helvetica", 11))
+        label.pack(expand=True, fill="both")
+
+        close_btn = tk.Button(rules_window, text="Close", command=rules_window.destroy)
+        close_btn.pack(pady=10)
+
     def update_ui(self, scorekeeper):     
         # Convert elapsed_time to clock positions
         # elapsed_time mod 60 gives us the minute position
@@ -115,7 +146,8 @@ class UI(object):
         self.capacity_meter.update_fill(scorekeeper.get_current_capacity())
 
     def on_resize(self, event):
-        w, h = 0.6 * self.root.winfo_width(), 0.7 * self.root.winfo_height()
+        w = 0.6 * self.root.winfo_width()
+        h = 0.7 * self.root.winfo_height()
         self.game_viewer.canvas.config(width=w, height=h)
 
     def get_next(self, data_fp, data_parser, scorekeeper):
@@ -130,9 +162,7 @@ class UI(object):
             self.game_viewer.delete_photo(None)
             self.game_viewer.display_score(scorekeeper.get_score())
         else:
-            humanoid = data_parser.get_random()
-            # Update visual display
-            self.humanoid = humanoid
+            self.humanoid = data_parser.get_random()
             fp = join(data_fp, self.humanoid.fp)
             self.game_viewer.create_photo(fp)
 
