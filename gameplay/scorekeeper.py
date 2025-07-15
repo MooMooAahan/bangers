@@ -210,9 +210,9 @@ class ScoreKeeper(object):
         """
         Accuracy = correctly saved humans / all human decisions (saves + bad saves + killed humans)
         """
-        true_positives = self.correct_saves
-        false_positives = self.false_saves
-        false_negatives = self.scorekeeper["killed"]
+        true_positives = self.correct_saves  # you saved a real human
+        false_positives = self.false_saves   # you saved a zombie
+        false_negatives = self.scorekeeper["killed"] # you killed a human
         
         total = true_positives + false_positives + false_negatives
         return true_positives / total if total > 0 else 0
