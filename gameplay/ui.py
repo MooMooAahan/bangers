@@ -26,25 +26,25 @@ class UI(object):
             self.machine_interface = HeuristicInterface(self.root, w, h)
 
         #  Add buttons and logo
-        user_buttons = [("Skip", lambda: [scorekeeper.skip(self.humanoid),
+        user_buttons = [("Skip (5 mins)", lambda: [scorekeeper.skip(self.humanoid),
                                           self.update_ui(scorekeeper),
                                           self.get_next(
                                               data_fp,
                                               data_parser,
                                               scorekeeper)]),
-                        ("Squish", lambda: [scorekeeper.squish(self.humanoid),
+                        ("Squish (15 mins)", lambda: [scorekeeper.squish(self.humanoid),
                                             self.update_ui(scorekeeper),
                                             self.get_next(
                                                 data_fp,
                                                 data_parser,
                                                 scorekeeper)]),
-                        ("Save", lambda: [scorekeeper.save(self.humanoid),
+                        ("Save (30 mins)", lambda: [scorekeeper.save(self.humanoid),
                                           self.update_ui(scorekeeper),
                                           self.get_next(
                                               data_fp,
                                               data_parser,
                                               scorekeeper)]),
-                        ("Scram", lambda: [scorekeeper.scram(self.humanoid),
+                        ("Scram (2 hrs)", lambda: [scorekeeper.scram(self.humanoid),
                                            self.update_ui(scorekeeper),
                                            self.get_next(
                                                data_fp,
