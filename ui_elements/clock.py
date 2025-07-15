@@ -39,8 +39,7 @@ class Clock(object):
         return
 
     def update_time(self, h, m):
-        now = (h * 5, m)
-        # Changing Stick Coordinates
+        now = (h * 5 + m / 12, m)
         for n, i in enumerate(now):
             x, y = self.canvas.coords(self.sticks[n])[0:2]
             cr = [x, y, self.length[n] * math.cos(math.radians(i * 6) - math.radians(90)) + self.x,
