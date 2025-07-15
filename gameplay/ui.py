@@ -26,7 +26,7 @@ class UI(object):
         capacity = 10
         w, h = 1280, 800
         self.root = tk.Tk()
-        self.root.title("Beaverworks SGAI 2023 - Dead or Alive")
+        self.root.title("Beaverworks SGAI 2025 - Team Splice")
         self.root.geometry(f"{w}x{h}")
         self.root.resizable(False, False)
 
@@ -42,31 +42,31 @@ class UI(object):
             self.machine_interface = HeuristicInterface(self.root, w, h)
 
         #  Add buttons and logo
-        user_buttons = [("Skip", lambda: [self.add_elapsed_time(15),
+        user_buttons = [("Skip (15 mins)", lambda: [self.add_elapsed_time(15),
                                           scorekeeper.skip(self.humanoid),
                                           self.update_ui(scorekeeper),
                                           self.get_next(
                                               data_fp,
                                               data_parser,
                                               scorekeeper)]),
-                        ("Inspect", lambda: [self.add_elapsed_time(15),
+                        ("Inspect (15 mins)", lambda: [self.add_elapsed_time(15),
                                              self.update_ui(scorekeeper),
                                              self.check_game_end(data_fp, data_parser, scorekeeper)]),
-                        ("Squish", lambda: [self.add_elapsed_time(5),
+                        ("Squish (5 mins)", lambda: [self.add_elapsed_time(5),
                                             scorekeeper.squish(self.humanoid),
                                             self.update_ui(scorekeeper),
                                             self.get_next(
                                                 data_fp,
                                                 data_parser,
                                                 scorekeeper)]),
-                        ("Save", lambda: [self.add_elapsed_time(30),
+                        ("Save (30 mins)", lambda: [self.add_elapsed_time(30),
                                           scorekeeper.save(self.humanoid),
                                           self.update_ui(scorekeeper),
                                           self.get_next(
                                               data_fp,
                                               data_parser,
                                               scorekeeper)]),
-                        ("Scram", lambda: [self.add_elapsed_time(120),
+                        ("Scram (2 hrs)", lambda: [self.add_elapsed_time(120),
                                            scorekeeper.scram(self.humanoid),
                                            self.update_ui(scorekeeper),
                                            self.get_next(
