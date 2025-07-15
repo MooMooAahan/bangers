@@ -4,6 +4,12 @@ import pandas as pd
 MAP_ACTION_STR_TO_INT = {s.value:i for i,s in enumerate(ActionState)}
 MAP_ACTION_INT_TO_STR = [s.value for s in ActionState]
 
+# Score for each type of person at the end of the game
+score_healthy = 10
+score_injured = 5
+score_zombie = -20
+score_killed = -10
+
 class ScoreKeeper(object):
     def __init__(self, shift_len, capacity):
         
@@ -14,6 +20,10 @@ class ScoreKeeper(object):
         
         self.logger = []
         self.all_logs = []
+        
+        self.correct_saves = 0
+        self.false_saves = 0
+
         
         self.reset()
         
@@ -75,10 +85,13 @@ class ScoreKeeper(object):
         self.remaining_time -= ActionCost.SAVE.value
         if humanoid.is_zombie():
             self.ambulance["zombie"] += 1
+            self.false_saves += 1
         elif humanoid.is_injured():
+            self.correct_saves += 1
             self.ambulance["injured"] += 1
         else:
             self.ambulance["healthy"] += 1
+            self.correct_saves += 1
 
     def squish(self, humanoid):
         """
@@ -130,7 +143,7 @@ class ScoreKeeper(object):
             action_dict['squish'] = False
             action_dict['skip'] = False
         if self.at_capacity():
-            action_dict['save'] - False
+            action_dict['save'] = False
         return [action_dict[s.value] for s in ActionState]
         
     # do_action or return false if not possible
@@ -180,6 +193,26 @@ class ScoreKeeper(object):
     def get_score(self):
         self.scram()
         return self.scorekeeper
+    
+    def get_final_score(self):
+        """
+        Calculate the final score based on saved/killed and also on time remaining
+        """
+        score = 0
+        score += self.ambulance["healthy"] * score_healthy
+        score += self.ambulance["injured"] * score_injured
+        score += self.ambulance["zombie"] * score_zombie
+        score += self.scorekeeper["killed"] * score_killed
+        score += self.remaining_time
+        return score
+    
+    def get_accuracy(self):
+        """
+        Calculate the accuracy of saved actions: correct human saves vs total saves
+        """
+        total_saves = self.correct_saves + self.false_saves
+        return self.correct_saves / total_saves if total_saves > 0 else 0
+    
     
     @staticmethod
     def get_action_idx(class_string):
