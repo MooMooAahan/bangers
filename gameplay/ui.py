@@ -163,6 +163,8 @@ class UI(object):
                 scorekeeper.save_log()
             self.capacity_meter.update_fill(0)
             self.game_viewer.delete_photo(None)
+            
+            
             final_score = scorekeeper.get_final_score()
             accuracy = round(scorekeeper.get_accuracy() * 100, 2)
             self.game_viewer.display_score(scorekeeper.get_score(), final_score, accuracy)
