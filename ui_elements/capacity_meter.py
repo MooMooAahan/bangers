@@ -24,10 +24,11 @@ class CapacityMeter(object):
                 y += size * 1.5
 
     def update_fill(self, index):
-        if index != 0:
-            self.canvas.itemconfig(self.__units[index-1], stipple="")
-        else:
-            for unit in self.__units:
+        # Fill all up to current capacity, gray out the rest
+        for i, unit in enumerate(self.__units):
+            if i < index:
+                self.canvas.itemconfig(unit, stipple="")
+            else:
                 self.canvas.itemconfig(unit, stipple="gray25")
 
 

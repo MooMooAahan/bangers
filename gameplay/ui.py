@@ -35,7 +35,9 @@ class UI(object):
         self.elapsed_time = 0  # Start at 0 elapsed time
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         
-        self.humanoid = data_parser.get_random()
+        # Track two humanoids for two images
+        self.humanoid_left = data_parser.get_random()
+        self.humanoid_right = data_parser.get_random()
         self.log = log
 
         if suggest:
@@ -43,31 +45,35 @@ class UI(object):
 
         #  Add buttons and logo
         user_buttons = [("Skip (15 mins)", lambda: [self.add_elapsed_time(15),
-                                          scorekeeper.skip(self.humanoid),
-                                          self.update_ui(scorekeeper),
-                                          self.get_next(
-                                              data_fp,
-                                              data_parser,
-                                              scorekeeper)]),
+                                              scorekeeper.skip(self.humanoid_left),
+                                              scorekeeper.skip(self.humanoid_right),
+                                              self.update_ui(scorekeeper),
+                                              self.get_next(
+                                                  data_fp,
+                                                  data_parser,
+                                                  scorekeeper)]),
                         ("Inspect (15 mins)", lambda: [self.add_elapsed_time(15),
-                                             self.update_ui(scorekeeper),
-                                             self.check_game_end(data_fp, data_parser, scorekeeper)]),
+                                                 self.update_ui(scorekeeper),
+                                                 self.check_game_end(data_fp, data_parser, scorekeeper)]),
                         ("Squish (5 mins)", lambda: [self.add_elapsed_time(5),
-                                            scorekeeper.squish(self.humanoid),
+                                            scorekeeper.squish(self.humanoid_left),
+                                            scorekeeper.squish(self.humanoid_right),
                                             self.update_ui(scorekeeper),
                                             self.get_next(
                                                 data_fp,
                                                 data_parser,
                                                 scorekeeper)]),
                         ("Save (30 mins)", lambda: [self.add_elapsed_time(30),
-                                          scorekeeper.save(self.humanoid),
+                                          scorekeeper.save(self.humanoid_left),
+                                          scorekeeper.save(self.humanoid_right),
                                           self.update_ui(scorekeeper),
                                           self.get_next(
                                               data_fp,
                                               data_parser,
                                               scorekeeper)]),
                         ("Scram (2 hrs)", lambda: [self.add_elapsed_time(120),
-                                           scorekeeper.scram(self.humanoid),
+                                           scorekeeper.scram(self.humanoid_left),
+                                           scorekeeper.scram(self.humanoid_right),
                                            self.update_ui(scorekeeper),
                                            self.get_next(
                                                data_fp,
@@ -77,16 +83,26 @@ class UI(object):
 
         if suggest:
             machine_buttons = [
-                ("Suggest", lambda: [self.machine_interface.suggest(self.humanoid)]),
-                ("Act", lambda: [self.machine_interface.act(scorekeeper, self.humanoid),
+                ("Suggest", lambda: [self.machine_interface.suggest(self.humanoid_left)]),
+                ("Act", lambda: [self.machine_interface.act(scorekeeper, self.humanoid_left),
                                  self.update_ui(scorekeeper),
                                  self.get_next(data_fp, data_parser, scorekeeper)])
             ]
             self.machine_menu = MachineMenu(self.root, machine_buttons)
 
-        # Display central photo
-        self.game_viewer = GameViewer(self.root, w, h, data_fp, self.humanoid)
-        self.root.bind("<Delete>", self.game_viewer.delete_photo)
+        # Display two stacked (vertically) photos, centered horizontally
+        image_width = 256
+        vertical_gap = 30  # pixels between images
+        w, h = 1280, 800
+        center_x = (w - image_width) // 2
+        y_top = 100
+        y_bottom = y_top + 256 + vertical_gap  # 256 is the image width, but height will be set by GameViewer
+        self.game_viewer_left = GameViewer(self.root, image_width, h, data_fp, self.humanoid_left)
+        self.game_viewer_right = GameViewer(self.root, image_width, h, data_fp, self.humanoid_right)
+        self.game_viewer_left.canvas.place(x=center_x, y=y_top)
+        self.game_viewer_right.canvas.place(x=center_x, y=y_bottom)
+        self.root.bind("<Delete>", self.game_viewer_left.delete_photo)
+        self.root.bind("<Delete>", self.game_viewer_right.delete_photo)
 
         # Display the countdown
         # At start, no time has elapsed, so clock should be at 12 o'clock
@@ -159,12 +175,18 @@ class UI(object):
             if self.log:
                 scorekeeper.save_log()
             self.capacity_meter.update_fill(0)
-            self.game_viewer.delete_photo(None)
-            self.game_viewer.display_score(scorekeeper.get_score())
+            self.game_viewer_left.delete_photo(None)
+            self.game_viewer_right.delete_photo(None)
+            self.game_viewer_left.display_score(scorekeeper.get_score())
+            # Only clear the right box, do not show score there
+            self.game_viewer_right.canvas.delete('all')
         else:
-            self.humanoid = data_parser.get_random()
-            fp = join(data_fp, self.humanoid.fp)
-            self.game_viewer.create_photo(fp)
+            self.humanoid_left = data_parser.get_random()
+            self.humanoid_right = data_parser.get_random()
+            fp_left = join(data_fp, self.humanoid_left.fp)
+            fp_right = join(data_fp, self.humanoid_right.fp)
+            self.game_viewer_left.create_photo(fp_left)
+            self.game_viewer_right.create_photo(fp_right)
 
         # Disable buttons that would exceed time limit
         self.disable_buttons_if_insufficient_time(remaining_time, remaining, scorekeeper.at_capacity())
@@ -176,8 +198,11 @@ class UI(object):
             if self.log:
                 scorekeeper.save_log()
             self.capacity_meter.update_fill(0)
-            self.game_viewer.delete_photo(None)
-            self.game_viewer.display_score(scorekeeper.get_score())
+            self.game_viewer_left.delete_photo(None)
+            self.game_viewer_right.delete_photo(None)
+            self.game_viewer_left.display_score(scorekeeper.get_score())
+            # Only clear the right box, do not show score there
+            self.game_viewer_right.canvas.delete('all')
             # Disable all buttons when game ends
             self.disable_buttons_if_insufficient_time(0, 0, False)
 
