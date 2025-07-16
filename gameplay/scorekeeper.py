@@ -208,11 +208,14 @@ class ScoreKeeper(object):
     
     def get_accuracy(self):
         """
-        Calculate the accuracy of saved actions: correct human saves vs total saves
+        Accuracy = correctly saved humans / all human decisions (saves + bad saves + killed humans)
         """
-        total_saves = self.correct_saves + self.false_saves
-        return self.correct_saves / total_saves if total_saves > 0 else 0
-    
+        true_positives = self.correct_saves  # you saved a real human
+        false_positives = self.false_saves   # you saved a zombie
+        false_negatives = self.scorekeeper["killed"] # you killed a human
+        
+        total = true_positives + false_positives + false_negatives
+        return true_positives / total if total > 0 else 0
     
     @staticmethod
     def get_action_idx(class_string):
