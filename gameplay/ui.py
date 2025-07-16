@@ -39,6 +39,12 @@ class UI(object):
         self.humanoid_left = data_parser.get_random()
         self.humanoid_right = data_parser.get_random()
         self.log = log
+        
+        #replay button
+        self.replay_btn = None
+        
+        #replay button
+        self.replay_btn = None
 
         if suggest:
             self.machine_interface = HeuristicInterface(self.root, w, h)
@@ -80,7 +86,7 @@ class UI(object):
                                                data_parser,
                                                scorekeeper)])]
         self.button_menu = ButtonMenu(self.root, user_buttons)
-
+        
         if suggest:
             machine_buttons = [
                 ("Suggest", lambda: [self.machine_interface.suggest(self.humanoid_left)]),
@@ -99,6 +105,7 @@ class UI(object):
         y_bottom = y_top + 256 + vertical_gap  # 256 is the image width, but height will be set by GameViewer
         self.game_viewer_left = GameViewer(self.root, image_width, h, data_fp, self.humanoid_left)
         self.game_viewer_right = GameViewer(self.root, image_width, h, data_fp, self.humanoid_right)
+        # Place the canvases - the GameViewer will handle its own sizing
         self.game_viewer_left.canvas.place(x=center_x, y=y_top)
         self.game_viewer_right.canvas.place(x=center_x, y=y_bottom)
         self.root.bind("<Delete>", self.game_viewer_left.delete_photo)
@@ -164,7 +171,9 @@ class UI(object):
     def on_resize(self, event):
         w = 0.6 * self.root.winfo_width()
         h = 0.7 * self.root.winfo_height()
-        self.game_viewer.canvas.config(width=w, height=h)
+        # Update both game viewers for dual screen setup
+        self.game_viewer_left.canvas.config(width=w, height=h)
+        self.game_viewer_right.canvas.config(width=w, height=h)
 
     def get_next(self, data_fp, data_parser, scorekeeper):
         remaining = len(data_parser.unvisited)
@@ -177,9 +186,22 @@ class UI(object):
             self.capacity_meter.update_fill(0)
             self.game_viewer_left.delete_photo(None)
             self.game_viewer_right.delete_photo(None)
-            self.game_viewer_left.display_score(scorekeeper.get_score())
-            # Only clear the right box, do not show score there
+            
+            final_score = scorekeeper.get_final_score()
+            accuracy = round(scorekeeper.get_accuracy() * 100, 2)
+            self.game_viewer_left.display_score(scorekeeper.get_score(), final_score, accuracy)
+            # Clear the right box and show a message
             self.game_viewer_right.canvas.delete('all')
+            self.game_viewer_right.canvas.create_text(
+                self.game_viewer_right.canvas.winfo_width() // 2,
+                self.game_viewer_right.canvas.winfo_height() // 2,
+                text="Game Complete",
+                font=("Arial", 20),
+                fill="black"
+            )
+            #added replay button
+            self.replay_btn = tk.Button(self.root, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
+            self.replay_btn.place(x=600, y=700)
         else:
             self.humanoid_left = data_parser.get_random()
             self.humanoid_right = data_parser.get_random()
@@ -200,9 +222,22 @@ class UI(object):
             self.capacity_meter.update_fill(0)
             self.game_viewer_left.delete_photo(None)
             self.game_viewer_right.delete_photo(None)
-            self.game_viewer_left.display_score(scorekeeper.get_score())
-            # Only clear the right box, do not show score there
+            
+            final_score = scorekeeper.get_final_score()
+            accuracy = round(scorekeeper.get_accuracy() * 100, 2)
+            self.game_viewer_left.display_score(scorekeeper.get_score(), final_score, accuracy)
+            # Clear the right box and show a message
             self.game_viewer_right.canvas.delete('all')
+            self.game_viewer_right.canvas.create_text(
+                self.game_viewer_right.canvas.winfo_width() // 2,
+                self.game_viewer_right.canvas.winfo_height() // 2,
+                text="Game Complete",
+                font=("Arial", 20),
+                fill="black"
+            )
+            #added replay button
+            self.replay_btn = tk.Button(self.root, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
+            self.replay_btn.place(x=600, y=700)
             # Disable all buttons when game ends
             self.disable_buttons_if_insufficient_time(0, 0, False)
 
@@ -211,3 +246,32 @@ class UI(object):
         # Use the existing ButtonMenu.disable_buttons method
         # Note: ButtonMenu now handles Skip (index 0), Inspect (index 1), Squish (index 2), Save (index 3)
         self.button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity)
+        
+            
+    def reset_game(self, data_parser, data_fp):
+        """Restart games"""
+        
+        if self.replay_btn:
+            self.replay_btn.place_forget()
+            self.replay_btn = None
+
+        self.elapsed_time = 0
+        self.scorekeeper.reset()
+        self.humanoid_left = data_parser.get_random()
+        self.humanoid_right = data_parser.get_random()
+        fp_left = join(data_fp, self.humanoid_left.fp)
+        fp_right = join(data_fp, self.humanoid_right.fp)
+        self.game_viewer_left.create_photo(fp_left)
+        self.game_viewer_right.create_photo(fp_right)
+        self.update_ui(self.scorekeeper)
+        self.button_menu.enable_all_buttons()
+        self.clock.update_time(12, 0)
+        # Clear any widgets in both canvases
+        for widget in self.game_viewer_left.canvas.pack_slaves():
+            widget.destroy()
+        for widget in self.game_viewer_right.canvas.pack_slaves():
+            widget.destroy()
+        data_parser.reset()
+
+
+
