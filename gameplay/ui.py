@@ -220,6 +220,7 @@ class UI(object):
         self.clock.update_time(12, 0)
         for widget in self.game_viewer.canvas.pack_slaves():
             widget.destroy()
+        data_parser.reset()
 
 
 
