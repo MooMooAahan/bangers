@@ -49,13 +49,14 @@ class GameViewer(object):
         y = self.img_buffer // 2
         self.canvas.create_image(x, y, anchor=tk.NW, image=self.photo, tags='photo')
 
-    def display_score(self, score):
-        self.canvas.delete('all')
-        # Add a larger top margin so the text is not cut off
-        top_margin = 50
-        self.canvas.create_text(self.canvas.winfo_width()//2, top_margin, text="FINAL SCORE", font=("Arial", 30), anchor=tk.N)
-        self.canvas.create_text(self.canvas.winfo_width()//2, top_margin+50, text="Killed {}".format(score["killed"]), font=("Arial", 15), anchor=tk.N)
-        self.canvas.create_text(self.canvas.winfo_width()//2, top_margin+80, text="Saved {}".format(score["saved"]), font=("Arial", 15), anchor=tk.N)
+    def display_score(self, score,final_score=None, accuracy=None):
+        tk.Label(self.canvas, text="FINAL SCORE", font=("Arial", 30)).pack(anchor=tk.NW)
+        tk.Label(self.canvas, text="Killed {}".format(score["killed"]), font=("Arial", 15)).pack(anchor=tk.NW)
+        tk.Label(self.canvas, text="Saved {}".format(score["saved"]), font=("Arial", 15)).pack(anchor=tk.NW)
+        if final_score is not None:
+            tk.Label(self.canvas, text="Final Score: {}".format(final_score), font=("Arial", 15)).pack(anchor=tk.NW)
+        if accuracy is not None:
+            tk.Label(self.canvas, text="Accuracy: {:.2f}%".format(accuracy), font=("Arial", 15)).pack(anchor=tk.NW)
 
 
 def display_photo(img_path, w, h):
