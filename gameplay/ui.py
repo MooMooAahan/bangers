@@ -37,6 +37,9 @@ class UI(object):
         
         self.humanoid = data_parser.get_random()
         self.log = log
+        
+        #replay button
+        self.replay_btn = None
 
         if suggest:
             self.machine_interface = HeuristicInterface(self.root, w, h)
@@ -74,7 +77,7 @@ class UI(object):
                                                data_parser,
                                                scorekeeper)])]
         self.button_menu = ButtonMenu(self.root, user_buttons)
-
+        
         if suggest:
             machine_buttons = [
                 ("Suggest", lambda: [self.machine_interface.suggest(self.humanoid)]),
@@ -160,9 +163,17 @@ class UI(object):
                 scorekeeper.save_log()
             self.capacity_meter.update_fill(0)
             self.game_viewer.delete_photo(None)
+            
+            
             final_score = scorekeeper.get_final_score()
             accuracy = round(scorekeeper.get_accuracy() * 100, 2)
             self.game_viewer.display_score(scorekeeper.get_score(), final_score, accuracy)
+            #added replay button
+            self.replay_btn = tk.Button(self.root, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
+            self.replay_btn.place(x=600, y=700)
+
+
+
 
         else:
             self.humanoid = data_parser.get_random()
@@ -189,3 +200,27 @@ class UI(object):
         # Use the existing ButtonMenu.disable_buttons method
         # Note: ButtonMenu now handles Skip (index 0), Inspect (index 1), Squish (index 2), Save (index 3)
         self.button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity)
+        
+            
+    def reset_game(self, data_parser, data_fp):
+        """Restart games"""
+        
+        if self.replay_btn:
+            self.replay_btn.place_forget()
+            self.replay_btn = None
+
+
+        self.elapsed_time = 0
+        self.scorekeeper.reset()
+        self.humanoid = data_parser.get_random()
+        fp = join(data_fp, self.humanoid.fp)
+        self.game_viewer.create_photo(fp)
+        self.update_ui(self.scorekeeper)
+        self.button_menu.enable_all_buttons()
+        self.clock.update_time(12, 0)
+        for widget in self.game_viewer.canvas.pack_slaves():
+            widget.destroy()
+        data_parser.reset()
+
+
+

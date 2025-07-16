@@ -33,6 +33,20 @@ class ButtonMenu(object):
             self.buttons[3].config(state="disabled")  # Save
 
 
+
+
+
+    def enable_all_buttons(self):
+        """Enables button for when you need to retry"""
+        for button in self.buttons:
+            button.config(state="normal")
+            
+    
+            
+            
+            
+            
+            
 def create_buttons(canvas, items):
     buttons = []
     for item in items:
@@ -53,3 +67,6 @@ def create_menu(buttons):
 
     for button in buttons:
         button.pack(side=tk.TOP, pady=10)
+
+
+
