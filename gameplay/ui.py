@@ -192,16 +192,30 @@ class UI(object):
             self.game_viewer_left.display_score(scorekeeper.get_score(), final_score, accuracy)
             # Clear the right box and show a message
             self.game_viewer_right.canvas.delete('all')
+            # Get canvas dimensions for positioning
+            canvas_width = self.game_viewer_right.canvas.winfo_width()
+            canvas_height = self.game_viewer_right.canvas.winfo_height()
+            center_x = canvas_width // 2
+            center_y = canvas_height // 2
+            
+            # Create "Game Complete" text
             self.game_viewer_right.canvas.create_text(
-                self.game_viewer_right.canvas.winfo_width() // 2,
-                self.game_viewer_right.canvas.winfo_height() // 2,
+                center_x,
+                center_y,
                 text="Game Complete",
                 font=("Arial", 20),
                 fill="black"
             )
-            #added replay button
+            
+            # Place replay button on top of the "Game Complete" text
+            # Get the canvas position on the window
+            canvas_x = self.game_viewer_right.canvas.winfo_x()
+            canvas_y = self.game_viewer_right.canvas.winfo_y()
+            # Position button at the center of the right canvas
+            button_x = canvas_x + center_x - 50  # Center the button (assuming button width ~100px)
+            button_y = canvas_y + center_y + 30  # Position below the text
             self.replay_btn = tk.Button(self.root, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
-            self.replay_btn.place(x=600, y=700)
+            self.replay_btn.place(x=button_x, y=button_y)
         else:
             self.humanoid_left = data_parser.get_random()
             self.humanoid_right = data_parser.get_random()
@@ -228,16 +242,30 @@ class UI(object):
             self.game_viewer_left.display_score(scorekeeper.get_score(), final_score, accuracy)
             # Clear the right box and show a message
             self.game_viewer_right.canvas.delete('all')
+            # Get canvas dimensions for positioning
+            canvas_width = self.game_viewer_right.canvas.winfo_width()
+            canvas_height = self.game_viewer_right.canvas.winfo_height()
+            center_x = canvas_width // 2
+            center_y = canvas_height // 2
+            
+            # Create "Game Complete" text
             self.game_viewer_right.canvas.create_text(
-                self.game_viewer_right.canvas.winfo_width() // 2,
-                self.game_viewer_right.canvas.winfo_height() // 2,
+                center_x,
+                center_y,
                 text="Game Complete",
                 font=("Arial", 20),
                 fill="black"
             )
-            #added replay button
+            
+            # Place replay button on top of the "Game Complete" text
+            # Get the canvas position on the window
+            canvas_x = self.game_viewer_right.canvas.winfo_x()
+            canvas_y = self.game_viewer_right.canvas.winfo_y()
+            # Position button at the center of the right canvas
+            button_x = canvas_x + center_x - 50  # Center the button (assuming button width ~100px)
+            button_y = canvas_y + center_y + 30  # Position below the text
             self.replay_btn = tk.Button(self.root, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
-            self.replay_btn.place(x=600, y=700)
+            self.replay_btn.place(x=button_x, y=button_y)
             # Disable all buttons when game ends
             self.disable_buttons_if_insufficient_time(0, 0, False)
 
