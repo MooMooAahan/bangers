@@ -124,6 +124,13 @@ class UI(object):
         # Display ambulance capacity
         self.capacity_meter = CapacityMeter(self.root, w, h, capacity)
 
+        # Added rule button on the right side
+        self.rules_btn = tk.Button(self.root, text="Rules", command=self.show_rules, 
+                                  font=("Arial", 18), bg="#4CAF50", fg="white", 
+                                  relief="raised", bd=2)
+        #If you want to change the size of the button, change the font size
+        self.rules_btn.place(x=w-200, y=620) 
+
         self.root.mainloop()
 
     def add_elapsed_time(self, minutes):
@@ -140,12 +147,14 @@ class UI(object):
             "- Choose an action: Skip when presented with fiqure ahead.\n"
             "- The goal is to save as many humans and squash  the zombies.\n"
             "- Your choices affect your score \n"
-            "- The game ends when your tasks are completed or the day ends"
+            "- The game ends when your tasks are completed or the day ends. \n"
+            #More rules if needed (make sure to add \n)
+            "- This is where we can add more rules in case we need to. \n\n"
         )
 
         rules_window = tk.Toplevel(self.root)
         rules_window.title("Game Rules")
-        rules_window.geometry("400x300")
+        rules_window.geometry("600x400")
         rules_window.resizable(False, False)
 
         label = tk.Label(rules_window, text=rules_text, justify="left", padx=10, pady=10, font=("Helvetica", 11))
