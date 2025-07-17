@@ -124,12 +124,14 @@ class UI(object):
         # Display ambulance capacity
         self.capacity_meter = CapacityMeter(self.root, w, h, capacity)
 
-        # Added rule button on the right side
+        # Added rule button on the left side, above the function buttons
+        rules_btn_width = 200  # Estimate width in pixels
+        rules_btn_x = 100   # Centered on the button menu canvas
+        rules_btn_y = 90  # 60px above the button menu
         self.rules_btn = tk.Button(self.root, text="Rules", command=self.show_rules, 
                                   font=("Arial", 18), bg="#4CAF50", fg="white", 
-                                  relief="raised", bd=2)
-        #If you want to change the size of the button, change the font size
-        self.rules_btn.place(x=w-200, y=620) 
+                                  relief="raised", bd=2, width=12)
+        self.rules_btn.place(x=rules_btn_x, y=rules_btn_y)
 
         self.root.mainloop()
 

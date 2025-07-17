@@ -7,7 +7,7 @@ import math
 class Clock(object):
     def __init__(self, root, w, h, init_h, init_m):
         self.canvas = tk.Canvas(root, width=math.floor(0.2 * w), height=math.floor(0.3 * h))
-        self.canvas.place(x=math.floor(0.75 * w), y=50)
+        self.canvas.place(x=math.floor(0.75 * w), y=30)
         self.sticks = None
         self.image = None
         self.x = 150  # Center Point x
