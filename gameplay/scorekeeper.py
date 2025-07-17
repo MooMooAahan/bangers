@@ -1,14 +1,24 @@
 from gameplay.enums import ActionCost, ActionState
 import pandas as pd
+import random
+
 
 MAP_ACTION_STR_TO_INT = {s.value:i for i,s in enumerate(ActionState)}
 MAP_ACTION_INT_TO_STR = [s.value for s in ActionState]
 
+"""
+scoring system's global variables
+"""
 # Score for each type of person at the end of the game
 score_healthy = 10
 score_injured = 5
 score_zombie = -20
 score_killed = -10
+"""
+timing system's global variables
+"""
+
+time_bonus = 0 # bonus time's default (in minutes)
 
 class ScoreKeeper(object):
     def __init__(self, shift_len, capacity):
@@ -83,15 +93,22 @@ class ScoreKeeper(object):
         self.log(humanoid, 'save')
         
         self.remaining_time -= ActionCost.SAVE.value
+        
         if humanoid.is_zombie():
             self.ambulance["zombie"] += 1
             self.false_saves += 1
-        elif humanoid.is_injured():
+            time_bonus = -10 # penalty for saving zombie is removing 10 minutes
+        elif humanoid.is_injured() or humanoid.is_healthy():
             self.correct_saves += 1
-            self.ambulance["injured"] += 1
+            if humanoid.is_injured():
+                self.ambulance["injured"] += 1
         else:
             self.ambulance["healthy"] += 1
-            self.correct_saves += 1
+        
+        if random.random() < 0.5:
+            time_bonus = 15 # make them have a 15 min bonus  
+        
+        self.remaining_time += time_bonus
 
     def squish(self, humanoid):
         """
