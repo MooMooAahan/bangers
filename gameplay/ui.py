@@ -8,6 +8,7 @@ from ui_elements.game_viewer import GameViewer
 from ui_elements.machine_menu import MachineMenu
 from os.path import join
 from PIL import Image, ImageTk
+import random
 
 class IntroScreen:
     def __init__(self, on_start_callback):
@@ -170,21 +171,14 @@ class UI(object):
         self.grid_rows = len(self.map_array)
         self.grid_cols = len(self.map_array[0])
         self.cell_size = 44  # Small for better fit
-        self.grid_origin = (20, 420)  # Lower left, but higher up
-        # Find first valid cell for ambulance start
-        for r in range(self.grid_rows):
-            for c in range(self.grid_cols):
-                if self.map_array[r][c] == 1:
-                    self.ambulance_pos = [r, c]
-                    break
-            else:
-                continue
-            break
-        self.path_history = [tuple(self.ambulance_pos)]
+        self.grid_origin = (20, 445)  # Lower left, but higher up
+        self.create_grid_map_canvas()  # Create the canvas first
+        self.reset_map()               # Now it's safe to call reset_map()
+        self.draw_grid_map()
         self.directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # right, down, left, up
         self.direction_idx = 0  # Start facing right
-        self.create_grid_map_canvas()
-        self.draw_grid_map()
+        # self.create_grid_map_canvas() # This line is moved
+        # self.draw_grid_map() # This line is moved
 
         self.root.mainloop()
 
@@ -333,6 +327,8 @@ class UI(object):
             self.replay_btn.pack(pady=(10, 0))
             # Remove any content from the right canvas
             self.game_viewer_right.canvas.delete('all')
+            self.hide_map = True # Hide the map when game ends
+            self.draw_grid_map() # Redraw the map to hide it
         else:
             self.humanoid_left = data_parser.get_random()
             self.humanoid_right = data_parser.get_random()
@@ -424,12 +420,25 @@ class UI(object):
         self.right_button_menu.enable_all_buttons()
         self.clock.update_time(12, 0)
         self.reset_map() # Reset map on game end
+        self.hide_map = False
+        self.draw_grid_map()
         # Clear any widgets in both canvases
         for widget in self.game_viewer_left.canvas.pack_slaves():
             widget.destroy()
         for widget in self.game_viewer_right.canvas.pack_slaves():
             widget.destroy()
         data_parser.reset()
+        self.map_canvas.place(x=self.grid_origin[0], y=self.grid_origin[1])
+
+
+
+
+
+
+
+
+
+
 
     def create_grid_map_canvas(self):
         w = self.grid_cols * self.cell_size + 2 * 10
@@ -438,6 +447,9 @@ class UI(object):
         self.map_canvas.place(x=self.grid_origin[0], y=self.grid_origin[1])
 
     def draw_grid_map(self):
+        if hasattr(self, 'map_canvas') and getattr(self, 'hide_map', False):
+            self.map_canvas.place_forget()
+            return
         self.map_canvas.delete("all")
         # Draw only valid cells
         for r in range(self.grid_rows):
@@ -474,65 +486,105 @@ class UI(object):
         if self.map_array[r][c] in (1, 3, 4):
             x = c * self.cell_size + 10 + self.cell_size // 2
             y = r * self.cell_size + 10 + self.cell_size // 2
-            # Flip ambulance sprite: use left arrow for visual effect
             self.map_canvas.create_oval(x-18, y-18, x+18, y+18, fill="#fff", outline="#3498db", width=3)
             self.map_canvas.create_text(x, y, text="⬅️", font=("Arial", 18))
-            # Always show R below and L to the right, if valid
-            # R (down)
+            # L (below)
             nr, nc = r + 1, c
             if 0 <= nr < self.grid_rows and self.map_array[nr][nc] in (1, 3, 4):
                 nx = nc * self.cell_size + 10 + self.cell_size // 2
                 ny = nr * self.cell_size + 10 + self.cell_size // 2
                 self.map_canvas.create_oval(nx-12, ny-12, nx+12, ny+12, outline="#f39c12", width=2)
-                self.map_canvas.create_text(nx, ny, text='R', font=("Arial", 12, "bold"), fill="#f39c12")
-            # L (right)
+                self.map_canvas.create_text(nx, ny, text='L', font=("Arial", 12, "bold"), fill="#f39c12")
+            # R (right)
             nr, nc = r, c + 1
             if 0 <= nc < self.grid_cols and self.map_array[nr][nc] in (1, 3, 4):
                 nx = nc * self.cell_size + 10 + self.cell_size // 2
                 ny = nr * self.cell_size + 10 + self.cell_size // 2
                 self.map_canvas.create_oval(nx-12, ny-12, nx+12, ny+12, outline="#f39c12", width=2)
-                self.map_canvas.create_text(nx, ny, text='L', font=("Arial", 12, "bold"), fill="#f39c12")
+                self.map_canvas.create_text(nx, ny, text='R', font=("Arial", 12, "bold"), fill="#f39c12")
 
     def move_map_right(self):
-        # R: move down if possible
-        r, c = self.ambulance_pos
-        new_r, new_c = r + 1, c
-        if 0 <= new_r < self.grid_rows and self.map_array[new_r][new_c] in (1, 3, 4):
-            self.ambulance_pos = [new_r, new_c]
-            self.path_history.append(tuple(self.ambulance_pos))
-        self.draw_grid_map()
-
-    def move_map_left(self):
-        # L: move right if possible
+        # R: move right if possible
         r, c = self.ambulance_pos
         new_r, new_c = r, c + 1
         if 0 <= new_c < self.grid_cols and self.map_array[new_r][new_c] in (1, 3, 4):
             self.ambulance_pos = [new_r, new_c]
             self.path_history.append(tuple(self.ambulance_pos))
+            self.check_bonus()
+        self.draw_grid_map()
+
+    def move_map_left(self):
+        # L: move down if possible
+        r, c = self.ambulance_pos
+        new_r, new_c = r + 1, c
+        if 0 <= new_r < self.grid_rows and self.map_array[new_r][new_c] in (1, 3, 4):
+            self.ambulance_pos = [new_r, new_c]
+            self.path_history.append(tuple(self.ambulance_pos))
+            self.check_bonus()
         self.draw_grid_map()
 
     def reset_map(self):
-        # Always start in BASE cell (value 3)
-        found = False
+        self.hide_map = False  # Ensure map is visible after replay/reset
+        # Always start on BASE cell (value 3)
+        base_r, base_c = None, None
         for r in range(self.grid_rows):
             for c in range(self.grid_cols):
                 if self.map_array[r][c] == 3:
-                    self.ambulance_pos = [r, c]
-                    found = True
+                    base_r, base_c = r, c
                     break
-            if found:
+            if base_r is not None:
                 break
-        if not found:
+        if base_r is not None and base_c is not None:
+            self.ambulance_pos = [base_r, base_c]
+        else:
+            # Fallback: first walkable cell
+            found = False
             for r in range(self.grid_rows):
                 for c in range(self.grid_cols):
-                    if self.map_array[r][c] in (1, 4):
+                    if self.map_array[r][c] in (1,4):
                         self.ambulance_pos = [r, c]
                         found = True
                         break
                 if found:
                     break
         self.path_history = [tuple(self.ambulance_pos)]
+        self.place_random_bonus()
         self.draw_grid_map()
+
+    def place_random_bonus(self):
+        # Remove any existing bonus
+        for r in range(self.grid_rows):
+            for c in range(self.grid_cols):
+                if self.map_array[r][c] == 4:
+                    self.map_array[r][c] = 1
+        # Find all walkable cells except BASE
+        walkable = [(r,c) for r in range(self.grid_rows) for c in range(self.grid_cols) if self.map_array[r][c] == 1]
+        if walkable:
+            bonus_r, bonus_c = random.choice(walkable)
+            self.map_array[bonus_r][bonus_c] = 4
+
+    def move_to_base(self):
+        # Move ambulance to BASE cell and reset path
+        base_found = False
+        for r in range(self.grid_rows):
+            for c in range(self.grid_cols):
+                if self.map_array[r][c] == 3:
+                    self.ambulance_pos = [r, c]
+                    self.path_history = [tuple(self.ambulance_pos)]
+                    self.draw_grid_map()
+                    base_found = True
+                    break
+            if base_found:
+                break
+        # If no BASE, do nothing
+
+    def check_bonus(self):
+        r, c = self.ambulance_pos
+        if self.map_array[r][c] == 4:
+            print(f"[DEBUG] Ambulance reached BONUS at ({r}, {c})! +30 min")
+            self.elapsed_time -= 30
+            self.scorekeeper.remaining_time += 30
+            self.map_array[r][c] = 1
 
 
 
