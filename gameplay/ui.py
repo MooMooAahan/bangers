@@ -9,6 +9,31 @@ from ui_elements.machine_menu import MachineMenu
 from os.path import join
 from PIL import Image, ImageTk
 
+class IntroScreen:
+    def __init__(self, on_start_callback):
+        self.root = tk.Tk()
+        self.root.title("Welcome to SGAI 2025 - Team Splice")
+        self.root.geometry("600x350")
+        self.root.resizable(False, False)
+        self.on_start_callback = on_start_callback
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        label = tk.Label(self.root, text="Welcome to Beaverworks SGAI 2025 - Team Splice",
+                         font=("Helvetica", 18), pady=40)
+        label.pack()
+
+        start_button = tk.Button(self.root, text="Start Game", font=("Helvetica", 16), width=15,
+                                 command=self.start_game)
+        start_button.pack(pady=30)
+
+    def start_game(self):
+        self.root.destroy()
+        self.on_start_callback()
+
+    def run(self):
+        self.root.mainloop()
 
 class UI(object):
     def __init__(self, data_parser, scorekeeper, data_fp, suggest, log):
