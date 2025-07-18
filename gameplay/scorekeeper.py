@@ -18,7 +18,8 @@ score_killed = -10
 timing system's global variables
 """
 
-time_bonus = 0 # bonus time's default (in minutes)
+time_penalty_for_zombie = -60 #penalty for saving a zombie
+time_bonus_for_saving_human = 360 #time bonus for saving a human
 
 class ScoreKeeper(object):
     def __init__(self, shift_len, capacity):
@@ -94,20 +95,24 @@ class ScoreKeeper(object):
         
         self.remaining_time -= ActionCost.SAVE.value
         
+        time_bonus = 0
+        
         if humanoid.is_zombie():
             self.ambulance["zombie"] += 1
             self.false_saves += 1
-            time_bonus = -10 # penalty for saving zombie is removing 10 minutes
-        elif humanoid.is_injured() or humanoid.is_healthy():
+            time_bonus = time_penalty_for_zombie # penalty for saving zombie is removing 10 minutes
+        elif humanoid.is_injured():
             self.correct_saves += 1
-            if humanoid.is_injured():
-                self.ambulance["injured"] += 1
-        else:
+            self.ambulance["injured"] += 1
+            if random.random() < 0.8:
+                time_bonus = time_bonus_for_saving_human # make them have a 30 min bonus  
+        elif humanoid.is_healthy():
+            self.correct_saves += 1
             self.ambulance["healthy"] += 1
+            if random.random() < 0.8:
+                time_bonus = time_bonus_for_saving_human # make them have a 30 min bonus 
         
-        if random.random() < 0.5:
-            time_bonus = 15 # make them have a 15 min bonus  
-        
+        print(f"[DEBUG] Time adjustment: {time_bonus} minutes")
         self.remaining_time += time_bonus
 
     def squish(self, humanoid):
