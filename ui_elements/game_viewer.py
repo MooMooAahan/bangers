@@ -11,7 +11,7 @@ class GameViewer(object):
         ### when we do the moral machine two image thingy we need to change this but thats for
         ### future somebody :P
         # Set image display size
-        self.img_width = w  # Use the width parameter passed in
+        self.img_width = w  # Use the width parameter passed in (now 300)
         self.img_buffer = 30
         # Load the image to get its original height
         from PIL import Image

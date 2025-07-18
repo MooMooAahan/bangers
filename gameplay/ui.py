@@ -1,6 +1,6 @@
 import math
 import tkinter as tk
-from ui_elements.button_menu import ButtonMenu
+from ui_elements.button_menu import ButtonMenu, LeftButtonMenu, RightButtonMenu
 from ui_elements.capacity_meter import CapacityMeter
 from ui_elements.clock import Clock
 from endpoints.heuristic_interface import HeuristicInterface
@@ -8,17 +8,31 @@ from ui_elements.game_viewer import GameViewer
 from ui_elements.machine_menu import MachineMenu
 from os.path import join
 
+class IntroScreen:
+    def __init__(self, on_start_callback):
+        self.root = tk.Tk()
+        self.root.title("Welcome to SGAI 2025 - Team Splice")
+        self.root.geometry("600x350")
+        self.root.resizable(False, False)
+        self.on_start_callback = on_start_callback
 
-import math
-import tkinter as tk
-from ui_elements.button_menu import ButtonMenu
-from ui_elements.capacity_meter import CapacityMeter
-from ui_elements.clock import Clock
-from endpoints.heuristic_interface import HeuristicInterface
-from ui_elements.game_viewer import GameViewer
-from ui_elements.machine_menu import MachineMenu
-from os.path import join
+        self.setup_ui()
 
+    def setup_ui(self):
+        label = tk.Label(self.root, text="Welcome to Beaverworks SGAI 2025 - Team Splice",
+                         font=("Helvetica", 18), pady=40)
+        label.pack()
+
+        start_button = tk.Button(self.root, text="Start Game", font=("Helvetica", 16), width=15,
+                                 command=self.start_game)
+        start_button.pack(pady=30)
+
+    def start_game(self):
+        self.root.destroy()
+        self.on_start_callback()
+
+    def run(self):
+        self.root.mainloop()
 
 class UI(object):
     def __init__(self, data_parser, scorekeeper, data_fp, suggest, log):
@@ -58,25 +72,9 @@ class UI(object):
                                                   data_fp,
                                                   data_parser,
                                                   scorekeeper)]),
-                        ("Inspect (15 mins)", lambda: [self.add_elapsed_time(15),
-                                                 self.update_ui(scorekeeper),
-                                                 self.check_game_end(data_fp, data_parser, scorekeeper)]),
-                        ("Squish (5 mins)", lambda: [self.add_elapsed_time(5),
-                                            scorekeeper.squish(self.humanoid_left),
-                                            scorekeeper.squish(self.humanoid_right),
-                                            self.update_ui(scorekeeper),
-                                            self.get_next(
-                                                data_fp,
-                                                data_parser,
-                                                scorekeeper)]),
-                        ("Save (30 mins)", lambda: [self.add_elapsed_time(30),
-                                          scorekeeper.save(self.humanoid_left),
-                                          scorekeeper.save(self.humanoid_right),
-                                          self.update_ui(scorekeeper),
-                                          self.get_next(
-                                              data_fp,
-                                              data_parser,
-                                              scorekeeper)]),
+                        ("Inspect (15 mins)", lambda: self.show_action_popup("Inspect")),
+                        ("Squish (5 mins)", lambda: self.show_action_popup("Squish")),
+                        ("Save (30 mins)", lambda: self.show_action_popup("Save")),
                         ("Scram (2 hrs)", lambda: [self.add_elapsed_time(120),
                                            scorekeeper.scram(self.humanoid_left),
                                            scorekeeper.scram(self.humanoid_right),
@@ -87,6 +85,51 @@ class UI(object):
                                                scorekeeper)])]
         self.button_menu = ButtonMenu(self.root, user_buttons)
         
+        # Add extra button menu with three buttons
+        left_buttons = [
+            ("Inspect Left", lambda: [self.add_elapsed_time(15),
+                                                 self.update_ui(scorekeeper),
+                                                 self.check_game_end(data_fp, data_parser, scorekeeper)]),
+            ("Squish Left", lambda: [self.add_elapsed_time(5),
+                                            scorekeeper.squish(self.humanoid_left),
+                                            self.update_ui(scorekeeper),
+                                            self.get_next(
+                                                data_fp,
+                                                data_parser,
+                                                scorekeeper)]),
+            ("Save Left", lambda: [self.add_elapsed_time(30),
+                                          scorekeeper.save(self.humanoid_left),
+                                          self.update_ui(scorekeeper),
+                                          self.get_next(
+                                              data_fp,
+                                              data_parser,
+                                              scorekeeper)])
+        ]
+        self.left_button_menu = LeftButtonMenu(self.root, left_buttons)
+
+        # add right side button menu with 3 buttons
+
+        right_buttons = [
+            ("Inspect Right", lambda: [self.add_elapsed_time(15),
+                                                 self.update_ui(scorekeeper),
+                                                 self.check_game_end(data_fp, data_parser, scorekeeper)]),
+            ("Squish Right", lambda: [self.add_elapsed_time(5),
+                                            scorekeeper.squish(self.humanoid_right),
+                                            self.update_ui(scorekeeper),
+                                            self.get_next(
+                                                data_fp,
+                                                data_parser,
+                                                scorekeeper)]),
+            ("Save Right", lambda: [self.add_elapsed_time(30),
+                                          scorekeeper.save(self.humanoid_right),
+                                          self.update_ui(scorekeeper),
+                                          self.get_next(
+                                              data_fp,
+                                              data_parser,
+                                              scorekeeper)])
+        ]
+        self.right_button_menu = RightButtonMenu(self.root, right_buttons)
+
         if suggest:
             machine_buttons = [
                 ("Suggest", lambda: [self.machine_interface.suggest(self.humanoid_left)]),
@@ -97,17 +140,20 @@ class UI(object):
             self.machine_menu = MachineMenu(self.root, machine_buttons)
 
         # Display two stacked (vertically) photos, centered horizontally
-        image_width = 256
+        image_width = 300
         vertical_gap = 30  # pixels between images
         w, h = 1280, 800
-        center_x = (w - image_width) // 2
-        y_top = 100
-        y_bottom = y_top + 256 + vertical_gap  # 256 is the image width, but height will be set by GameViewer
+        # Calculate total width for both images side by side
+        total_width = image_width * 2
+        # Center the pair of images
+        center_x = (w - total_width) // 2
+        y_top = 100 + 50  # Shift down by 50 pixels
+        # Place left and right images side by side
         self.game_viewer_left = GameViewer(self.root, image_width, h, data_fp, self.humanoid_left)
         self.game_viewer_right = GameViewer(self.root, image_width, h, data_fp, self.humanoid_right)
-        # Place the canvases - the GameViewer will handle its own sizing
+        # Place the canvases - left on the left, right on the right, both at y_top
         self.game_viewer_left.canvas.place(x=center_x, y=y_top)
-        self.game_viewer_right.canvas.place(x=center_x, y=y_bottom)
+        self.game_viewer_right.canvas.place(x=center_x + image_width, y=y_top)
         self.root.bind("<Delete>", self.game_viewer_left.delete_photo)
         self.root.bind("<Delete>", self.game_viewer_right.delete_photo)
 
@@ -121,6 +167,15 @@ class UI(object):
         # Display ambulance capacity
         self.capacity_meter = CapacityMeter(self.root, w, h, capacity)
 
+        # Added rule button on the left side, above the function buttons
+        rules_btn_width = 200  # Estimate width in pixels
+        rules_btn_x = 100   # Centered on the button menu canvas
+        rules_btn_y = 90  # 60px above the button menu
+        self.rules_btn = tk.Button(self.root, text="Rules", command=self.show_rules, 
+                                  font=("Arial", 18), bg="#4CAF50", fg="white", 
+                                  relief="raised", bd=2, width=12)
+        self.rules_btn.place(x=rules_btn_x, y=rules_btn_y)
+
         self.root.mainloop()
 
     def add_elapsed_time(self, minutes):
@@ -129,6 +184,55 @@ class UI(object):
         remaining_time = self.total_time - self.elapsed_time
         # Update the scorekeeper's remaining time
         self.scorekeeper.remaining_time = remaining_time
+    def show_leftright_instructions(self):
+        leftright_text = (
+            "Make sure to press L or R! You can only do this action for 1 side. \n"
+            "If you are inspecting, you can press both L and R to inspect both sides. \n"
+        )
+        return leftright_text
+
+    def show_action_popup(self, action_name):
+        """Show a popup with highlighted instructions when large action buttons are clicked"""
+        instructions_text = self.show_leftright_instructions()
+        
+        # Create popup window
+        popup = tk.Toplevel(self.root)
+        popup.title(f"{action_name} Instructions")
+        popup.geometry("700x300")
+        popup.resizable(False, False)
+        
+        # Center the popup on the screen
+        popup.transient(self.root)
+        popup.grab_set()
+        
+        # Create main frame
+        main_frame = tk.Frame(popup, padx=20, pady=20)
+        main_frame.pack(expand=True, fill="both")
+        
+        # Title label
+        if action_name == "Save":
+            title_label = tk.Label(main_frame, text=f"Saving", 
+                              font=("Arial", 16, "bold"), fg="#2E86AB")
+            title_label.pack(pady=(0, 15))
+        else:
+            title_label = tk.Label(main_frame, text=f"{action_name}ing", 
+                              font=("Arial", 16, "bold"), fg="#2E86AB")
+            title_label.pack(pady=(0, 15))
+        
+        # Instructions text with highlighting
+        instructions_label = tk.Label(main_frame, text=instructions_text, 
+                                    justify="center", anchor="center", font=("Arial", 12),
+                                    fg="#E74C3C", bg="#FDF2E9", 
+                                    relief="solid", bd=1, padx=15, pady=15)
+        instructions_label.pack(expand=True, fill="both", pady=(0, 15))
+        
+        # Close button
+        close_btn = tk.Button(main_frame, text="Close", 
+                             command=popup.destroy,
+                             font=("Arial", 12), bg="#3498DB", fg="white",
+                             relief="raised", bd=2, padx=20, pady=5)
+        close_btn.pack()
+
 
     def show_rules(self):
         rules_text = (
@@ -137,12 +241,14 @@ class UI(object):
             "- Choose an action: Skip when presented with fiqure ahead.\n"
             "- The goal is to save as many humans and squash  the zombies.\n"
             "- Your choices affect your score \n"
-            "- The game ends when your tasks are completed or the day ends"
+            "- The game ends when your tasks are completed or the day ends. \n"
+            #More rules if needed (make sure to add \n)
+            "- This is where we can add more rules in case we need to. \n\n"
         )
 
         rules_window = tk.Toplevel(self.root)
         rules_window.title("Game Rules")
-        rules_window.geometry("400x300")
+        rules_window.geometry("600x400")
         rules_window.resizable(False, False)
 
         label = tk.Label(rules_window, text=rules_text, justify="left", padx=10, pady=10, font=("Helvetica", 11))
@@ -189,36 +295,34 @@ class UI(object):
             self.capacity_meter.update_fill(0)
             self.game_viewer_left.delete_photo(None)
             self.game_viewer_right.delete_photo(None)
-            
             final_score = scorekeeper.get_final_score()
             accuracy = round(scorekeeper.get_accuracy() * 100, 2)
-            self.game_viewer_left.display_score(scorekeeper.get_score(), final_score, accuracy)
-            # Clear the right box and show a message
+            # Remove any previous final score frame
+            if hasattr(self, 'final_score_frame') and self.final_score_frame:
+                self.final_score_frame.destroy()
+            # Create a new frame for the final score block
+            self.final_score_frame = tk.Frame(self.root, width=300, height=300)
+            self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
+            # 'Game Complete' label
+            game_complete_label = tk.Label(self.final_score_frame, text="Game Complete", font=("Arial", 40))
+            game_complete_label.pack(pady=(10, 5))
+            # 'Final Score' label
+            final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE", font=("Arial", 16))
+            final_score_label.pack(pady=(5, 2))
+            # Scoring details
+            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score()['killed']}", font=("Arial", 12))
+            killed_label.pack()
+            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score()['saved']}", font=("Arial", 12))
+            saved_label.pack()
+            score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
+            score_label.pack()
+            accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
+            accuracy_label.pack()
+            # Replay button
+            self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
+            self.replay_btn.pack(pady=(10, 0))
+            # Remove any content from the right canvas
             self.game_viewer_right.canvas.delete('all')
-            # Get canvas dimensions for positioning
-            canvas_width = self.game_viewer_right.canvas.winfo_width()
-            canvas_height = self.game_viewer_right.canvas.winfo_height()
-            center_x = canvas_width // 2
-            center_y = canvas_height // 2
-            
-            # Create "Game Complete" text
-            self.game_viewer_right.canvas.create_text(
-                center_x,
-                center_y,
-                text="Game Complete",
-                font=("Arial", 20),
-                fill="black"
-            )
-            
-            # Place replay button on top of the "Game Complete" text
-            # Get the canvas position on the window
-            canvas_x = self.game_viewer_right.canvas.winfo_x()
-            canvas_y = self.game_viewer_right.canvas.winfo_y()
-            # Position button at the center of the right canvas
-            button_x = canvas_x + center_x - 50  # Center the button (assuming button width ~100px)
-            button_y = canvas_y + center_y + 30  # Position below the text
-            self.replay_btn = tk.Button(self.root, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
-            self.replay_btn.place(x=button_x, y=button_y)
         else:
             self.humanoid_left = data_parser.get_random()
             self.humanoid_right = data_parser.get_random()
@@ -278,14 +382,24 @@ class UI(object):
         # Note: ButtonMenu now handles Skip (index 0), Inspect (index 1), Squish (index 2), Save (index 3)
         self.button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity)
         
+        # Also disable the left and right button menus with the same logic
+        self.left_button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity)
+        self.right_button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity)
+        
             
     def reset_game(self, data_parser, data_fp):
         """Restart games"""
-        
+        # Remove the final score frame if it exists
+        if hasattr(self, 'final_score_frame') and self.final_score_frame:
+            self.final_score_frame.destroy()
+            self.final_score_frame = None
+        # Remove the replay button if it exists and is not in the frame
         if self.replay_btn:
-            self.replay_btn.place_forget()
+            try:
+                self.replay_btn.place_forget()
+            except Exception:
+                pass
             self.replay_btn = None
-
         self.elapsed_time = 0
         self.scorekeeper.reset()
         self.humanoid_left = data_parser.get_random()
@@ -296,6 +410,8 @@ class UI(object):
         self.game_viewer_right.create_photo(fp_right)
         self.update_ui(self.scorekeeper)
         self.button_menu.enable_all_buttons()
+        self.left_button_menu.enable_all_buttons()
+        self.right_button_menu.enable_all_buttons()
         self.clock.update_time(12, 0)
         # Clear any widgets in both canvases
         for widget in self.game_viewer_left.canvas.pack_slaves():
