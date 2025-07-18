@@ -50,8 +50,8 @@ class UI(object):
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         
         # Track two humanoids for two images
-        self.humanoid_left = data_parser.get_random()
-        self.humanoid_right = data_parser.get_random()
+        self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
+        print(f"[UI DEBUG] Initial Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
         self.log = log
         
         #replay button
@@ -327,8 +327,8 @@ class UI(object):
             # Remove any content from the right canvas
             self.game_viewer_right.canvas.delete('all')
         else:
-            self.humanoid_left = data_parser.get_random()
-            self.humanoid_right = data_parser.get_random()
+            self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
+            print(f"[UI DEBUG] Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
             fp_left = join(data_fp, self.humanoid_left.fp)
             fp_right = join(data_fp, self.humanoid_right.fp)
             self.game_viewer_left.create_photo(fp_left)
@@ -405,8 +405,9 @@ class UI(object):
             self.replay_btn = None
         self.elapsed_time = 0
         self.scorekeeper.reset()
-        self.humanoid_left = data_parser.get_random()
-        self.humanoid_right = data_parser.get_random()
+        data_parser.reset()
+        self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
+        print(f"[UI DEBUG] Reset Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
         fp_left = join(data_fp, self.humanoid_left.fp)
         fp_right = join(data_fp, self.humanoid_right.fp)
         self.game_viewer_left.create_photo(fp_left)
@@ -421,7 +422,6 @@ class UI(object):
             widget.destroy()
         for widget in self.game_viewer_right.canvas.pack_slaves():
             widget.destroy()
-        data_parser.reset()
 
 
 

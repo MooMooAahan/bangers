@@ -50,6 +50,57 @@ class DataParser(object):
                             state=state)
         return humanoid
 
+    def get_scenario(self):
+        """
+        Randomly selects a scenario and returns (left_humanoid, right_humanoid, scenario_number, scenario_desc)
+        """
+        import random
+        # Define scenario dictionary: scenario_number: (left_type, right_type)
+        scenarios = {
+            0: ("human", "zombie"),
+            1: ("zombie", "human"),
+            2: ("human", "human"),
+            3: ("zombie", "zombie"),
+            4: ("injured", "zombie"),
+            5: ("zombie", "injured"),
+            6: ("injured", "human"),
+            7: ("human", "injured"),
+            8: ("injured", "injured"),
+            9: ("corpse", "human"),
+            10: ("human", "corpse"),
+            11: ("corpse", "zombie"),
+            12: ("zombie", "corpse"),
+            13: ("corpse", "corpse"),
+            14: ("corpse", "injured"),
+            15: ("injured", "corpse"),
+        }
+        scenario_number = random.choice(list(scenarios.keys()))
+        left_type, right_type = scenarios[scenario_number]
+        scenario_desc = (left_type, right_type)
+
+        def get_random_of_type(h_type):
+            if h_type == 'human':
+                candidates = self.df[(self.df['Class'] == 'Default') & (self.df['Injured'] == False)]
+            elif h_type == 'injured':
+                candidates = self.df[(self.df['Class'] == 'Default') & (self.df['Injured'] == True)]
+            elif h_type == 'zombie':
+                candidates = self.df[(self.df['Class'] == 'Zombie') & (self.df['Injured'] == False)]
+            elif h_type == 'corpse':
+                candidates = self.df[(self.df['Class'] == 'Zombie') & (self.df['Injured'] == True)]
+            else:
+                raise ValueError(f"Unknown type: {h_type}")
+            if len(candidates) == 0:
+                raise ValueError(f"No candidates for type {h_type}")
+            idx = random.choice(candidates.index)
+            datarow = self.df.loc[idx]
+            state = datarow_to_state(datarow)
+            return Humanoid(fp=datarow['Filename'], state=state)
+
+        left = get_random_of_type(left_type)
+        right = get_random_of_type(right_type)
+        print(f"[SCENARIO DEBUG] Scenario {scenario_number}: left={left_type} ({left.fp}), right={right_type} ({right.fp})")
+        return left, right, scenario_number, scenario_desc
+
 
 # can be customized
 def datarow_to_state(datarow):
