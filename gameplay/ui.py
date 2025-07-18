@@ -166,6 +166,8 @@ class UI(object):
             h = 12
         m = minutes_elapsed
         
+        print(f"I changed my time :> to {h} {m}")
+        
         self.clock.update_time(h, m)
         self.capacity_meter.update_fill(scorekeeper.get_current_capacity())
 

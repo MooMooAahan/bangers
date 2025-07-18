@@ -111,6 +111,7 @@ class ScoreKeeper(object):
                 time_bonus = TIME_BONUS_FOR_SAVING_HUMAN # make them have a 30 min bonus 
         
         self.remaining_time += time_bonus
+        print(f"[DEBUG] Time adjustment: adding {time_bonus} minutes to remaining time, time remaining {self.remaining_time}")
         
 
     def squish(self, humanoid):
