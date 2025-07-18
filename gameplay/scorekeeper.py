@@ -37,6 +37,8 @@ class ScoreKeeper(object):
         
         self.reset()
         
+        self.ambulance_time_adjustment = 0
+        
     def reset(self):
         """
         resets scorekeeper on new environment
@@ -110,7 +112,7 @@ class ScoreKeeper(object):
             if random.random() < 0.8:
                 time_bonus = TIME_BONUS_FOR_SAVING_HUMAN # make them have a 30 min bonus 
         
-        self.remaining_time += time_bonus
+        self.ambulance_time_adjustment += time_bonus
         print(f"[DEBUG] Time adjustment: adding {time_bonus} minutes to remaining time, time remaining {self.remaining_time}")
         
 
@@ -144,12 +146,16 @@ class ScoreKeeper(object):
         if humanoid:
             self.log(humanoid, 'scram')
         
-        self.remaining_time -= ActionCost.SCRAM.value
+        # self.remaining_time -= ActionCost.SCRAM.value
+        
         if self.ambulance["zombie"] > 0:
             self.scorekeeper["killed"] += self.ambulance["injured"] + self.ambulance["healthy"]
         else:
             self.scorekeeper["saved"] += self.ambulance["injured"] + self.ambulance["healthy"]
 
+        self.remaining_time += self.ambulance_time_adjustment
+        self.ambulance_time_adjustment = 0
+       
         self.ambulance["zombie"] = 0
         self.ambulance["injured"] = 0
         self.ambulance["healthy"] = 0
