@@ -491,7 +491,16 @@ class UI(object):
                 self.map_canvas.create_text(nx, ny, text='L', font=("Arial", 12, "bold"), fill="#f39c12")
 
     def move_map_right(self):
-        # Always move right in the grid if possible
+        # R: move down if possible
+        r, c = self.ambulance_pos
+        new_r, new_c = r + 1, c
+        if 0 <= new_r < self.grid_rows and self.map_array[new_r][new_c] in (1, 3, 4):
+            self.ambulance_pos = [new_r, new_c]
+            self.path_history.append(tuple(self.ambulance_pos))
+        self.draw_grid_map()
+
+    def move_map_left(self):
+        # L: move right if possible
         r, c = self.ambulance_pos
         new_r, new_c = r, c + 1
         if 0 <= new_c < self.grid_cols and self.map_array[new_r][new_c] in (1, 3, 4):
@@ -499,17 +508,8 @@ class UI(object):
             self.path_history.append(tuple(self.ambulance_pos))
         self.draw_grid_map()
 
-    def move_map_left(self):
-        # Always move left in the grid if possible
-        r, c = self.ambulance_pos
-        new_r, new_c = r, c - 1
-        if 0 <= new_c < self.grid_cols and self.map_array[new_r][new_c] in (1, 3, 4):
-            self.ambulance_pos = [new_r, new_c]
-            self.path_history.append(tuple(self.ambulance_pos))
-        self.draw_grid_map()
-
     def reset_map(self):
-        # Reset to first valid cell (3 if present, else first 1/4)
+        # Always start in BASE cell (value 3)
         found = False
         for r in range(self.grid_rows):
             for c in range(self.grid_cols):
