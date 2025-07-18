@@ -271,6 +271,7 @@ class UI(object):
         # Convert elapsed_time to clock positions
         # elapsed_time mod 60 gives us the minute position
         # elapsed_time / 60 gives us the hour position
+        self.elapsed_time = self.total_time - scorekeeper.remaining_time
         hours_elapsed = math.floor(self.elapsed_time / 60.0)
         minutes_elapsed = self.elapsed_time % 60
         
@@ -280,6 +281,8 @@ class UI(object):
         if h == 0:
             h = 12
         m = minutes_elapsed
+        
+        print(f"I changed my time :> to {h} {m}")
         
         self.clock.update_time(h, m)
         self.capacity_meter.update_fill(scorekeeper.get_current_capacity())

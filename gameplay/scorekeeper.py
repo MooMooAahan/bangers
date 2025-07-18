@@ -1,14 +1,25 @@
 from gameplay.enums import ActionCost, ActionState
 import pandas as pd
+import random
+
 
 MAP_ACTION_STR_TO_INT = {s.value:i for i,s in enumerate(ActionState)}
 MAP_ACTION_INT_TO_STR = [s.value for s in ActionState]
 
+"""
+scoring system's global variables
+"""
 # Score for each type of person at the end of the game
-score_healthy = 10
-score_injured = 5
-score_zombie = -20
-score_killed = -10
+SCORE_HEALTHY = 10
+SCORE_INJURED = 5
+SCORE_ZOMBIE = -20
+SCORE_KILLED = -10
+"""
+timing system's global variables
+"""
+
+TIME_PENALTY_FOR_ZOMBIE = -15 #penalty for saving a zombie
+TIME_BONUS_FOR_SAVING_HUMAN = +15 #time bonus for saving a human
 
 class ScoreKeeper(object):
     def __init__(self, shift_len, capacity):
@@ -23,9 +34,10 @@ class ScoreKeeper(object):
         
         self.correct_saves = 0
         self.false_saves = 0
-
         
         self.reset()
+        
+        self.ambulance_time_adjustment = 0
         
     def reset(self):
         """
@@ -73,7 +85,6 @@ class ScoreKeeper(object):
             logs.append(log)
         logs = pd.DataFrame(logs)
         logs.to_csv('log.csv')
-        
 
     def save(self, humanoid):
         """
@@ -82,16 +93,28 @@ class ScoreKeeper(object):
         """
         self.log(humanoid, 'save')
         
-        self.remaining_time -= ActionCost.SAVE.value
+        # self.remaining_time -= ActionCost.SAVE.value
+        
+        time_bonus = 0
+        
         if humanoid.is_zombie():
             self.ambulance["zombie"] += 1
             self.false_saves += 1
+            time_bonus = TIME_PENALTY_FOR_ZOMBIE # penalty for saving zombie is removing 10 minutes
         elif humanoid.is_injured():
             self.correct_saves += 1
             self.ambulance["injured"] += 1
-        else:
-            self.ambulance["healthy"] += 1
+            if random.random() < 0.8:
+                time_bonus = TIME_BONUS_FOR_SAVING_HUMAN # make them have a 30 min bonus  
+        elif humanoid.is_healthy():
             self.correct_saves += 1
+            self.ambulance["healthy"] += 1
+            if random.random() < 0.8:
+                time_bonus = TIME_BONUS_FOR_SAVING_HUMAN # make them have a 30 min bonus 
+        
+        self.ambulance_time_adjustment += time_bonus
+        print(f"[DEBUG] Time adjustment: adding {time_bonus} minutes to remaining time, time remaining {self.remaining_time}")
+        
 
     def squish(self, humanoid):
         """
@@ -123,12 +146,16 @@ class ScoreKeeper(object):
         if humanoid:
             self.log(humanoid, 'scram')
         
-        self.remaining_time -= ActionCost.SCRAM.value
+        # self.remaining_time -= ActionCost.SCRAM.value
+        
         if self.ambulance["zombie"] > 0:
             self.scorekeeper["killed"] += self.ambulance["injured"] + self.ambulance["healthy"]
         else:
             self.scorekeeper["saved"] += self.ambulance["injured"] + self.ambulance["healthy"]
 
+        self.remaining_time += self.ambulance_time_adjustment
+        self.ambulance_time_adjustment = 0
+       
         self.ambulance["zombie"] = 0
         self.ambulance["injured"] = 0
         self.ambulance["healthy"] = 0
@@ -199,10 +226,10 @@ class ScoreKeeper(object):
         Calculate the final score based on saved/killed and also on time remaining
         """
         score = 0
-        score += self.ambulance["healthy"] * score_healthy
-        score += self.ambulance["injured"] * score_injured
-        score += self.ambulance["zombie"] * score_zombie
-        score += self.scorekeeper["killed"] * score_killed
+        score += self.ambulance["healthy"] * SCORE_HEALTHY
+        score += self.ambulance["injured"] * SCORE_INJURED
+        score += self.ambulance["zombie"] * SCORE_ZOMBIE
+        score += self.scorekeeper["killed"] * SCORE_KILLED
         score += self.remaining_time
         return score
     
