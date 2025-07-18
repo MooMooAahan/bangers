@@ -52,8 +52,8 @@ class UI(object):
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         
         # Track two humanoids for two images
-        self.humanoid_left = data_parser.get_random()
-        self.humanoid_right = data_parser.get_random()
+        self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
+        print(f"[UI DEBUG] Initial Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
         self.log = log
         
         #replay button
@@ -147,7 +147,10 @@ class UI(object):
         self.clock = Clock(self.root, w, h, init_h, init_m)
 
         # Display ambulance capacity
-        self.capacity_meter = CapacityMeter(self.root, w, h, capacity)
+        def get_ambulance_people():
+            # Show each type and how many of each are in the ambulance
+            return [f'{k}: {v}' for k, v in self.scorekeeper.ambulance.items() if v > 0]
+        self.capacity_meter = CapacityMeter(self.root, w, h, capacity, get_ambulance_contents=get_ambulance_people)
 
         # Added rule button on the left side, above the function buttons
         rules_btn_width = 200  # Estimate width in pixels
@@ -330,8 +333,8 @@ class UI(object):
             self.hide_map = True # Hide the map when game ends
             self.draw_grid_map() # Redraw the map to hide it
         else:
-            self.humanoid_left = data_parser.get_random()
-            self.humanoid_right = data_parser.get_random()
+            self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
+            print(f"[UI DEBUG] Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
             fp_left = join(data_fp, self.humanoid_left.fp)
             fp_right = join(data_fp, self.humanoid_right.fp)
             self.game_viewer_left.create_photo(fp_left)
@@ -408,8 +411,9 @@ class UI(object):
             self.replay_btn = None
         self.elapsed_time = 0
         self.scorekeeper.reset()
-        self.humanoid_left = data_parser.get_random()
-        self.humanoid_right = data_parser.get_random()
+        data_parser.reset()
+        self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
+        print(f"[UI DEBUG] Reset Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
         fp_left = join(data_fp, self.humanoid_left.fp)
         fp_right = join(data_fp, self.humanoid_right.fp)
         self.game_viewer_left.create_photo(fp_left)
@@ -427,18 +431,7 @@ class UI(object):
             widget.destroy()
         for widget in self.game_viewer_right.canvas.pack_slaves():
             widget.destroy()
-        data_parser.reset()
-        self.map_canvas.place(x=self.grid_origin[0], y=self.grid_origin[1])
-
-
-
-
-
-
-
-
-
-
+        # End of canvas widget clearing
 
     def create_grid_map_canvas(self):
         w = self.grid_cols * self.cell_size + 2 * 10

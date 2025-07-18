@@ -2,10 +2,11 @@ import math
 import tkinter as tk
 from PIL import Image, ImageTk
 import os
+import tkinter.messagebox  # <-- Add this import
 
 
 class CapacityMeter(object):
-    def __init__(self, root, w, h, max_cap):
+    def __init__(self, root, w, h, max_cap, get_ambulance_contents=None):
         self.canvas = tk.Canvas(root, width=math.floor(0.2 * w), height=math.floor(0.5 * h))
         # Align with the clock (placed at x=math.floor(0.75 * w))
         x_pos = math.floor(0.75 * w)
@@ -33,6 +34,27 @@ class CapacityMeter(object):
         y_offset = (canvas_height - new_h) // 2 + 30 - 30
         self.bg_image_id = self.canvas.create_image(x_offset, y_offset, anchor=tk.NW, image=self.bg_photo)
         self.render(max_cap, self.unit_size)
+
+        # Store the callback or data provider for ambulance contents
+        self.get_ambulance_contents = get_ambulance_contents
+        # Bind click event to ambulance image
+        self.canvas.tag_bind(self.bg_image_id, '<Button-1>', self.on_ambulance_click)
+
+    def on_ambulance_click(self, event):
+        # Get ambulance contents from callback or attribute
+        if self.get_ambulance_contents is not None:
+            people = self.get_ambulance_contents()
+        else:
+            people = getattr(self, 'ambulance_contents', [])
+        if not people:
+            info = 'The ambulance is empty.'
+        else:
+            info = '\n'.join(str(person) for person in people)
+        tk.messagebox.showinfo('Ambulance Contents', info)
+
+    def set_ambulance_contents(self, people):
+        # Optional: allow setting ambulance contents directly
+        self.ambulance_contents = people
 
     def render(self, max_cap, size):
         # Remove old units
