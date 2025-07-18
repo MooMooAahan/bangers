@@ -4,6 +4,7 @@ from endpoints.data_parser import DataParser
 from endpoints.heuristic_interface import HeuristicInterface
 from endpoints.training_interface import TrainInterface
 from endpoints.inference_interface import InferInterface
+from gameplay.ui import UI, IntroScreen
 
 from gameplay.scorekeeper import ScoreKeeper
 from gameplay.ui import UI
@@ -64,8 +65,11 @@ class Main(object):
             print("RL equiv reward:",self.scorekeeper.get_cumulative_reward())
             print(self.scorekeeper.get_score())
         else: # Launch UI gameplay
-            self.ui = UI(self.data_parser, self.scorekeeper, self.data_fp, log = log, suggest = False)
+            def start_ui():
+                self.ui = UI(self.data_parser, self.scorekeeper, self.data_fp, log=log, suggest=False)
 
+            intro = IntroScreen(start_ui)
+            intro.run()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
