@@ -165,7 +165,10 @@ class UI(object):
         self.clock = Clock(self.root, w, h, init_h, init_m)
 
         # Display ambulance capacity
-        self.capacity_meter = CapacityMeter(self.root, w, h, capacity)
+        def get_ambulance_people():
+            # Show each type and how many of each are in the ambulance
+            return [f'{k}: {v}' for k, v in self.scorekeeper.ambulance.items() if v > 0]
+        self.capacity_meter = CapacityMeter(self.root, w, h, capacity, get_ambulance_contents=get_ambulance_people)
 
         # Added rule button on the left side, above the function buttons
         rules_btn_width = 200  # Estimate width in pixels
