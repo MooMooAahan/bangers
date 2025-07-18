@@ -7,6 +7,7 @@ from endpoints.heuristic_interface import HeuristicInterface
 from ui_elements.game_viewer import GameViewer
 from ui_elements.machine_menu import MachineMenu
 from os.path import join
+from PIL import Image, ImageTk
 
 
 class UI(object):
@@ -53,6 +54,7 @@ class UI(object):
                         ("Scram (2 hrs)", lambda: [self.add_elapsed_time(120),
                                            scorekeeper.scram(self.humanoid_left),
                                            scorekeeper.scram(self.humanoid_right),
+                                           self.reset_map(),
                                            self.update_ui(scorekeeper),
                                            self.get_next(
                                                data_fp,
@@ -61,49 +63,28 @@ class UI(object):
         self.button_menu = ButtonMenu(self.root, user_buttons)
         
         # Add extra button menu with three buttons
-        left_buttons = [
-            ("Inspect Left", lambda: [self.add_elapsed_time(15),
-                                                 self.update_ui(scorekeeper),
-                                                 self.check_game_end(data_fp, data_parser, scorekeeper)]),
-            ("Squish Left", lambda: [self.add_elapsed_time(5),
-                                            scorekeeper.squish(self.humanoid_left),
-                                            self.update_ui(scorekeeper),
-                                            self.get_next(
-                                                data_fp,
-                                                data_parser,
-                                                scorekeeper)]),
-            ("Save Left", lambda: [self.add_elapsed_time(30),
-                                          scorekeeper.save(self.humanoid_left),
-                                          self.update_ui(scorekeeper),
-                                          self.get_next(
-                                              data_fp,
-                                              data_parser,
-                                              scorekeeper)])
+        # Save references to left/right button actions for map movement
+        self.left_action_callbacks = [
+            lambda: [self.add_elapsed_time(15), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Left (no move)
+            lambda: [self.add_elapsed_time(5), scorekeeper.squish(self.humanoid_left), self.move_map_left(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)],  # Squish Left
+            lambda: [self.add_elapsed_time(30), scorekeeper.save(self.humanoid_left), self.move_map_left(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)]  # Save Left
         ]
-        self.left_button_menu = LeftButtonMenu(self.root, left_buttons)
+        self.left_button_menu = LeftButtonMenu(self.root, [
+            ("Inspect Left", self.left_action_callbacks[0]),
+            ("Squish Left", self.left_action_callbacks[1]),
+            ("Save Left", self.left_action_callbacks[2])
+        ])
 
-        # add right side button menu with 3 buttons
-
-        right_buttons = [
-            ("Inspect Right", lambda: [self.add_elapsed_time(15),
-                                                 self.update_ui(scorekeeper),
-                                                 self.check_game_end(data_fp, data_parser, scorekeeper)]),
-            ("Squish Right", lambda: [self.add_elapsed_time(5),
-                                            scorekeeper.squish(self.humanoid_right),
-                                            self.update_ui(scorekeeper),
-                                            self.get_next(
-                                                data_fp,
-                                                data_parser,
-                                                scorekeeper)]),
-            ("Save Right", lambda: [self.add_elapsed_time(30),
-                                          scorekeeper.save(self.humanoid_right),
-                                          self.update_ui(scorekeeper),
-                                          self.get_next(
-                                              data_fp,
-                                              data_parser,
-                                              scorekeeper)])
+        self.right_action_callbacks = [
+            lambda: [self.add_elapsed_time(15), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Right (no move)
+            lambda: [self.add_elapsed_time(5), scorekeeper.squish(self.humanoid_right), self.move_map_right(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)],  # Squish Right
+            lambda: [self.add_elapsed_time(30), scorekeeper.save(self.humanoid_right), self.move_map_right(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)]  # Save Right
         ]
-        self.right_button_menu = RightButtonMenu(self.root, right_buttons)
+        self.right_button_menu = RightButtonMenu(self.root, [
+            ("Inspect Right", self.right_action_callbacks[0]),
+            ("Squish Right", self.right_action_callbacks[1]),
+            ("Save Right", self.right_action_callbacks[2])
+        ])
 
         if suggest:
             machine_buttons = [
@@ -150,6 +131,35 @@ class UI(object):
                                   font=("Arial", 18), bg="#4CAF50", fg="white", 
                                   relief="raised", bd=2, width=12)
         self.rules_btn.place(x=rules_btn_x, y=rules_btn_y)
+
+        # 2D grid map setup (bottom left)
+        # Predefined map array (6x6, all walkable)
+        self.map_array = [
+            [3,1,1,1,1,1],
+            [1,1,1,1,1,1],
+            [1,1,1,1,1,1],
+            [1,1,1,1,1,1],
+            [1,1,1,1,1,1],
+            [1,1,1,1,1,4],
+        ]
+        self.grid_rows = len(self.map_array)
+        self.grid_cols = len(self.map_array[0])
+        self.cell_size = 44  # Small for better fit
+        self.grid_origin = (20, 420)  # Lower left, but higher up
+        # Find first valid cell for ambulance start
+        for r in range(self.grid_rows):
+            for c in range(self.grid_cols):
+                if self.map_array[r][c] == 1:
+                    self.ambulance_pos = [r, c]
+                    break
+            else:
+                continue
+            break
+        self.path_history = [tuple(self.ambulance_pos)]
+        self.directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # right, down, left, up
+        self.direction_idx = 0  # Start facing right
+        self.create_grid_map_canvas()
+        self.draw_grid_map()
 
         self.root.mainloop()
 
@@ -385,12 +395,116 @@ class UI(object):
         self.left_button_menu.enable_all_buttons()
         self.right_button_menu.enable_all_buttons()
         self.clock.update_time(12, 0)
+        self.reset_map() # Reset map on game end
         # Clear any widgets in both canvases
         for widget in self.game_viewer_left.canvas.pack_slaves():
             widget.destroy()
         for widget in self.game_viewer_right.canvas.pack_slaves():
             widget.destroy()
         data_parser.reset()
+
+    def create_grid_map_canvas(self):
+        w = self.grid_cols * self.cell_size + 2 * 10
+        h = self.grid_rows * self.cell_size + 2 * 10
+        self.map_canvas = tk.Canvas(self.root, width=w, height=h, bg="white", highlightthickness=1, highlightbackground="#888")
+        self.map_canvas.place(x=self.grid_origin[0], y=self.grid_origin[1])
+
+    def draw_grid_map(self):
+        self.map_canvas.delete("all")
+        # Draw only valid cells
+        for r in range(self.grid_rows):
+            for c in range(self.grid_cols):
+                val = self.map_array[r][c]
+                if val in (1, 3, 4):
+                    x1 = c * self.cell_size + 10
+                    y1 = r * self.cell_size + 10
+                    x2 = x1 + self.cell_size
+                    y2 = y1 + self.cell_size
+                    self.map_canvas.create_rectangle(x1, y1, x2, y2, outline="#bbb", width=2, fill="#fff")
+                    if val == 3:
+                        self.map_canvas.create_text((x1+x2)//2, (y1+y2)//2, text="BASE", font=("Arial", 10, "bold"), fill="#2ecc40")
+                    elif val == 4:
+                        self.map_canvas.create_text((x1+x2)//2, (y1+y2)//2, text="BONUS", font=("Arial", 10, "bold"), fill="#e67e22")
+        # Draw path
+        if len(self.path_history) > 1:
+            points = []
+            for (pr, pc) in self.path_history:
+                if self.map_array[pr][pc] in (1, 3, 4):
+                    px = pc * self.cell_size + 10 + self.cell_size // 2
+                    py = pr * self.cell_size + 10 + self.cell_size // 2
+                    points.extend([px, py])
+            if len(points) >= 4:
+                self.map_canvas.create_line(*points, fill="#3498db", width=5, smooth=True)
+        elif len(self.path_history) == 1:
+            pr, pc = self.ambulance_pos
+            if self.map_array[pr][pc] in (1, 3, 4):
+                px = pc * self.cell_size + 10 + self.cell_size // 2
+                py = pr * self.cell_size + 10 + self.cell_size // 2
+                self.map_canvas.create_oval(px-4, py-4, px+4, py+4, fill="#3498db", outline="")
+        # Draw ambulance at current position
+        r, c = self.ambulance_pos
+        if self.map_array[r][c] in (1, 3, 4):
+            x = c * self.cell_size + 10 + self.cell_size // 2
+            y = r * self.cell_size + 10 + self.cell_size // 2
+            # Flip ambulance sprite: use left arrow for visual effect
+            self.map_canvas.create_oval(x-18, y-18, x+18, y+18, fill="#fff", outline="#3498db", width=3)
+            self.map_canvas.create_text(x, y, text="⬅️", font=("Arial", 18))
+            # Always show R below and L to the right, if valid
+            # R (down)
+            nr, nc = r + 1, c
+            if 0 <= nr < self.grid_rows and self.map_array[nr][nc] in (1, 3, 4):
+                nx = nc * self.cell_size + 10 + self.cell_size // 2
+                ny = nr * self.cell_size + 10 + self.cell_size // 2
+                self.map_canvas.create_oval(nx-12, ny-12, nx+12, ny+12, outline="#f39c12", width=2)
+                self.map_canvas.create_text(nx, ny, text='R', font=("Arial", 12, "bold"), fill="#f39c12")
+            # L (right)
+            nr, nc = r, c + 1
+            if 0 <= nc < self.grid_cols and self.map_array[nr][nc] in (1, 3, 4):
+                nx = nc * self.cell_size + 10 + self.cell_size // 2
+                ny = nr * self.cell_size + 10 + self.cell_size // 2
+                self.map_canvas.create_oval(nx-12, ny-12, nx+12, ny+12, outline="#f39c12", width=2)
+                self.map_canvas.create_text(nx, ny, text='L', font=("Arial", 12, "bold"), fill="#f39c12")
+
+    def move_map_right(self):
+        # Always move right in the grid if possible
+        r, c = self.ambulance_pos
+        new_r, new_c = r, c + 1
+        if 0 <= new_c < self.grid_cols and self.map_array[new_r][new_c] in (1, 3, 4):
+            self.ambulance_pos = [new_r, new_c]
+            self.path_history.append(tuple(self.ambulance_pos))
+        self.draw_grid_map()
+
+    def move_map_left(self):
+        # Always move left in the grid if possible
+        r, c = self.ambulance_pos
+        new_r, new_c = r, c - 1
+        if 0 <= new_c < self.grid_cols and self.map_array[new_r][new_c] in (1, 3, 4):
+            self.ambulance_pos = [new_r, new_c]
+            self.path_history.append(tuple(self.ambulance_pos))
+        self.draw_grid_map()
+
+    def reset_map(self):
+        # Reset to first valid cell (3 if present, else first 1/4)
+        found = False
+        for r in range(self.grid_rows):
+            for c in range(self.grid_cols):
+                if self.map_array[r][c] == 3:
+                    self.ambulance_pos = [r, c]
+                    found = True
+                    break
+            if found:
+                break
+        if not found:
+            for r in range(self.grid_rows):
+                for c in range(self.grid_cols):
+                    if self.map_array[r][c] in (1, 4):
+                        self.ambulance_pos = [r, c]
+                        found = True
+                        break
+                if found:
+                    break
+        self.path_history = [tuple(self.ambulance_pos)]
+        self.draw_grid_map()
 
 
 
