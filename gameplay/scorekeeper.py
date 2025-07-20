@@ -53,6 +53,7 @@ class ScoreKeeper(object):
             "injured": 0,
             "healthy": 0
         }
+        self.ambulance_people = {}
         self.scorekeeper = {
             "killed": 0,
             "saved": 0,
@@ -102,23 +103,58 @@ class ScoreKeeper(object):
         
         time_bonus = 0
         
+        # Add to ambulance_people dictionary
+        humanoid_id = f"humanoid{len(self.ambulance_people) + 1}"
         if humanoid.is_zombie():
             self.ambulance["zombie"] += 1
             self.false_saves += 1
             time_bonus = TIME_PENALTY_FOR_ZOMBIE # penalty for saving zombie is removing 10 minutes
+            self.ambulance_people[humanoid_id] = {"class": "zombie", "status": "healthy", "role": "blank", "original_status": "zombie"}
+
         elif humanoid.is_injured():
             self.correct_saves += 1
             self.ambulance["injured"] += 1
             if random.random() < 0.8:
                 time_bonus = TIME_BONUS_FOR_SAVING_HUMAN # make them have a 30 min bonus  
+            # Role assignment for injured humans
+            role_index = random.randint(0, 9)
+            if role_index <= 3:
+                injured_base_role = "Civilian"
+            elif role_index <= 5:
+                injured_base_role = "Child"
+            elif role_index <= 7:
+                injured_base_role = "Doctor"
+            elif role_index == 8:
+                injured_base_role = "Militant"
+            else:
+                injured_base_role = "Police" 
+            role = f"injured {injured_base_role}"
+            self.ambulance_people[humanoid_id] = {"class": "human", "status": "injured", "role": injured_base_role, "original_status": "injured"}
+
         elif humanoid.is_healthy():
             self.correct_saves += 1
             self.ambulance["healthy"] += 1
             if random.random() < 0.8:
                 time_bonus = TIME_BONUS_FOR_SAVING_HUMAN # make them have a 30 min bonus 
+            
+            # Role assignment for healthy humans
+            role_index = random.randint(0, 9)
+            if role_index <= 3:
+                healthy_base_role = "Civilian"
+            elif role_index <= 5:
+                healthy_base_role = "Child"
+            elif role_index <= 7:
+                healthy_base_role = "Doctor"
+            elif role_index == 8:
+                healthy_base_role = "Militant"
+            else:
+                healthy_base_role = "Police"
+
+            self.ambulance_people[humanoid_id] = {"class": "human", "status": "healthy", "role": healthy_base_role, "original_status": "healthy"}
         
         self.ambulance_time_adjustment += time_bonus
         print(f"[DEBUG] Time adjustment: adding {time_bonus} minutes to remaining time, time remaining {self.remaining_time}")
+        print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
         
 
     def squish(self, humanoid):
@@ -153,10 +189,9 @@ class ScoreKeeper(object):
         
         # self.remaining_time -= ActionCost.SCRAM.value
         
-        if self.ambulance["zombie"] > 0:
-            self.scorekeeper["killed"] += self.ambulance["injured"] + self.ambulance["healthy"]
-        else:
-            self.scorekeeper["saved"] += self.ambulance["injured"] + self.ambulance["healthy"]
+        # Count zombies as killed, humans as saved
+        self.scorekeeper["killed"] += self.ambulance["zombie"]
+        self.scorekeeper["saved"] += self.ambulance["injured"] + self.ambulance["healthy"]
 
         self.remaining_time += self.ambulance_time_adjustment
         self.ambulance_time_adjustment = 0
@@ -170,6 +205,8 @@ class ScoreKeeper(object):
         self.ambulance["zombie"] = 0
         self.ambulance["injured"] = 0
         self.ambulance["healthy"] = 0
+        self.ambulance_people.clear()
+        print(f"[DEBUG] Ambulance cleared: {self.ambulance_people}")
     
     def available_action_space(self):
         """
@@ -266,3 +303,39 @@ class ScoreKeeper(object):
     @staticmethod
     def get_all_actions():
         return MAP_ACTION_INT_TO_STR
+
+    def process_zombie_infections(self):
+        """
+        Process zombie infections at the start of each turn.
+        Each zombie has a 5% chance to turn each human into a zombie.
+        """
+        # Count zombies and humans
+        zombie_count = self.ambulance["zombie"]
+        human_count = self.ambulance["injured"] + self.ambulance["healthy"]
+        
+        if zombie_count == 0 or human_count == 0:
+            return []  # No infections possible
+        
+        infected_humanoids = []
+        
+        # Check each humanoid in the ambulance
+        for humanoid_id, humanoid_data in list(self.ambulance_people.items()):
+            if humanoid_data["class"] == "human":
+                # Each zombie has a 5% chance to infect this human
+                infection_chance = zombie_count * 0.05
+                if random.random() < infection_chance:
+                    # Turn this human into a zombie
+                    humanoid_data["class"] = "zombie"
+                    humanoid_data["status"] = "healthy"
+                    humanoid_data["role"] = "blank"
+                    
+                    # Update ambulance counts
+                    if humanoid_data.get("original_status") == "injured":
+                        self.ambulance["injured"] -= 1
+                    else:
+                        self.ambulance["healthy"] -= 1
+                    self.ambulance["zombie"] += 1
+                    
+                    infected_humanoids.append(humanoid_id)
+        
+        return infected_humanoids

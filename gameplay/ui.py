@@ -284,7 +284,7 @@ class UI(object):
     def get_next(self, data_fp, data_parser, scorekeeper):
         remaining = len(data_parser.unvisited)
         remaining_time = self.total_time - self.elapsed_time
-
+        
         # Ran out of humanoids or time? End game
         if remaining == 0 or remaining_time <= 0:
             if self.log:
@@ -325,6 +325,24 @@ class UI(object):
         else:
             self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
             print(f"[UI DEBUG] Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
+            
+            # Process zombie infections at the start of each turn
+            infected_humanoids = scorekeeper.process_zombie_infections()
+            if infected_humanoids:
+                # Debug prints
+                print(f"[ZOMBIE INFECTION] The following humanoids were turned into zombies:")
+                for humanoid_id in infected_humanoids:
+                    print(f"[ZOMBIE INFECTION] {humanoid_id} was turned into a zombie!")
+                
+                # Create popup message for zombie infections
+                infection_message = "ZOMBIE INFECTION!\n\nThe following humanoids were turned into zombies:\n"
+                for humanoid_id in infected_humanoids:
+                    infection_message += f"• {humanoid_id}\n"
+                infection_message += "\nThe ambulance is now more dangerous!"
+                
+                # Show popup
+                tk.messagebox.showwarning("Zombie Infection!", infection_message)
+            
             fp_left = join(data_fp, self.humanoid_left.fp)
             fp_right = join(data_fp, self.humanoid_right.fp)
             self.game_viewer_left.create_photo(fp_left)
