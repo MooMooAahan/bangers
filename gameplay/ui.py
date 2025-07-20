@@ -34,7 +34,8 @@ class IntroScreen:
 class UI(object):
     def __init__(self, data_parser, scorekeeper, data_fp, suggest, log):
         # Base window setup
-        capacity = 10
+        self.scorekeeper = scorekeeper  # Store scorekeeper reference
+        capacity = self.scorekeeper.capacity
         w, h = 1280, 800
         self.root = tk.Tk()
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
@@ -44,6 +45,7 @@ class UI(object):
         self.total_time = 720  # 12 hours in minutes
         self.elapsed_time = 0  # Start at 0 elapsed time
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
+  
         # Track two humanoids for two images
         self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
         print(f"[UI DEBUG] Initial Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
@@ -64,7 +66,9 @@ class UI(object):
                         ("Inspect (15 mins)", lambda: self.show_action_popup("Inspect")),
                         ("Squish (5 mins)", lambda: self.show_action_popup("Squish")),
                         ("Save (30 mins)", lambda: self.show_action_popup("Save")),
-                        ("Scram (2 hrs)", lambda: [self.add_elapsed_time(120),
+                        ("Scram (2 hrs)", lambda: [
+                                            print("[DEBUG] Scram penalty applied:", 120 - getattr(self.scorekeeper, "scram_time_reduction", 0), "minutes"),
+                                        self.add_elapsed_time(120 - getattr(self.scorekeeper, "scram_time_reduction", 0)),
                                            scorekeeper.scram(self.humanoid_left),
                                            scorekeeper.scram(self.humanoid_right),
                                            self.reset_map(),
@@ -78,7 +82,7 @@ class UI(object):
         # Add extra button menu with three buttons
         # Save references to left/right button actions for map movement
         self.left_action_callbacks = [
-            lambda: [self.add_elapsed_time(15), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Left (no move)
+            lambda: [self.add_elapsed_time(15 - getattr(self.scorekeeper, "inspect_cost_reduction", 0)), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Left (no move)
             lambda: [self.add_elapsed_time(5), scorekeeper.squish(self.humanoid_left), self.move_map_left(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)],  # Squish Left
             lambda: [self.add_elapsed_time(30), scorekeeper.save(self.humanoid_left), self.move_map_left(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)]  # Save Left
         ]
@@ -89,10 +93,11 @@ class UI(object):
         ])
 
         self.right_action_callbacks = [
-            lambda: [self.add_elapsed_time(15), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Right (no move)
+            lambda: [self.add_elapsed_time(15 - getattr(self.scorekeeper, "inspect_cost_reduction", 0)), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Right (no move)
             lambda: [self.add_elapsed_time(5), scorekeeper.squish(self.humanoid_right), self.move_map_right(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)],  # Squish Right
             lambda: [self.add_elapsed_time(30), scorekeeper.save(self.humanoid_right), self.move_map_right(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)]  # Save Right
         ]
+        
         self.right_button_menu = RightButtonMenu(self.root, [
             ("Inspect Right", self.right_action_callbacks[0]),
             ("Squish Right", self.right_action_callbacks[1]),
@@ -137,6 +142,7 @@ class UI(object):
                                   font=("Arial", 18), bg="#4CAF50", fg="white", 
                                   relief="raised", bd=2, width=12)
         self.rules_btn.place(x=rules_btn_x, y=rules_btn_y)
+
         # 2D grid map setup (bottom left)
         # 1 = up, 2 = down, 3 = right, 4 = left, 5 = base
         self.map_array = [
@@ -158,6 +164,15 @@ class UI(object):
         self.direction_idx = 0  # Start facing right
         # self.create_grid_map_canvas() # This line is moved
         # self.draw_grid_map() # This line is moved
+
+        self.upgrade_btn = tk.Button(self.root, text="Upgrade Shop",
+                                command=self.show_upgrade_shop,
+                                font=("Arial", 18), bg="#F39C12", fg="white",
+                                relief="raised", bd=2, width=12)
+        self.upgrade_btn.place(x=300, y=rules_btn_y)
+
+
+
         self.root.mainloop()
 
     def add_elapsed_time(self, minutes):
@@ -518,5 +533,29 @@ class UI(object):
         self.path_history = [tuple(self.ambulance_pos)]
         self.draw_grid_map()
 
+    def show_upgrade_shop(self):
+        shop = tk.Toplevel(self.root)
+        shop.title("Upgrade Shop")
+        shop.geometry("400x300")
+        shop.resizable(False, False)
+
+    # Show current money
+        money = self.scorekeeper.upgrade_manager.get_money()
+        tk.Label(shop, text=f"Money: ${money}", font=("Arial", 16)).pack(pady=10)
+
+    # Show each upgrade
+        for name, info in self.scorekeeper.upgrade_manager.upgrades.items():
+            upgrade_label = name.replace("_", " ").title()
+            level = info["level"]
+            cost = info["cost"]
+
+            def make_purchase(n=name):
+                if self.scorekeeper.upgrade_manager.purchase(n):
+                    shop.destroy()
+                    self.show_upgrade_shop()  # Refresh the popup
+
+            btn_text = f"{upgrade_label} (Level {level}) - ${cost}"
+            tk.Button(shop, text=btn_text, font=("Arial", 12),
+                  command=make_purchase).pack(pady=5)
 
 

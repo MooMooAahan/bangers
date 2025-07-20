@@ -1,3 +1,4 @@
+from gameplay.upgrades_manager import UpgradeManager
 from gameplay.enums import ActionCost, ActionState
 import pandas as pd
 import random
@@ -38,11 +39,15 @@ class ScoreKeeper(object):
         self.reset()
         
         self.ambulance_time_adjustment = 0
+        self.upgrade_manager = UpgradeManager(self)
         
     def reset(self):
         """
         resets scorekeeper on new environment
         """
+        if hasattr(self, "upgrade_manager"):
+            self.upgrade_manager.reset()
+
         self.ambulance = {
             "zombie": 0,
             "injured": 0,
@@ -156,6 +161,12 @@ class ScoreKeeper(object):
         self.remaining_time += self.ambulance_time_adjustment
         self.ambulance_time_adjustment = 0
        
+        if hasattr(self, "upgrade_manager"):
+            num_humans = self.ambulance["healthy"] + self.ambulance["injured"]
+            earnings = num_humans * 10
+            self.upgrade_manager.earn_money(earnings)
+            print(f"[SCRAM] Earned ${earnings} for {num_humans} humans.")
+        
         self.ambulance["zombie"] = 0
         self.ambulance["injured"] = 0
         self.ambulance["healthy"] = 0
