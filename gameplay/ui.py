@@ -37,7 +37,8 @@ class IntroScreen:
 class UI(object):
     def __init__(self, data_parser, scorekeeper, data_fp, suggest, log):
         # Base window setup
-        capacity = 10
+        self.scorekeeper = scorekeeper  # Store scorekeeper reference
+        capacity = self.scorekeeper.capacity
         w, h = 1280, 800
         self.root = tk.Tk()
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
@@ -47,7 +48,7 @@ class UI(object):
         # Time management variables
         self.total_time = 720  # 12 hours in minutes
         self.elapsed_time = 0  # Start at 0 elapsed time
-        self.scorekeeper = scorekeeper  # Store scorekeeper reference
+        # self.scorekeeper = scorekeeper   Store scorekeeper reference
         
         # Track two humanoids for two images
         self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
@@ -75,7 +76,9 @@ class UI(object):
                         ("Inspect (15 mins)", lambda: self.show_action_popup("Inspect")),
                         ("Squish (5 mins)", lambda: self.show_action_popup("Squish")),
                         ("Save (30 mins)", lambda: self.show_action_popup("Save")),
-                        ("Scram (2 hrs)", lambda: [self.add_elapsed_time(120),
+                        ("Scram (2 hrs)", lambda: [
+                                            print("[DEBUG] Scram penalty applied:", 120 - getattr(self.scorekeeper, "scram_time_reduction", 0), "minutes"),
+                                        self.add_elapsed_time(120 - getattr(self.scorekeeper, "scram_time_reduction", 0)),
                                            scorekeeper.scram(self.humanoid_left),
                                            scorekeeper.scram(self.humanoid_right),
                                            self.update_ui(scorekeeper),
@@ -87,7 +90,7 @@ class UI(object):
         
         # Add extra button menu with three buttons
         left_buttons = [
-            ("Inspect Left", lambda: [self.add_elapsed_time(15),
+            ("Inspect Left", lambda: [self.add_elapsed_time(15 - getattr(self.scorekeeper, "inspect_cost_reduction", 0)),
                                                  self.update_ui(scorekeeper),
                                                  self.check_game_end(data_fp, data_parser, scorekeeper)]),
             ("Squish Left", lambda: [self.add_elapsed_time(5),
@@ -110,7 +113,7 @@ class UI(object):
         # add right side button menu with 3 buttons
 
         right_buttons = [
-            ("Inspect Right", lambda: [self.add_elapsed_time(15),
+            ("Inspect Right", lambda: [self.add_elapsed_time(15 - getattr(self.scorekeeper, "inspect_cost_reduction", 0)),
                                                  self.update_ui(scorekeeper),
                                                  self.check_game_end(data_fp, data_parser, scorekeeper)]),
             ("Squish Right", lambda: [self.add_elapsed_time(5),
@@ -178,6 +181,12 @@ class UI(object):
                                   font=("Arial", 18), bg="#4CAF50", fg="white", 
                                   relief="raised", bd=2, width=12)
         self.rules_btn.place(x=rules_btn_x, y=rules_btn_y)
+        self.upgrade_btn = tk.Button(self.root, text="Upgrade Shop",
+                                command=self.show_upgrade_shop,
+                                font=("Arial", 18), bg="#F39C12", fg="white",
+                                relief="raised", bd=2, width=12)
+        self.upgrade_btn.place(x=300, y=rules_btn_y)
+
 
         self.root.mainloop()
 
@@ -423,5 +432,29 @@ class UI(object):
         for widget in self.game_viewer_right.canvas.pack_slaves():
             widget.destroy()
 
+    def show_upgrade_shop(self):
+        shop = tk.Toplevel(self.root)
+        shop.title("Upgrade Shop")
+        shop.geometry("400x300")
+        shop.resizable(False, False)
+
+    # Show current money
+        money = self.scorekeeper.upgrade_manager.get_money()
+        tk.Label(shop, text=f"Money: ${money}", font=("Arial", 16)).pack(pady=10)
+
+    # Show each upgrade
+        for name, info in self.scorekeeper.upgrade_manager.upgrades.items():
+            upgrade_label = name.replace("_", " ").title()
+            level = info["level"]
+            cost = info["cost"]
+
+            def make_purchase(n=name):
+                if self.scorekeeper.upgrade_manager.purchase(n):
+                    shop.destroy()
+                    self.show_upgrade_shop()  # Refresh the popup
+
+            btn_text = f"{upgrade_label} (Level {level}) - ${cost}"
+            tk.Button(shop, text=btn_text, font=("Arial", 12),
+                  command=make_purchase).pack(pady=5)
 
 
