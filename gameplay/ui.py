@@ -45,7 +45,7 @@ class UI(object):
         self.root.resizable(False, False)
         # Time management variables
         self.total_time = 720  # 12 hours in minutes
-        self.elapsed_time = 0  # Start at 0 elapsed time
+        # self.elapsed_time removed; time is managed by ScoreKeeper
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         
         # Movement tracking
@@ -65,30 +65,30 @@ class UI(object):
             return max(5, self.movement_count * 5)
         def get_scram_text():
             return f"Scram ({get_scram_time()} mins)"
-        def get_inspect_time():
-            return max(5, self.movement_count * 5)
-        def get_inspect_text():
-            return f"Inspect ({get_inspect_time()} mins)"
+        # Remove get_inspect_time and get_inspect_text functions entirely.
+        # In the main button menu:
+        def get_inspect_cost():
+            return 15 - getattr(self.scorekeeper, "inspect_cost_reduction", 0)
+        # In left/right button menus:
+        def get_inspect_cost_left_right():
+            return 15 - getattr(self.scorekeeper, "inspect_cost_reduction", 0)
 
         # We'll need to update the button text dynamically, so store the button objects
         self.user_buttons = [
-            ("Skip (15 mins)", lambda: [self.add_elapsed_time(15),
-                                  scorekeeper.skip(self.humanoid_left),
-                                  scorekeeper.skip(self.humanoid_right),
+            ("Skip (15 mins)", lambda: [
+                                  scorekeeper.skip_both(self.humanoid_left, self.humanoid_right),
                                   self.move_ambulance_by_cell(),
                                   self.update_ui(scorekeeper),
                                   self.get_next(
                                       data_fp,
                                       data_parser,
                                       scorekeeper)]),
-            (get_inspect_text(), lambda: [self.add_elapsed_time(get_inspect_time()), self.show_action_popup("Inspect")]),
+            (f"Inspect ({get_inspect_cost()} mins)", lambda: [self.show_action_popup("Inspect")]),
             ("Squish (5 mins)", lambda: self.show_action_popup("Squish")),
             ("Save (30 mins)", lambda: self.show_action_popup("Save")),
             (get_scram_text(), lambda: [
                                     print(f"[DEBUG] Scram penalty applied: {get_scram_time()} minutes"),
-                                    self.add_elapsed_time(get_scram_time()),
-                                    scorekeeper.scram(self.humanoid_left),
-                                    scorekeeper.scram(self.humanoid_right),
+                                    scorekeeper.scram(time_cost=get_scram_time()),
                                     self.move_ambulance_by_cell(),
                                     self.update_ui(scorekeeper),
                                     self.get_next(
@@ -101,7 +101,7 @@ class UI(object):
         # Patch: update Scram and Inspect button text after every action
         def update_button_texts():
             # Button order: Skip, Inspect, Squish, Save, Scram
-            self.button_menu.buttons[1].config(text=get_inspect_text())
+            self.button_menu.buttons[1].config(text=f"Inspect ({get_inspect_cost()} mins)")
             self.button_menu.buttons[4].config(text=get_scram_text())
         self.update_button_texts = update_button_texts
 
@@ -116,9 +116,9 @@ class UI(object):
         # Add extra button menu with three buttons
         # Save references to left/right button actions for map movement
         self.left_action_callbacks = [
-            lambda: [self.add_elapsed_time(get_inspect_time()), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Left (no move)
-            lambda: [self.add_elapsed_time(5), scorekeeper.squish(self.humanoid_left), self.move_map_left(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)],  # Squish Left
-            lambda: [self.add_elapsed_time(30), scorekeeper.save(self.humanoid_left), self.move_map_left(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)]  # Save Left
+            lambda: [scorekeeper.inspect(self.humanoid_left), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Left
+            lambda: [scorekeeper.squish(self.humanoid_left), self.move_map_left(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)],  # Squish Left
+            lambda: [scorekeeper.save(self.humanoid_left), self.move_map_left(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)]  # Save Left
         ]
         self.left_button_menu = LeftButtonMenu(self.root, [
             ("Inspect Left", self.left_action_callbacks[0]),
@@ -127,9 +127,9 @@ class UI(object):
         ])
 
         self.right_action_callbacks = [
-            lambda: [self.add_elapsed_time(get_inspect_time()), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Right (no move)
-            lambda: [self.add_elapsed_time(5), scorekeeper.squish(self.humanoid_right), self.move_map_right(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)],  # Squish Right
-            lambda: [self.add_elapsed_time(30), scorekeeper.save(self.humanoid_right), self.move_map_right(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)]  # Save Right
+            lambda: [scorekeeper.inspect(self.humanoid_right), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Right
+            lambda: [scorekeeper.squish(self.humanoid_right), self.move_map_right(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)],  # Squish Right
+            lambda: [scorekeeper.save(self.humanoid_right), self.move_map_right(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)]  # Save Right
         ]
         self.right_button_menu = RightButtonMenu(self.root, [
             ("Inspect Right", self.right_action_callbacks[0]),
@@ -212,15 +212,10 @@ class UI(object):
 
         # Initialize the UI with the current state
         self.update_ui(scorekeeper)
+        self.time_warning_shown = False  # Track if the limited time warning popup has been shown
 
         self.root.mainloop()
 
-    def add_elapsed_time(self, minutes):
-        """Add elapsed time and update scorekeeper's remaining time"""
-        self.elapsed_time += minutes
-        remaining_time = self.total_time - self.elapsed_time
-        # Update the scorekeeper's remaining time
-        self.scorekeeper.remaining_time = remaining_time
     def show_leftright_instructions(self):
         leftright_text = (
             "Make sure to press L or R! You can only do this action for 1 side. \n"
@@ -296,24 +291,28 @@ class UI(object):
         close_btn.pack(pady=10)
 
     def update_ui(self, scorekeeper):     
-        # Convert remaining_time to clock positions
-        # remaining_time mod 60 gives us the minute position
-        # remaining_time / 60 gives us the hour position
-        remaining_time = scorekeeper.remaining_time
-        hours_remaining = math.floor(remaining_time / 60.0)
-        minutes_remaining = remaining_time % 60
-        
-        # Convert to 12-hour clock format (1-12)
-        # 0 hours = 12 o'clock, 1 hour = 1 o'clock, etc.
-        h = (hours_remaining % 12)
+        # Use elapsed time to drive the clock forward
+        elapsed_time = self.total_time - scorekeeper.remaining_time
+        hours_elapsed = math.floor(elapsed_time / 60.0)
+        minutes_elapsed = elapsed_time % 60
+        # Clock starts at 8:00 AM
+        start_hour = 8
+        h = (start_hour + hours_elapsed) % 12
         if h == 0:
             h = 12
-        m = minutes_remaining
-        
+        m = minutes_elapsed
         print(f"I changed my time :> to {h} {m}")
-        
         self.clock.update_time(h, m)
         self.capacity_meter.update_fill(scorekeeper.get_current_capacity())
+
+        # Show a warning popup if 3 hours or less remain, but only once per game session
+        if scorekeeper.remaining_time <= 180 and not getattr(self, 'time_warning_shown', False):
+            self.time_warning_shown = True
+            import tkinter.messagebox
+            tkinter.messagebox.showwarning(
+                "Limited Time Warning",
+                "Warning: You have 3 hours or less remaining! Make your decisions carefully."
+            )
 
     def on_resize(self, event):
         w = 0.6 * self.root.winfo_width()
@@ -460,7 +459,7 @@ class UI(object):
             except Exception:
                 pass
             self.replay_btn = None
-        self.elapsed_time = 0
+        # self.elapsed_time = 0 # Removed
         self.movement_count = 0  # Reset movement counter
         self.route_complete = False  # Reset route complete flag
         self.movement_label.config(text="Route Progress: 0/20")  # Reset movement label
@@ -487,6 +486,9 @@ class UI(object):
         for widget in self.game_viewer_right.canvas.pack_slaves():
             widget.destroy()
         # End of canvas widget clearing
+        self.time_warning_shown = False  # Reset the warning flag for a new game
+        self.rules_btn.config(state='normal')
+        self.upgrade_btn.config(state='normal')
     def create_grid_map_canvas(self):
         w = self.grid_cols * self.cell_size + 2 * 10
         h = self.grid_rows * self.cell_size + 2 * 10
@@ -603,6 +605,14 @@ class UI(object):
         self.replay_btn.pack(pady=(10, 0))
         # Remove any content from the right canvas
         self.game_viewer_right.canvas.delete('all')
+        # Disable all button functionality when route is complete
+        self.button_menu.disable_buttons(0, 0, True)
+        self.left_button_menu.disable_buttons(0, 0, True)
+        self.right_button_menu.disable_buttons(0, 0, True)
+        if hasattr(self, 'machine_menu'):
+            self.machine_menu.disable_buttons(0, 0, True)
+        self.rules_btn.config(state='disabled')
+        self.upgrade_btn.config(state='disabled')
 
     def move_map_left(self):
         self.move_ambulance_by_cell()

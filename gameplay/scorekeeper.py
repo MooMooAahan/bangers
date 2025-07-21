@@ -98,8 +98,7 @@ class ScoreKeeper(object):
         updates scorekeeper
         """
         self.log(humanoid, 'save')
-        
-        # self.remaining_time -= ActionCost.SAVE.value
+        self.remaining_time -= ActionCost.SAVE.value
         
         time_bonus = 0
         
@@ -179,15 +178,32 @@ class ScoreKeeper(object):
         if humanoid.is_injured():
             self.scorekeeper["killed"] += 1
 
-    def scram(self, humanoid = None):
+    def skip_both(self, humanoid_left, humanoid_right):
+        """Skips both humanoids but only deducts 15 minutes total."""
+        self.log(humanoid_left, 'skip')
+        self.log(humanoid_right, 'skip')
+        self.remaining_time -= ActionCost.SKIP.value
+        if humanoid_left.is_injured():
+            self.scorekeeper["killed"] += 1
+        if humanoid_right.is_injured():
+            self.scorekeeper["killed"] += 1
+
+    def inspect(self, humanoid):
+        """Logs an inspect action and deducts inspect cost."""
+        self.log(humanoid, 'inspect')
+        self.remaining_time -= ActionCost.INSPECT.value
+
+    def scram(self, humanoid=None, time_cost=None):
         """
         scrams
         updates scorekeeper
         """
         if humanoid:
             self.log(humanoid, 'scram')
-        
-        # self.remaining_time -= ActionCost.SCRAM.value
+        if time_cost is not None:
+            self.remaining_time -= time_cost
+        else:
+            self.remaining_time -= ActionCost.SCRAM.value
         
         # Count zombies as killed, humans as saved
         self.scorekeeper["killed"] += self.ambulance["zombie"]
