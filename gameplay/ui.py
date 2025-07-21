@@ -34,6 +34,8 @@ class IntroScreen:
 class UI(object):
     def __init__(self, data_parser, scorekeeper, data_fp, suggest, log):
         # Base window setup
+        self.data_parser = data_parser  # Store data_parser reference
+        self.data_fp = data_fp  # Store data_fp reference
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         capacity = self.scorekeeper.capacity
         w, h = 1280, 800
@@ -45,6 +47,10 @@ class UI(object):
         self.total_time = 720  # 12 hours in minutes
         self.elapsed_time = 0  # Start at 0 elapsed time
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
+        
+        # Movement tracking
+        self.movement_count = 0  # Track number of ambulance movements
+        self.route_complete = False  # Flag to track if route is complete
   
         # Track two humanoids for two images
         self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
@@ -58,6 +64,7 @@ class UI(object):
         user_buttons = [("Skip (15 mins)", lambda: [self.add_elapsed_time(15),
                                               scorekeeper.skip(self.humanoid_left),
                                               scorekeeper.skip(self.humanoid_right),
+                                              self.move_ambulance_by_cell(),
                                               self.update_ui(scorekeeper),
                                               self.get_next(
                                                   data_fp,
@@ -171,7 +178,14 @@ class UI(object):
                                 relief="raised", bd=2, width=12)
         self.upgrade_btn.place(x=300, y=rules_btn_y)
 
+        # Movement progress label
+        self.movement_label = tk.Label(self.root, text="Route Progress: 0/20", 
+                                      font=("Arial", 12), bg="#E8F4FD", fg="#2E86AB",
+                                      relief="solid", bd=1, padx=10, pady=5)
+        self.movement_label.place(x=500, y=rules_btn_y)
 
+        # Initialize the UI with the current state
+        self.update_ui(scorekeeper)
 
         self.root.mainloop()
 
@@ -234,11 +248,12 @@ class UI(object):
     def show_rules(self):
         rules_text = (
             "Game Rules:\n"
-            "- The goal is to finish the ambulance route by the end of the day\n"
-            "- Choose an action: Skip when presented with fiqure ahead.\n"
-            "- The goal is to save as many humans and squash  the zombies.\n"
+            "- The goal is to complete the ambulance route (20 movements)\n"
+            "- Choose an action: Skip when presented with figure ahead.\n"
+            "- The goal is to save as many humans and squash the zombies.\n"
             "- Your choices affect your score \n"
-            "- The game ends when your tasks are completed or the day ends. \n"
+            "- The game ends when you complete the route or the day ends. \n"
+            "- Route progress is shown in the top-right corner. \n"
             #More rules if needed (make sure to add \n)
             "- This is where we can add more rules in case we need to. \n\n"
         )
@@ -255,19 +270,19 @@ class UI(object):
         close_btn.pack(pady=10)
 
     def update_ui(self, scorekeeper):     
-        # Convert elapsed_time to clock positions
-        # elapsed_time mod 60 gives us the minute position
-        # elapsed_time / 60 gives us the hour position
-        self.elapsed_time = self.total_time - scorekeeper.remaining_time
-        hours_elapsed = math.floor(self.elapsed_time / 60.0)
-        minutes_elapsed = self.elapsed_time % 60
+        # Convert remaining_time to clock positions
+        # remaining_time mod 60 gives us the minute position
+        # remaining_time / 60 gives us the hour position
+        remaining_time = scorekeeper.remaining_time
+        hours_remaining = math.floor(remaining_time / 60.0)
+        minutes_remaining = remaining_time % 60
         
         # Convert to 12-hour clock format (1-12)
         # 0 hours = 12 o'clock, 1 hour = 1 o'clock, etc.
-        h = (hours_elapsed % 12)
+        h = (hours_remaining % 12)
         if h == 0:
             h = 12
-        m = minutes_elapsed
+        m = minutes_remaining
         
         print(f"I changed my time :> to {h} {m}")
         
@@ -283,7 +298,7 @@ class UI(object):
 
     def get_next(self, data_fp, data_parser, scorekeeper):
         remaining = len(data_parser.unvisited)
-        remaining_time = self.total_time - self.elapsed_time
+        remaining_time = scorekeeper.remaining_time
         
         # Ran out of humanoids or time? End game
         if remaining == 0 or remaining_time <= 0:
@@ -323,37 +338,39 @@ class UI(object):
             self.hide_map = True # Hide the map when game ends
             self.draw_grid_map() # Redraw the map to hide it
         else:
-            self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
-            print(f"[UI DEBUG] Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
-            
-            # Process zombie infections at the start of each turn
-            infected_humanoids = scorekeeper.process_zombie_infections()
-            if infected_humanoids:
-                # Debug prints
-                print(f"[ZOMBIE INFECTION] The following humanoids were turned into zombies:")
-                for humanoid_id in infected_humanoids:
-                    print(f"[ZOMBIE INFECTION] {humanoid_id} was turned into a zombie!")
+            # Only load new images if route is not complete
+            if not self.route_complete:
+                self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
+                print(f"[UI DEBUG] Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
                 
-                # Create popup message for zombie infections
-                infection_message = "ZOMBIE INFECTION!\n\nThe following humanoids were turned into zombies:\n"
-                for humanoid_id in infected_humanoids:
-                    infection_message += f"• {humanoid_id}\n"
-                infection_message += "\nThe ambulance is now more dangerous!"
+                # Process zombie infections at the start of each turn
+                infected_humanoids = scorekeeper.process_zombie_infections()
+                if infected_humanoids:
+                    # Debug prints
+                    print(f"[ZOMBIE INFECTION] The following humanoids were turned into zombies:")
+                    for humanoid_id in infected_humanoids:
+                        print(f"[ZOMBIE INFECTION] {humanoid_id} was turned into a zombie!")
+                    
+                    # Create popup message for zombie infections
+                    infection_message = "ZOMBIE INFECTION!\n\nThe following humanoids were turned into zombies:\n"
+                    for humanoid_id in infected_humanoids:
+                        infection_message += f"• {humanoid_id}\n"
+                    infection_message += "\nThe ambulance is now more dangerous!"
+                    
+                    # Show popup
+                    tk.messagebox.showwarning("Zombie Infection!", infection_message)
                 
-                # Show popup
-                tk.messagebox.showwarning("Zombie Infection!", infection_message)
-            
-            fp_left = join(data_fp, self.humanoid_left.fp)
-            fp_right = join(data_fp, self.humanoid_right.fp)
-            self.game_viewer_left.create_photo(fp_left)
-            self.game_viewer_right.create_photo(fp_right)
+                fp_left = join(data_fp, self.humanoid_left.fp)
+                fp_right = join(data_fp, self.humanoid_right.fp)
+                self.game_viewer_left.create_photo(fp_left)
+                self.game_viewer_right.create_photo(fp_right)
 
         # Disable buttons that would exceed time limit
         self.disable_buttons_if_insufficient_time(remaining_time, remaining, scorekeeper.at_capacity())
 
     def check_game_end(self, data_fp, data_parser, scorekeeper):
         """Check if game should end due to time running out"""
-        remaining_time = self.total_time - self.elapsed_time
+        remaining_time = scorekeeper.remaining_time
         if remaining_time <= 0:
             if self.log:
                 scorekeeper.save_log()
@@ -418,6 +435,9 @@ class UI(object):
                 pass
             self.replay_btn = None
         self.elapsed_time = 0
+        self.movement_count = 0  # Reset movement counter
+        self.route_complete = False  # Reset route complete flag
+        self.movement_label.config(text="Route Progress: 0/20")  # Reset movement label
         self.scorekeeper.reset()
         data_parser.reset()
         self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
@@ -508,7 +528,55 @@ class UI(object):
         if 0 <= new_r < self.grid_rows and 0 <= new_c < self.grid_cols and self.map_array[new_r][new_c] != 0:
             self.ambulance_pos = [new_r, new_c]
             self.path_history.append(tuple(self.ambulance_pos))
+            # Increment movement counter
+            self.movement_count += 1
+            print(f"[DEBUG] Ambulance movement {self.movement_count}/20")
+            
+            # Update movement progress label
+            self.movement_label.config(text=f"Route Progress: {self.movement_count}/20")
+            
+            # Check if we've reached 20 movements
+            if self.movement_count >= 20:
+                print("[DEBUG] Reached 20 movements - triggering end screen")
+                self.trigger_end_screen()
         self.draw_grid_map()
+
+    def trigger_end_screen(self):
+        """Trigger the end screen when 20 movements are reached"""
+        self.route_complete = True  # Set flag to prevent new images from loading
+        if self.log:
+            self.scorekeeper.save_log()
+        self.capacity_meter.update_fill(0)
+        self.game_viewer_left.delete_photo(None)
+        self.game_viewer_right.delete_photo(None)
+        final_score = self.scorekeeper.get_final_score()
+        accuracy = round(self.scorekeeper.get_accuracy() * 100, 2)
+        # Remove any previous final score frame
+        if hasattr(self, 'final_score_frame') and self.final_score_frame:
+            self.final_score_frame.destroy()
+        # Create a new frame for the final score block
+        self.final_score_frame = tk.Frame(self.root, width=300, height=300)
+        self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
+        # 'Route Complete' label
+        game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40))
+        game_complete_label.pack(pady=(10, 5))
+        # 'Final Score' label
+        final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE", font=("Arial", 16))
+        final_score_label.pack(pady=(5, 2))
+        # Scoring details
+        killed_label = tk.Label(self.final_score_frame, text=f"Killed {self.scorekeeper.get_score()['killed']}", font=("Arial", 12))
+        killed_label.pack()
+        saved_label = tk.Label(self.final_score_frame, text=f"Saved {self.scorekeeper.get_score()['saved']}", font=("Arial", 12))
+        saved_label.pack()
+        score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
+        score_label.pack()
+        accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
+        accuracy_label.pack()
+        # Replay button
+        self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(self.data_parser, self.data_fp))
+        self.replay_btn.pack(pady=(10, 0))
+        # Remove any content from the right canvas
+        self.game_viewer_right.canvas.delete('all')
 
     def move_map_left(self):
         self.move_ambulance_by_cell()
