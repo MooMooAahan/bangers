@@ -214,6 +214,23 @@ class UI(object):
         self.update_ui(scorekeeper)
         self.time_warning_shown = False  # Track if the limited time warning popup has been shown
 
+        self.inspect_canvas = tk.Canvas(self.root, width=600, height=150, bg="lightgreen", highlightthickness=0)
+        self.inspect_canvas.place(x=341, y=468)
+        # Draw the outer 2-pixel border (rectangle)
+        self.inspect_canvas.create_rectangle(
+            1, 1, 599, 149,  # Slightly inside the canvas bounds to show full border
+            outline="black",
+            width=2
+        )
+        # Draw the vertical line down the middle
+        self.inspect_canvas.create_line(
+            300, 0, 300, 150,  # From top middle to bottom middle
+            fill="black",
+            width=2
+        )
+        # Raise the canvas to the front
+        self.inspect_canvas.tkraise()
+
         self.root.mainloop()
 
     def show_leftright_instructions(self):
