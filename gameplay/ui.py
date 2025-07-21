@@ -61,35 +61,62 @@ class UI(object):
         if suggest:
             self.machine_interface = HeuristicInterface(self.root, w, h)
         #  Add buttons and logo
-        user_buttons = [("Skip (15 mins)", lambda: [self.add_elapsed_time(15),
-                                              scorekeeper.skip(self.humanoid_left),
-                                              scorekeeper.skip(self.humanoid_right),
-                                              self.move_ambulance_by_cell(),
-                                              self.update_ui(scorekeeper),
-                                              self.get_next(
-                                                  data_fp,
-                                                  data_parser,
-                                                  scorekeeper)]),
-                        ("Inspect (15 mins)", lambda: self.show_action_popup("Inspect")),
-                        ("Squish (5 mins)", lambda: self.show_action_popup("Squish")),
-                        ("Save (30 mins)", lambda: self.show_action_popup("Save")),
-                        ("Scram (2 hrs)", lambda: [
-                                            print("[DEBUG] Scram penalty applied:", 120 - getattr(self.scorekeeper, "scram_time_reduction", 0), "minutes"),
-                                        self.add_elapsed_time(120 - getattr(self.scorekeeper, "scram_time_reduction", 0)),
-                                           scorekeeper.scram(self.humanoid_left),
-                                           scorekeeper.scram(self.humanoid_right),
-                                           self.reset_map(),
-                                           self.update_ui(scorekeeper),
-                                           self.get_next(
-                                               data_fp,
-                                               data_parser,
-                                               scorekeeper)])]
-        self.button_menu = ButtonMenu(self.root, user_buttons)
+        def get_scram_time():
+            return max(5, self.movement_count * 5)
+        def get_scram_text():
+            return f"Scram ({get_scram_time()} mins)"
+        def get_inspect_time():
+            return max(5, self.movement_count * 5)
+        def get_inspect_text():
+            return f"Inspect ({get_inspect_time()} mins)"
+
+        # We'll need to update the button text dynamically, so store the button objects
+        self.user_buttons = [
+            ("Skip (15 mins)", lambda: [self.add_elapsed_time(15),
+                                  scorekeeper.skip(self.humanoid_left),
+                                  scorekeeper.skip(self.humanoid_right),
+                                  self.move_ambulance_by_cell(),
+                                  self.update_ui(scorekeeper),
+                                  self.get_next(
+                                      data_fp,
+                                      data_parser,
+                                      scorekeeper)]),
+            (get_inspect_text(), lambda: [self.add_elapsed_time(get_inspect_time()), self.show_action_popup("Inspect")]),
+            ("Squish (5 mins)", lambda: self.show_action_popup("Squish")),
+            ("Save (30 mins)", lambda: self.show_action_popup("Save")),
+            (get_scram_text(), lambda: [
+                                    print(f"[DEBUG] Scram penalty applied: {get_scram_time()} minutes"),
+                                    self.add_elapsed_time(get_scram_time()),
+                                    scorekeeper.scram(self.humanoid_left),
+                                    scorekeeper.scram(self.humanoid_right),
+                                    self.move_ambulance_by_cell(),
+                                    self.update_ui(scorekeeper),
+                                    self.get_next(
+                                        data_fp,
+                                        data_parser,
+                                        scorekeeper)])
+        ]
+        self.button_menu = ButtonMenu(self.root, self.user_buttons)
+
+        # Patch: update Scram and Inspect button text after every action
+        def update_button_texts():
+            # Button order: Skip, Inspect, Squish, Save, Scram
+            self.button_menu.buttons[1].config(text=get_inspect_text())
+            self.button_menu.buttons[4].config(text=get_scram_text())
+        self.update_button_texts = update_button_texts
+
+        # Call update_button_texts after every UI update
+        orig_update_ui = self.update_ui
+        def patched_update_ui(scorekeeper):
+            orig_update_ui(scorekeeper)
+            self.update_button_texts()
+        self.update_ui = patched_update_ui
+
         # Restore left/right button menus for Squish/Save
         # Add extra button menu with three buttons
         # Save references to left/right button actions for map movement
         self.left_action_callbacks = [
-            lambda: [self.add_elapsed_time(15 - getattr(self.scorekeeper, "inspect_cost_reduction", 0)), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Left (no move)
+            lambda: [self.add_elapsed_time(get_inspect_time()), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Left (no move)
             lambda: [self.add_elapsed_time(5), scorekeeper.squish(self.humanoid_left), self.move_map_left(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)],  # Squish Left
             lambda: [self.add_elapsed_time(30), scorekeeper.save(self.humanoid_left), self.move_map_left(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)]  # Save Left
         ]
@@ -100,11 +127,10 @@ class UI(object):
         ])
 
         self.right_action_callbacks = [
-            lambda: [self.add_elapsed_time(15 - getattr(self.scorekeeper, "inspect_cost_reduction", 0)), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Right (no move)
+            lambda: [self.add_elapsed_time(get_inspect_time()), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Right (no move)
             lambda: [self.add_elapsed_time(5), scorekeeper.squish(self.humanoid_right), self.move_map_right(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)],  # Squish Right
             lambda: [self.add_elapsed_time(30), scorekeeper.save(self.humanoid_right), self.move_map_right(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)]  # Save Right
         ]
-        
         self.right_button_menu = RightButtonMenu(self.root, [
             ("Inspect Right", self.right_action_callbacks[0]),
             ("Squish Right", self.right_action_callbacks[1]),
