@@ -269,19 +269,27 @@ class UI(object):
     def show_rules(self):
         rules_text = (
             "Game Rules:\n"
-            "- The goal is to complete the ambulance route (20 movements)\n"
-            "- Choose an action: Skip when presented with figure ahead.\n"
+            "- The goal is to complete the ambulance route (20 movements).\n"
+            "- Choose an action: Skip if you want to skip this set of humanoids.\n"
+            "- Inspect if you want to inspect the humanoids.\n"
+            "- Squish if you want to squash the zombies.\n"
+            "- Save if you want to save the humanoids.\n"
+            "- Scram if your capacity is full.\n"
             "- The goal is to save as many humans and squash the zombies.\n"
-            "- Your choices affect your score \n"
+            "- Saving humans gives you money for more upgrades when you scram.\n"
+            "- Your choices affect your score.\n"
+            "- Saving zombies or killing humans hurt your score, while saving humans and killing zombies adds to it."
             "- The game ends when you complete the route or the day ends. \n"
-            "- Route progress is shown in the top-right corner. \n"
+            "- If you don't complete your route on time, you lose points."
+            "- Route progress is shown in the middle of your screen. \n"
+            "- Remember: You can only save one set of humanoids, so pick wisely! \n"
             #More rules if needed (make sure to add \n)
             "- This is where we can add more rules in case we need to. \n\n"
         )
 
         rules_window = tk.Toplevel(self.root)
         rules_window.title("Game Rules")
-        rules_window.geometry("600x400")
+        rules_window.geometry("1200x500")
         rules_window.resizable(False, False)
 
         label = tk.Label(rules_window, text=rules_text, justify="left", padx=10, pady=10, font=("Helvetica", 11))
