@@ -20,17 +20,17 @@ class DataParser(object):
         metadata_fp = os.path.join(data_fp, metadata_fn)
         self.fp = data_fp
         self.df = pd.read_csv(metadata_fp)
-        # Add modified dataset if it exists
-        modified_fp = os.path.join(data_fp, "modified_dataset", "metadata.csv")
+        # Add modified dataset if 
         alt_modified_fp = os.path.join(data_fp, "metadata.csv")
-        if os.path.exists(modified_fp):
-            df_mod = pd.read_csv(modified_fp)
-            self.df = pd.concat([self.df, df_mod], ignore_index=True)
-        elif os.path.exists(alt_modified_fp):
-            df_mod = pd.read_csv(alt_modified_fp)
-            self.df = pd.concat([self.df, df_mod], ignore_index=True)
+        df_mod = pd.read_csv(alt_modified_fp)
+        self.df = pd.concat([self.df, df_mod], ignore_index=True)
         self.unvisited = self.df.index.to_list()
         self.visited = []
+        # Standardize 'Class' and 'Injured' columns for consistent filtering
+        self.df['Class'] = self.df['Class'].astype(str).str.strip().str.capitalize()
+        self.df['Injured'] = self.df['Injured'].map(lambda x: True if str(x).strip().lower() == 'true' else False)
+        print('[DEBUG] DataParser loaded DataFrame:')
+        print(self.df)
 
     def reset(self):
         """
@@ -102,7 +102,7 @@ class DataParser(object):
             else:
                 raise ValueError(f"Unknown type: {h_type}")
             print(f"[DEBUG] {side} candidates count: {len(candidates)}")
-            print(f"[DEBUG] {side} candidates sample: {candidates['Filename'].head().tolist()}")
+            print(f"[DEBUG] {side} candidates sample: {candidates['Filename']}")
             if len(candidates) == 0:
                 raise ValueError(f"No candidates for type {h_type}")
             idx = random.choice(candidates.index)
