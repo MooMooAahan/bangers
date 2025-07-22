@@ -152,10 +152,12 @@ class ScoreKeeper(object):
         if humanoid_right.is_injured():
             self.scorekeeper["killed"] += 1
 
-    def inspect(self, humanoid):
+    def inspect(self, humanoid, cost=None):
         """Logs an inspect action and deducts inspect cost."""
         self.log(humanoid, 'inspect')
-        self.remaining_time -= ActionCost.INSPECT.value
+        if cost is None:
+            cost = ActionCost.INSPECT.value
+        self.remaining_time -= cost
 
     def scram(self, humanoid=None, time_cost=None):
         """
