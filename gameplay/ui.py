@@ -53,7 +53,7 @@ class UI(object):
         self.route_complete = False  # Flag to track if route is complete
   
         # Track two humanoids for two images
-        self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
+        self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc, self.scenario_humanoid_attributes = data_parser.get_scenario()
         print(f"[UI DEBUG] Initial Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
         self.log = log
         #replay button
@@ -116,7 +116,7 @@ class UI(object):
         # Add extra button menu with three buttons
         # Save references to left/right button actions for map movement
         self.left_action_callbacks = [
-            lambda: [scorekeeper.inspect(self.humanoid_left), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Left
+            lambda: [self.print_scenario_side_attributes('left'), scorekeeper.inspect(self.humanoid_left), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Left
             lambda: [scorekeeper.squish(self.humanoid_left), self.move_map_left(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)],  # Squish Left
             lambda: [scorekeeper.save(self.humanoid_left), self.move_map_left(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)]  # Save Left
         ]
@@ -127,7 +127,7 @@ class UI(object):
         ])
 
         self.right_action_callbacks = [
-            lambda: [scorekeeper.inspect(self.humanoid_right), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Right
+            lambda: [self.print_scenario_side_attributes('right'), scorekeeper.inspect(self.humanoid_right), self.update_ui(scorekeeper), self.check_game_end(data_fp, data_parser, scorekeeper)],  # Inspect Right
             lambda: [scorekeeper.squish(self.humanoid_right), self.move_map_right(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)],  # Squish Right
             lambda: [scorekeeper.save(self.humanoid_right), self.move_map_right(), self.update_ui(scorekeeper), self.get_next(data_fp, data_parser, scorekeeper)]  # Save Right
         ]
@@ -214,21 +214,19 @@ class UI(object):
         self.update_ui(scorekeeper)
         self.time_warning_shown = False  # Track if the limited time warning popup has been shown
 
+        # Restore to a single inspect_canvas as before
         self.inspect_canvas = tk.Canvas(self.root, width=600, height=150, bg="lightgreen", highlightthickness=0)
         self.inspect_canvas.place(x=341, y=468)
-        # Draw the outer 2-pixel border (rectangle)
         self.inspect_canvas.create_rectangle(
             1, 1, 599, 149,  # Slightly inside the canvas bounds to show full border
             outline="black",
             width=2
         )
-        # Draw the vertical line down the middle
         self.inspect_canvas.create_line(
             300, 0, 300, 150,  # From top middle to bottom middle
             fill="black",
             width=2
         )
-        # Raise the canvas to the front
         self.inspect_canvas.tkraise()
 
         self.root.mainloop()
@@ -349,7 +347,6 @@ class UI(object):
     def get_next(self, data_fp, data_parser, scorekeeper):
         remaining = len(data_parser.unvisited)
         remaining_time = scorekeeper.remaining_time
-        
         # Ran out of humanoids or time? End game
         if remaining == 0 or remaining_time <= 0:
             if self.log:
@@ -390,9 +387,10 @@ class UI(object):
         else:
             # Only load new images if route is not complete
             if not self.route_complete:
-                self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
+                self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc, self.scenario_humanoid_attributes = data_parser.get_scenario()
                 print(f"[UI DEBUG] Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
-                
+                # Clear inspect canvas text
+                self.inspect_canvas.delete('text')
                 # Process zombie infections at the start of each turn
                 infected_humanoids = scorekeeper.process_zombie_infections()
                 if infected_humanoids:
@@ -419,7 +417,6 @@ class UI(object):
                         cure_message += f"• {humanoid_id}\n"
                     cure_message += "\nDoctors have made the ambulance safer!"
                     tk.messagebox.showinfo("Zombie Cure!", cure_message)
-                
                 fp_left = join(data_fp, self.humanoid_left.fp)
                 fp_right = join(data_fp, self.humanoid_right.fp)
                 self.game_viewer_left.create_photo(fp_left)
@@ -714,5 +711,23 @@ class UI(object):
             btn_text = f"{upgrade_label} (Level {level}) - ${cost}"
             tk.Button(shop, text=btn_text, font=("Arial", 12),
                   command=make_purchase).pack(pady=5)
+
+    def print_scenario_side_attributes(self, side):
+        lines = [f"{side.title()} side:"]
+        for i in range(1, 4):
+            key = f"{side}_humanoid{i}"
+            attrs = self.scenario_humanoid_attributes.get(key, {})
+            if attrs and attrs.get('type', '').strip():
+                lines.append(f"{key}:")
+                lines.append(f"  Type: {attrs['type']}")
+                lines.append(f"  Status: {attrs['status']}")
+                lines.append(f"  Role: {attrs['role']}")
+                lines.append("")  # Blank line between humanoids
+        text = '\n'.join(lines)
+        # Print at different x positions depending on side
+        if side == 'left':
+            self.inspect_canvas.create_text(10, 10, anchor='nw', text=text, font=("Arial", 12), tags='text')
+        else:
+            self.inspect_canvas.create_text(310, 10, anchor='nw', text=text, font=("Arial", 12), tags='text')
 
 

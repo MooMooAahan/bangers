@@ -174,7 +174,7 @@ class DataParser(object):
         fill_humanoid_attributes('Right', right_datarow)
 
         print(f"[SCENARIO ATTRIBUTES] {scenario_humanoid_attributes}")
-        return left, right, scenario_number, scenario_desc
+        return left, right, scenario_number, scenario_desc, scenario_humanoid_attributes
 
 
 # can be customized
