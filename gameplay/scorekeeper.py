@@ -320,6 +320,34 @@ class ScoreKeeper(object):
         
         return infected_humanoids
 
+    def process_zombie_cures(self):
+        """
+        Process zombie cures at the start of each turn.
+        Each healthy doctor adds 5% cure chance, each injured doctor adds 2.5% cure chance.
+        Each zombie is checked independently.
+        """
+        # Count doctors
+        cure_chance = 0.0
+        for person in self.ambulance_people.values():
+            if person['role'] == 'Doctor':
+                if person['status'] == 'injured':
+                    cure_chance += 0.025
+                else:
+                    cure_chance += 0.05
+        if cure_chance == 0:
+            return []  # No cures possible
+        cured_humanoids = []
+        for humanoid_id, humanoid_data in list(self.ambulance_people.items()):
+            if humanoid_data["class"] == "zombie":
+                if random.random() < cure_chance:
+                    # Cure this zombie
+                    humanoid_data["class"] = "human"
+                    humanoid_data["role"] = "Civilian"
+                    # Keep status (injured/healthy) the same
+                    humanoid_data["original_status"] = "cured_zombie"
+                    cured_humanoids.append(humanoid_id)
+        return cured_humanoids
+
     def save_side_from_scenario(self, side, scenario_humanoid_attributes):
         """
         Save all nonblank people from scenario_humanoid_attributes for the given side ('left' or 'right').

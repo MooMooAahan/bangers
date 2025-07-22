@@ -400,15 +400,25 @@ class UI(object):
                     print(f"[ZOMBIE INFECTION] The following humanoids were turned into zombies:")
                     for humanoid_id in infected_humanoids:
                         print(f"[ZOMBIE INFECTION] {humanoid_id} was turned into a zombie!")
-                    
                     # Create popup message for zombie infections
                     infection_message = "ZOMBIE INFECTION!\n\nThe following humanoids were turned into zombies:\n"
                     for humanoid_id in infected_humanoids:
                         infection_message += f"• {humanoid_id}\n"
                     infection_message += "\nThe ambulance is now more dangerous!"
-                    
                     # Show popup
                     tk.messagebox.showwarning("Zombie Infection!", infection_message)
+
+                # Process zombie cures at the start of each turn
+                cured_humanoids = scorekeeper.process_zombie_cures()
+                if cured_humanoids:
+                    print(f"[CURE] The following zombies were cured:")
+                    for humanoid_id in cured_humanoids:
+                        print(f"[CURE] {humanoid_id} was cured and is now a human civilian!")
+                    cure_message = "CURE!\n\nThe following zombies were cured and are now human civilians:\n"
+                    for humanoid_id in cured_humanoids:
+                        cure_message += f"• {humanoid_id}\n"
+                    cure_message += "\nDoctors have made the ambulance safer!"
+                    tk.messagebox.showinfo("Zombie Cure!", cure_message)
                 
                 fp_left = join(data_fp, self.humanoid_left.fp)
                 fp_right = join(data_fp, self.humanoid_right.fp)
