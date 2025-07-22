@@ -508,7 +508,7 @@ class UI(object):
         self.button_menu.enable_all_buttons()
         self.left_button_menu.enable_all_buttons()
         self.right_button_menu.enable_all_buttons()
-        self.clock.update_time(12, 0)
+        self.clock.update_time(8, 0)
         self.reset_map() # Reset map on game end
         self.hide_map = False
         self.draw_grid_map()
