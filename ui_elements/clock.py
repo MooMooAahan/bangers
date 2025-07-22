@@ -3,14 +3,13 @@ import math
 
 class Clock(object):
     def __init__(self, root, w, h, init_h, init_m):
-        # Smaller canvas
         self.canvas = tk.Canvas(root, width=180, height=120, bg="#f0f0f0", highlightthickness=0)
         self.canvas.place(x=math.floor(0.80 * w), y=30)
 
         # Title label
         tk.Label(self.canvas, text="Current time", font=("Arial", 15), bg="#f0f0f0").place(relx=0.5, y=10, anchor="n")
 
-        # Digital time label (smaller)
+        # Digital time label
         self.label = tk.Label(self.canvas, text="", font=("Arial", 30, "bold"), bg="#f0f0f0", fg="midnightblue")
         self.label.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
