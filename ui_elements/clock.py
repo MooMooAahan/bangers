@@ -18,15 +18,20 @@ class Clock(object):
         self.current_m = init_m
         self._start_blink()
 
-    def update_time(self, h, m):
+    def update_time(self, h, m, force_pm=False):
         self.current_h = h
         self.current_m = m
+        self.force_pm = force_pm
         self._render_time()
 
     def _render_time(self):
         hour_24 = self.current_h
         minute = self.current_m
-        am_pm = "AM" if hour_24 < 12 else "PM"
+        # Use force_pm if set, otherwise normal AM/PM logic
+        if hasattr(self, 'force_pm') and self.force_pm:
+            am_pm = "PM"
+        else:
+            am_pm = "AM" if hour_24 < 12 else "PM"
         hour_12 = hour_24 % 12
         if hour_12 == 0:
             hour_12 = 12
