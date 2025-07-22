@@ -287,37 +287,52 @@ class ScoreKeeper(object):
     def process_zombie_infections(self):
         """
         Process zombie infections at the start of each turn.
-        Each zombie has a 5% chance to turn each human into a zombie.
+        Each zombie has a 5% chance to turn each human into a zombie, reduced by militants.
+        Each healthy militant reduces infection chance by 10%, each injured militant by 5%.
         """
         # Count zombies and humans
         zombie_count = self.ambulance["zombie"]
         human_count = self.ambulance["injured"] + self.ambulance["healthy"]
-        
+
+        # Count militants
+        healthy_militants = 0
+        injured_militants = 0
+        for person in self.ambulance_people.values():
+            if person['role'] == 'Militant':
+                if person['status'] == 'injured':
+                    injured_militants += 1
+                else:
+                    healthy_militants += 1
+
         if zombie_count == 0 or human_count == 0:
             return []  # No infections possible
-        
+
         infected_humanoids = []
-        
+
         # Check each humanoid in the ambulance
         for humanoid_id, humanoid_data in list(self.ambulance_people.items()):
             if humanoid_data["class"] == "human":
                 # Each zombie has a 5% chance to infect this human
                 infection_chance = zombie_count * 0.05
+                # Subtract militant protection
+                infection_chance -= healthy_militants * 0.10
+                infection_chance -= injured_militants * 0.05
+                infection_chance = max(0, infection_chance)  # Don't allow negative chance
                 if random.random() < infection_chance:
                     # Turn this human into a zombie
                     humanoid_data["class"] = "zombie"
                     humanoid_data["status"] = "healthy"
                     humanoid_data["role"] = "blank"
-                    
+
                     # Update ambulance counts
                     if humanoid_data.get("original_status") == "injured":
                         self.ambulance["injured"] -= 1
                     else:
                         self.ambulance["healthy"] -= 1
                     self.ambulance["zombie"] += 1
-                    
+
                     infected_humanoids.append(humanoid_id)
-        
+
         return infected_humanoids
 
     def process_zombie_cures(self):
