@@ -99,58 +99,22 @@ class ScoreKeeper(object):
         """
         self.log(humanoid, 'save')
         self.remaining_time -= ActionCost.SAVE.value
-        
         time_bonus = 0
-        
-        # Add to ambulance_people dictionary
-        humanoid_id = f"humanoid{len(self.ambulance_people) + 1}"
+        # No longer add to ambulance_people here; handled by save_side_from_scenario
         if humanoid.is_zombie():
             self.ambulance["zombie"] += 1
             self.false_saves += 1
-            time_bonus = TIME_PENALTY_FOR_ZOMBIE # penalty for saving zombie is removing 10 minutes
-            self.ambulance_people[humanoid_id] = {"class": "zombie", "status": "healthy", "role": "blank", "original_status": "zombie"}
-
+            time_bonus = TIME_PENALTY_FOR_ZOMBIE
         elif humanoid.is_injured():
             self.correct_saves += 1
             self.ambulance["injured"] += 1
             if random.random() < 0.8:
-                time_bonus = TIME_BONUS_FOR_SAVING_HUMAN # make them have a 30 min bonus  
-            # Role assignment for injured humans
-            role_index = random.randint(0, 9)
-            if role_index <= 3:
-                injured_base_role = "Civilian"
-            elif role_index <= 5:
-                injured_base_role = "Child"
-            elif role_index <= 7:
-                injured_base_role = "Doctor"
-            elif role_index == 8:
-                injured_base_role = "Militant"
-            else:
-                injured_base_role = "Police" 
-            role = f"injured {injured_base_role}"
-            self.ambulance_people[humanoid_id] = {"class": "human", "status": "injured", "role": injured_base_role, "original_status": "injured"}
-
+                time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
         elif humanoid.is_healthy():
             self.correct_saves += 1
             self.ambulance["healthy"] += 1
             if random.random() < 0.8:
-                time_bonus = TIME_BONUS_FOR_SAVING_HUMAN # make them have a 30 min bonus 
-            
-            # Role assignment for healthy humans
-            role_index = random.randint(0, 9)
-            if role_index <= 3:
-                healthy_base_role = "Civilian"
-            elif role_index <= 5:
-                healthy_base_role = "Child"
-            elif role_index <= 7:
-                healthy_base_role = "Doctor"
-            elif role_index == 8:
-                healthy_base_role = "Militant"
-            else:
-                healthy_base_role = "Police"
-
-            self.ambulance_people[humanoid_id] = {"class": "human", "status": "healthy", "role": healthy_base_role, "original_status": "healthy"}
-        
+                time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
         self.ambulance_time_adjustment += time_bonus
         print(f"[DEBUG] Time adjustment: adding {time_bonus} minutes to remaining time, time remaining {self.remaining_time}")
         print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
@@ -355,3 +319,19 @@ class ScoreKeeper(object):
                     infected_humanoids.append(humanoid_id)
         
         return infected_humanoids
+
+    def save_side_from_scenario(self, side, scenario_humanoid_attributes):
+        """
+        Save all nonblank people from scenario_humanoid_attributes for the given side ('left' or 'right').
+        """
+        for i in range(1, 4):
+            key = f"{side}_humanoid{i}"
+            attrs = scenario_humanoid_attributes.get(key, {})
+            if attrs and attrs.get('type', '').strip():
+                humanoid_id = f"humanoid{len(self.ambulance_people) + 1}"
+                self.ambulance_people[humanoid_id] = {
+                    "class": attrs['type'],
+                    "status": attrs['status'],
+                    "role": attrs['role'],
+                    "original_status": attrs['status']
+                }
