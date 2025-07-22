@@ -706,6 +706,9 @@ class UI(object):
 
             def make_purchase(n=name):
                 if self.scorekeeper.upgrade_manager.purchase(n):
+                    # If ambulance capacity was upgraded, update the capacity meter
+                    if n == "ambulance_capacity":
+                        self.capacity_meter.render(self.scorekeeper.capacity, self.capacity_meter.unit_size)
                     shop.destroy()
                     self.show_upgrade_shop()  # Refresh the popup
 
@@ -714,7 +717,7 @@ class UI(object):
                   command=make_purchase).pack(pady=5)
 
     def print_scenario_side_attributes(self, side):
-        lines = [f"{side.title()} side:"]
+        lines = [f"Ambulance Capacity = {self.scorekeeper.capacity}", f"{side.title()} side:"]
         for i in range(1, 4):
             key = f"{side}_humanoid{i}"
             attrs = self.scenario_humanoid_attributes.get(key, {})
@@ -728,11 +731,8 @@ class UI(object):
         # Print at different x positions depending on side
         if side == 'left':
             self.inspect_canvas.create_text(10, 10, anchor='nw', text=text, font=("Arial", 12), tags='text')
-            self.left_button_menu.buttons[0].config(state='disabled')
         else:
             self.inspect_canvas.create_text(310, 10, anchor='nw', text=text, font=("Arial", 12), tags='text')
-            self.right_button_menu.buttons[0].config(state='disabled')
-        # Disable the inspect button for this side after printing
 
     def add_elapsed_time(self, minutes):
         self.scorekeeper.remaining_time -= minutes

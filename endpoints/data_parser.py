@@ -29,8 +29,6 @@ class DataParser(object):
         # Standardize 'Class' and 'Injured' columns for consistent filtering
         self.df['Class'] = self.df['Class'].astype(str).str.strip().str.capitalize()
         self.df['Injured'] = self.df['Injured'].map(lambda x: True if str(x).strip().lower() == 'true' else False)
-        print('[DEBUG] DataParser loaded DataFrame:')
-        print(self.df)
 
     def reset(self):
         """
@@ -101,8 +99,6 @@ class DataParser(object):
                 candidates = self.df[(self.df['Class'] == 'Zombie') & (self.df['Injured'] == True)]
             else:
                 raise ValueError(f"Unknown type: {h_type}")
-            print(f"[DEBUG] {side} candidates count: {len(candidates)}")
-            print(f"[DEBUG] {side} candidates sample: {candidates['Filename']}")
             if len(candidates) == 0:
                 raise ValueError(f"No candidates for type {h_type}")
             idx = random.choice(candidates.index)
@@ -173,7 +169,6 @@ class DataParser(object):
         fill_humanoid_attributes('Left', left_datarow)
         fill_humanoid_attributes('Right', right_datarow)
 
-        print(f"[SCENARIO ATTRIBUTES] {scenario_humanoid_attributes}")
         return left, right, scenario_number, scenario_desc, scenario_humanoid_attributes
 
 
