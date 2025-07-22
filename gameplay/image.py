@@ -1,47 +1,59 @@
+from gameplay.humanoid import Humanoid
+from gameplay.enums import State
+import pandas as pd
+
 class Image(object):
     """
-    Stores all metadata for an image and references to Humanoid objects.
+    Stores all metadata for an image and references to up to two Humanoid objects.
     """
     def __init__(self, datarow):
-        """
-        datarow: pandas Series (row from DataParser.df)
-        humanoids: list of Humanoid objects (or a single Humanoid)
-        """
         # Store all metadata fields as attributes
         for col in datarow.index:
             setattr(self, col, datarow[col])
-        # Store humanoid(s)
-        self.humanoids = humanoids if isinstance(humanoids, list) else [humanoids]
 
-        # get information 
-        state = datarow_to_state(datarow)
+        # Parse humanoid count
+        try:
+            self.humanoid_count = int(datarow['HumanoidCount'])
+        except Exception:
+            self.humanoid_count = 0
 
+        # Parse fields for up to two humanoids
+        def split_or_none(val):
+            if pd.isna(val) or val == "":
+                return [None, None]
+            parts = str(val).split('|')
+            if len(parts) == 1:
+                return [parts[0], None]
+            elif len(parts) >= 2:
+                return [parts[0], parts[1]]
+            return [None, None]
 
+        # Extract all relevant fields
+        classes = split_or_none(datarow['Class'])
+        injureds = split_or_none(datarow['Injured'])
+        genders = split_or_none(datarow['Gender'])
+        items = split_or_none(datarow['Item'])
 
-# can be customized
-def datarow_to_state(datarow):
-    """
-    takes in a row of a pandas dataframe and returns the class of the humanoid in the dataframe
+        # Helper to get state from class/injured
+        def get_state(cls, inj):
+            if cls is None or cls == "":
+                return None
+            if str(cls).lower() == "default":
+                return State.INJURED.value if str(inj).lower() == "true" else State.HEALTHY.value
+            elif str(cls).lower() == "zombie":
+                return State.CORPSE.value if str(inj).lower() == "true" else State.ZOMBIE.value
+            return None
 
-    datarow : row of the metadata dataframe
-    """
-    img_path = datarow['Filename']
-    img_class = datarow['Class']
-    img_injured = datarow['Injured']
-    # img_gender = datarow['Gender']
-    # img_item = datarow['Item']
-    # state = ""
-    if img_class == 'Default':
-        state = State.HEALTHY.value
-        if img_injured:
-            state = State.INJURED.value
-    else:
-        state = State.ZOMBIE.value
-        if img_injured:
-            state = State.CORPSE.value
-    return state
-
-
+        # Create up to two humanoids
+        self.humanoids = []
+        for i in range(2):
+            if self.humanoid_count > i and classes[i] not in (None, "", "nan"):
+                state = get_state(classes[i], injureds[i])
+                self.humanoids.append(
+                    Humanoid(fp=str(datarow['Filename']).strip(), state=state)
+                )
+            else:
+                self.humanoids.append(None)  # Null if not present
 
     def __repr__(self):
-        return f"<ImageData Filename={getattr(self, 'Filename', None)} Humanoids={self.humanoids}>"
+        return f"<ImageData Filename={getattr(self, 'Filename', None)} HumanoidCount={self.humanoid_count} Humanoids={self.humanoids}>"

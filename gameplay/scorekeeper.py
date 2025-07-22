@@ -63,19 +63,21 @@ class ScoreKeeper(object):
         self.all_logs.append(self.logger)
         self.logger = []
     
-    def log(self, humanoid, action):
+    def log(self, image, action):
         """
         logs current action taken against a humanoid
         
         humanoid : the humanoid presented
         action : the action taken
         """
-        self.logger.append({"humanoid_class":humanoid.state,
-                            "humanoid_fp":humanoid.fp,
-                            "action":action,
-                            "remaining_time":self.remaining_time,
-                            "capacity":self.get_current_capacity(),
-                            })
+
+        for humanoid in image.humanoids:
+            self.logger.append({"humanoid_class":humanoid.state,
+                    "humanoid_fp":humanoid.fp,
+                    "action":action,
+                    "remaining_time":self.remaining_time,
+                    "capacity":self.get_current_capacity(),
+                    })
         
     def save_log(self,):
         """
@@ -92,74 +94,83 @@ class ScoreKeeper(object):
         logs = pd.DataFrame(logs)
         logs.to_csv('log.csv')
 
-    def save(self, humanoid):
+    def save(self, image):
         """
         saves the humanoid
         updates scorekeeper
         """
-        self.log(humanoid, 'save')
+        self.log(image, 'save')
         self.remaining_time -= ActionCost.SAVE.value
         time_bonus = 0
         # No longer add to ambulance_people here; handled by save_side_from_scenario
-        if humanoid.is_zombie():
-            self.ambulance["zombie"] += 1
-            self.false_saves += 1
-            time_bonus = TIME_PENALTY_FOR_ZOMBIE
-        elif humanoid.is_injured():
-            self.correct_saves += 1
-            self.ambulance["injured"] += 1
-            if random.random() < 0.8:
-                time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
-        elif humanoid.is_healthy():
-            self.correct_saves += 1
-            self.ambulance["healthy"] += 1
-            if random.random() < 0.8:
-                time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
-        self.ambulance_time_adjustment += time_bonus
-        print(f"[DEBUG] Time adjustment: adding {time_bonus} minutes to remaining time, time remaining {self.remaining_time}")
-        print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
+        for humanoid in image.humanoids:
+            if humanoid.is_zombie():
+                self.ambulance["zombie"] += 1
+                self.false_saves += 1
+                time_bonus = TIME_PENALTY_FOR_ZOMBIE
+            elif humanoid.is_injured():
+                self.correct_saves += 1
+                self.ambulance["injured"] += 1
+                if random.random() < 0.8:
+                    time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+            elif humanoid.is_healthy():
+                self.correct_saves += 1
+                self.ambulance["healthy"] += 1
+                if random.random() < 0.8:
+                    time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+            self.ambulance_time_adjustment += time_bonus
+            print(f"[DEBUG] Time adjustment: adding {time_bonus} minutes to remaining time, time remaining {self.remaining_time}")
+            print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
         
 
-    def squish(self, humanoid):
+    def squish(self, image):
         """
         squishes the humanoid
         updates scorekeeper
         """
-        self.log(humanoid, 'squish')
+        self.log(image, 'squish')
         
         self.remaining_time -= ActionCost.SQUISH.value
-        if not (humanoid.is_zombie() or humanoid.is_corpse()):
-            self.scorekeeper["killed"] += 1
+        for humanoid in image.humanoids:
+            if not (humanoid.is_zombie() or humanoid.is_corpse()):
+                self.scorekeeper["killed"] += 1
 
-    def skip(self, humanoid):
+    def skip(self, image):
         """
         skips the humanoid
         updates scorekeeper
         """
-        self.log(humanoid, 'skip')
+        self.log(image, 'skip')
         
         self.remaining_time -= ActionCost.SKIP.value
-        if humanoid.is_injured():
-            self.scorekeeper["killed"] += 1
+        for humanoid in image.humanoids:
+            if humanoid.is_injured():
+                self.scorekeeper["killed"] += 1
 
-    def skip_both(self, humanoid_left, humanoid_right):
+    def skip_both(self, image_left, image_right):
         """Skips both humanoids but only deducts 15 minutes total."""
-        self.log(humanoid_left, 'skip')
-        self.log(humanoid_right, 'skip')
+        # access image humanoids and log them 
+        self.log(image_left, 'skip')
+        self.log(image_right, 'skip')
         self.remaining_time -= ActionCost.SKIP.value
-        if humanoid_left.is_injured():
-            self.scorekeeper["killed"] += 1
-        if humanoid_right.is_injured():
-            self.scorekeeper["killed"] += 1
+        for humanoid in image_left.humanoids:
+            if humanoid.is_injured():
+                self.scorekeeper["killed"] += 1
+        for humanoid in image_right.humanoids:
+            if humanoid.is_injured():
+                self.scorekeeper["killed"] += 1
 
-    def inspect(self, humanoid, cost=None):
+    def inspect(self, image, cost=None):
         """Logs an inspect action and deducts inspect cost."""
-        self.log(humanoid, 'inspect')
+        for humanoid in image.humanoids:
+            self.log(image, 'inspect')
+
         if cost is None:
             cost = ActionCost.INSPECT.value
         self.remaining_time -= cost
 
-    def scram(self, humanoid=None, time_cost=None):
+    #TODO: fix this to be able to scram images and not humanoids
+    def scram(self, huamonid, time_cost=None):
         """
         scrams
         updates scorekeeper
