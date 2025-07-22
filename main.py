@@ -32,7 +32,7 @@ class Main(object):
                     print('Ran out of time')
                     break
                 else:
-                    humanoid = self.data_parser.get_random()
+                    humanoid = self.data_parser.get_random(side = 'left') ## TODO: this is currently hardcoded to left side
                     action = simon.get_model_suggestion(humanoid, self.scorekeeper.at_capacity())
                     if action == ActionCost.SKIP:
                         self.scorekeeper.skip(humanoid)
@@ -57,7 +57,7 @@ class Main(object):
                 if simon.scorekeeper.remaining_time <= 0:
                     break
                 else:
-                    humanoid = self.data_parser.get_random()
+                    humanoid = self.data_parser.get_random(side = 'left') ## TODO: this is currently hardcoded to left side
                     simon.act(humanoid)
             self.scorekeeper = simon.scorekeeper
             if log:
