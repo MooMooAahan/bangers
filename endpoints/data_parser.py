@@ -31,8 +31,6 @@ class DataParser(object):
         # Standardize 'Class' and 'Injured' columns for consistent filtering
         self.df['Class'] = self.df['Class'].astype(str).str.strip().str.capitalize()
         self.df['Injured'] = self.df['Injured'].map(lambda x: True if str(x).strip().lower() == 'true' else False)
-        print('[DEBUG] DataParser loaded DataFrame:')
-        print(self.df)
 
     def reset(self):
         """

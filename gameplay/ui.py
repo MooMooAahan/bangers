@@ -356,7 +356,9 @@ class UI(object):
             h = 12
         m = minutes_elapsed
         print(f"I changed my time :> to {h} {m}")
-        self.clock.update_time(h, m)
+        # Add force_pm flag if remaining_time <= 480
+        force_pm = scorekeeper.remaining_time <= 480
+        self.clock.update_time(h, m, force_pm=force_pm)
         self.capacity_meter.update_fill(scorekeeper.get_current_capacity())
 
         # Show a warning popup if 3 hours or less remain, but only once per game session
@@ -524,40 +526,61 @@ class UI(object):
             except Exception:
                 pass
             self.replay_btn = None
-        # self.elapsed_time = 0 # Removed
         self.movement_count = 0  # Reset movement counter
         self.route_complete = False  # Reset route complete flag
         self.movement_label.config(text="Route Progress: 0/20")  # Reset movement label
         self.scorekeeper.reset()
         data_parser.reset()
-        
-        
+        # 1. Fully reset the clock (including blink, time, force_pm)
+        self.clock.blink = True
+        self.clock.current_h = 8
+        self.clock.current_m = 0
+        self.clock.force_pm = False
+        self.clock.update_time(8, 0, force_pm=False)
+        # 2. Reset ambulance map and position
+        self.reset_map() # This sets ambulance_pos and path_history to start
+        self.hide_map = False
+        self.draw_grid_map()
+        self.map_canvas.place(x=self.grid_origin[0], y=self.grid_origin[1]) # Always re-place the map after replay
+        # 3. Re-enable all buttons
+        self.button_menu.enable_all_buttons()
+        self.left_button_menu.enable_all_buttons()
+        self.right_button_menu.enable_all_buttons()
+        if hasattr(self, 'machine_menu'):
+            self.machine_menu.enable_all_buttons()
+        self.rules_btn.config(state='normal')
+        self.upgrade_btn.config(state='normal')
+        # 4. Get a new scenario
         self.image_left, self.image_right = data_parser.get_random(side='left'), data_parser.get_random(side='right')
         #TODO: fix to be getting images, not humanoids
         # self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
         # print(f"[UI DEBUG] Reset Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
         fp_left = join(data_fp, self.image_left.fp)
         fp_right = join(data_fp, self.image_right.fp)
+
         self.game_viewer_left.create_photo(fp_left)
         self.game_viewer_right.create_photo(fp_right)
         self.update_ui(self.scorekeeper)
-        self.button_menu.enable_all_buttons()
-        self.left_button_menu.enable_all_buttons()
-        self.right_button_menu.enable_all_buttons()
-        self.clock.update_time(12, 0)
-        self.reset_map() # Reset map on game end
-        self.hide_map = False
-        self.draw_grid_map()
-        self.map_canvas.place(x=self.grid_origin[0], y=self.grid_origin[1]) # Always re-place the map after replay
         # Clear any widgets in both canvases
         for widget in self.game_viewer_left.canvas.pack_slaves():
             widget.destroy()
         for widget in self.game_viewer_right.canvas.pack_slaves():
             widget.destroy()
-        # End of canvas widget clearing
+        # Clear inspect canvas
+        self.inspect_canvas.delete('all')
+        # Redraw inspect canvas border and center line
+        self.inspect_canvas.create_rectangle(
+            1, 1, 599, 149,  # Slightly inside the canvas bounds to show full border
+            outline="black",
+            width=2
+        )
+        self.inspect_canvas.create_line(
+            300, 0, 300, 150,  # From top middle to bottom middle
+            fill="black",
+            width=2
+        )
+        self.inspect_canvas.tkraise()
         self.time_warning_shown = False  # Reset the warning flag for a new game
-        self.rules_btn.config(state='normal')
-        self.upgrade_btn.config(state='normal')
     def create_grid_map_canvas(self):
         w = self.grid_cols * self.cell_size + 2 * 10
         h = self.grid_rows * self.cell_size + 2 * 10
@@ -742,6 +765,9 @@ class UI(object):
 
             def make_purchase(n=name):
                 if self.scorekeeper.upgrade_manager.purchase(n):
+                    # If ambulance capacity was upgraded, update the capacity meter
+                    if n == "ambulance_capacity":
+                        self.capacity_meter.render(self.scorekeeper.capacity, self.capacity_meter.unit_size)
                     shop.destroy()
                     self.show_upgrade_shop()  # Refresh the popup
 
@@ -784,11 +810,10 @@ class UI(object):
         # # Print at different x positions depending on side
         if side == 'left':
             self.inspect_canvas.create_text(10, 10, anchor='nw', text=text, font=("Arial", 12), tags='text')
-            self.left_button_menu.buttons[0].config(state='disabled')
+            self.left_button_menu.buttons[0].config(state='disabled')    
         else:
             self.inspect_canvas.create_text(310, 10, anchor='nw', text=text, font=("Arial", 12), tags='text')
             self.right_button_menu.buttons[0].config(state='disabled')
-        # Disable the inspect button for this side after printing
 
     def add_elapsed_time(self, minutes):
         self.scorekeeper.remaining_time -= minutes

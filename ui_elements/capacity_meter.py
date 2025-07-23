@@ -13,7 +13,7 @@ class CapacityMeter(object):
         y_pos = math.floor(0.4 * h) - 20  # move up by 20px
         self.canvas.place(x=x_pos, y=y_pos)
         self.__units = []
-        self.unit_size = 20  # Half the previous size (was 40)
+        self.unit_size = 14  # Half the previous size (was 40)
         self.canvas.update()
         # Robust image path
         image_path = os.path.join(os.path.dirname(__file__), '..', 'images', 'ambulance.png')
@@ -46,10 +46,12 @@ class CapacityMeter(object):
             people = self.get_ambulance_contents()
         else:
             people = getattr(self, 'ambulance_contents', [])
+        # Add capacity info
+        capacity_info = f'Ambulance Capacity = {len(self.__units)}'
         if not people:
-            info = 'The ambulance is empty.'
+            info = f'{capacity_info}\nThe ambulance is empty.'
         else:
-            info = '\n'.join(str(person) for person in people)
+            info = f'{capacity_info}\n' + '\n'.join(str(person) for person in people)
         tk.messagebox.showinfo('Ambulance Contents', info)
 
     def set_ambulance_contents(self, people):
@@ -63,27 +65,22 @@ class CapacityMeter(object):
         self.__units = []
         tk.Label(self.canvas, text="Capacity", font=("Arial", 15)).place(x=100, y=0)
 
-        # Arrange in 5 rows if max_cap > 5, else 1 row
-        if max_cap > 5:
-            rows = 5
-            cols = math.ceil(max_cap / 5)
-        else:
-            rows = 1
-            cols = max_cap
+        # Always use 2 columns, stack extra dots below
+        cols = 2
+        rows = math.ceil(max_cap / 2)
         # --- Adjustable starting position for circles ---
-        x_start = 130  # Change this to move the circles horizontally
+        x_start = 131  # Change this to move the circles horizontally
         y_start = 192  # Change this to move the circles vertically
         # ----------------------------------------------
-        x_gap = size * 1.5
+        x_gap = 60 - 27
         y_gap = size * 1.5
         idx = 0
         for row in range(rows):
-            x = x_start
             y = y_start + row * y_gap
             for col in range(cols):
+                x = x_start + col * x_gap
                 if idx < max_cap:
                     self.__units.append(self.create_circle(self.canvas, x, y, size))
-                    x += x_gap
                     idx += 1
 
     def update_fill(self, index):

@@ -4,7 +4,7 @@ class UpgradeManager:
         self.money = 0
         
         self.upgrades = {
-    "ambulance_capacity": {"level": 0, "cost": 20, "max": 5},
+    "ambulance_capacity": {"level": 0, "cost": 20, "max": 4},
     "scram_speed": {"level": 0, "cost": 30, "max": 3},
     "inspect_discount": {"level": 0, "cost": 20, "max": 2}
 }
