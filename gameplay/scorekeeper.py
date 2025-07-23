@@ -22,6 +22,8 @@ timing system's global variables
 TIME_PENALTY_FOR_ZOMBIE = -15 #penalty for saving a zombie
 TIME_BONUS_FOR_SAVING_HUMAN = +15 #time bonus for saving a human
 
+
+
 class ScoreKeeper(object):
     def __init__(self, shift_len, capacity):
         
@@ -94,10 +96,7 @@ class ScoreKeeper(object):
         logs.to_csv('log.csv')
 
     def save(self, humanoid):
-        """
-        saves the humanoid
-        updates scorekeeper
-        """
+    
         self.log(humanoid, 'save')
         self.remaining_time -= ActionCost.SAVE.value
         time_bonus = 0
@@ -107,7 +106,6 @@ class ScoreKeeper(object):
             self.false_saves += 1
             time_bonus = TIME_PENALTY_FOR_ZOMBIE
         elif humanoid.is_injured():
-            self.correct_saves += 1
             self.ambulance["injured"] += 1
             if random.random() < 0.8:
                 time_bonus = TIME_BONUS_FOR_SAVING_HUMAN

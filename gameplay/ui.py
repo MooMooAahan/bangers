@@ -377,6 +377,8 @@ class UI(object):
             killed_label.pack()
             saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score()['saved']}", font=("Arial", 12))
             saved_label.pack()
+            
+        
             score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
             score_label.pack()
 
@@ -385,6 +387,11 @@ class UI(object):
 
             accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
             accuracy_label.pack()
+            zombies_saved_score_label = tk.Label(self.final_score_frame,
+                text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
+                font=("Arial", 12))
+            zombies_saved_score_label.pack()
+
             # Replay button
             self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
             self.replay_btn.pack(pady=(10, 0))
