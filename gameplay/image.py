@@ -9,7 +9,10 @@ class Image(object):
     def __init__(self, datarow):
         # Store all metadata fields as attributes
         for col in datarow.index:
-            setattr(self, col, datarow[col])
+            val = datarow[col]
+            if col == "Filename" and isinstance(val, str):
+                val = val.strip().strip('"').strip("'")
+            setattr(self, col, val)
 
         # Parse humanoid count
         try:
