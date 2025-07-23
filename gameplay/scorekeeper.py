@@ -10,6 +10,8 @@ score_injured = 5
 score_zombie = -20
 score_killed = -10
 
+
+
 class ScoreKeeper(object):
     def __init__(self, shift_len, capacity):
         
@@ -76,19 +78,20 @@ class ScoreKeeper(object):
         
 
     def save(self, humanoid):
-        """
-        saves the humanoid
-        updates scorekeeper
-        """
+    
         self.log(humanoid, 'save')
-        
         self.remaining_time -= ActionCost.SAVE.value
+
         if humanoid.is_zombie():
             self.ambulance["zombie"] += 1
             self.false_saves += 1
+          
+            
+
         elif humanoid.is_injured():
-            self.correct_saves += 1
             self.ambulance["injured"] += 1
+            self.correct_saves += 1
+
         else:
             self.ambulance["healthy"] += 1
             self.correct_saves += 1
