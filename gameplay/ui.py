@@ -43,6 +43,7 @@ class UI(object):
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
         self.root.geometry(f"{w}x{h}")
         self.root.resizable(False, False)
+        self.fasle_saves = 0 
         # Time management variables
         self.total_time = 720  # 12 hours in minutes
         # self.elapsed_time removed; time is managed by ScoreKeeper
@@ -378,6 +379,10 @@ class UI(object):
             saved_label.pack()
             score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
             score_label.pack()
+
+            zombies_ambulance = tk.Label(self.final_score_frame, text=f"Zombies in ambulance: {self.false_saves()}", font=("Arial", 12))
+            zombies_ambulance.pack()
+
             accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
             accuracy_label.pack()
             # Replay button
@@ -655,6 +660,8 @@ class UI(object):
         saved_label.pack()
         score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
         score_label.pack()
+        zombie_ambu= tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.fasle_saves}", font=("Arial", 12))
+        zombie_ambu.pack()
         accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
         accuracy_label.pack()
         # Replay button
