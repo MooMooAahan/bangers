@@ -80,6 +80,35 @@ class ScoreKeeper(object):
                     "remaining_time":self.remaining_time,
                     "capacity":self.get_current_capacity(),
                     })
+    
+    def logScram(self, image_left, image_right, action = 'scram'):
+        """
+        version for two images aka scram
+
+        logs current action taken against a humanoid
+        
+        humanoid : the humanoid presented
+        action : the action taken
+        """
+
+        for humanoid in image_left.humanoids:
+            if humanoid is None:
+                continue
+            self.logger.append({"humanoid_class":humanoid.state,
+                    "humanoid_fp":humanoid.fp,
+                    "action":action,
+                    "remaining_time":self.remaining_time,
+                    "capacity":self.get_current_capacity(),
+                    })
+        for humanoid in image_right.humanoids:
+            if humanoid is None:
+                continue
+            self.logger.append({"humanoid_class":humanoid.state,
+                    "humanoid_fp":humanoid.fp,
+                    "action":action,
+                    "remaining_time":self.remaining_time,
+                    "capacity":self.get_current_capacity(),
+                    })
         
     def save_log(self):
         """
@@ -184,13 +213,12 @@ class ScoreKeeper(object):
         self.remaining_time -= cost
 
     #TODO: fix this to be able to scram images and not humanoids + other number tweaks
-    def scram(self, time_cost=None):
+    def scram(self, image_left, image_right, time_cost=None):
         """
         scrams
         updates scorekeeper
         """
-        if image:
-            self.log(image, 'scram')
+        self.logScram(image_left, image_right, 'scram')
         if time_cost is not None:
             self.remaining_time -= time_cost
         else:

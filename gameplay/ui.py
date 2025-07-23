@@ -91,7 +91,7 @@ class UI(object):
             ("Save (30 mins)", lambda: self.show_action_popup("Save")),
             (get_scram_text(), lambda: [
                                     print(f"[DEBUG] Scram penalty applied: {get_scram_time()} minutes"),
-                                    scorekeeper.scram(time_cost=get_scram_time()),
+                                    scorekeeper.scram(self.image_left, self.image_right, time_cost=get_scram_time()),
                                     self.move_ambulance_by_cell(),
                                     self.update_ui(scorekeeper),
                                     self.get_next(
