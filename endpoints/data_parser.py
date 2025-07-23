@@ -54,6 +54,16 @@ class DataParser(object):
         
         # select a random index from unvisited that matches the side
         index = random.choice(self.unvisited)
+        if side == 'left':
+            while self.df.iloc[index]['Side'] != 'Left':
+                index = random.choice(self.unvisited)
+        elif side == 'right':
+            while self.df.iloc[index]['Side'] != 'Right':
+                index = random.choice(self.unvisited)
+        elif side == 'random':
+            pass
+        else:
+            raise ValueError("Invalid side")
         # while side != self.df.iloc[index]['Side']:
         #     index = random.choice(self.unvisited)
         # remove the index from unvisited and add to visited
