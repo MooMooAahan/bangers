@@ -382,8 +382,7 @@ class UI(object):
             score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
             score_label.pack()
 
-            zombies_ambulance = tk.Label(self.final_score_frame, text=f"Zombies in ambulance: {self.false_saves()}", font=("Arial", 12))
-            zombies_ambulance.pack()
+        
 
             accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
             accuracy_label.pack()
