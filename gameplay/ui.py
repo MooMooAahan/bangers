@@ -450,8 +450,8 @@ class UI(object):
                         cure_message += f"• {humanoid_id}\n"
                     cure_message += "\nDoctors have made the ambulance safer!"
                     tk.messagebox.showinfo("Zombie Cure!", cure_message)
-                fp_left = join(data_fp, self.image_left.fp)
-                fp_right = join(data_fp, self.image_right.fp)
+                fp_left = join(data_fp, self.image_left.Filename)
+                fp_right = join(data_fp, self.image_right.Filename)
                 self.game_viewer_left.create_photo(fp_left)
                 self.game_viewer_right.create_photo(fp_right)
 
@@ -750,18 +750,38 @@ class UI(object):
                   command=make_purchase).pack(pady=5)
 
     def print_scenario_side_attributes(self, side):
+
+        if side == 'left':
+            image = self.image_left
+        elif side == 'right':
+            image = self.image_right
+        else:
+            print(f"Unknown side: {side}")
+            return
+
         lines = [f"{side.title()} side:"]
-        for i in range(1, 4):
-            key = f"{side}_humanoid{i}"
-            attrs = self.scenario_humanoid_attributes.get(key, {})
-            if attrs and attrs.get('type', '').strip():
-                lines.append(f"{key}:")
-                lines.append(f"  Type: {attrs['type']}")
-                lines.append(f"  Status: {attrs['status']}")
-                lines.append(f"  Role: {attrs['role']}")
-                lines.append("")  # Blank line between humanoids
+        print(f"Attributes for {side} image:")
+        for idx, humanoid in enumerate(image.humanoids):
+            if humanoid is not None:
+                lines.append(f"  Humanoid {idx}:")
+                lines.append(f"    File path: {humanoid.fp}")
+                lines.append(f"    State: {humanoid.state}")
+                # Add more attributes if you want, e.g. gender, item, etc.
+            else:
+                lines.append(f"  Humanoid {idx}: None")
+
+
+        # for i in range(1, 4):
+        #     key = f"{side}_humanoid{i}"
+        #     attrs = self.scenario_humanoid_attributes.get(key, {})
+        #     if attrs and attrs.get('type', '').strip():
+        #         lines.append(f"{key}:")
+        #         lines.append(f"  Type: {attrs['type']}")
+        #         lines.append(f"  Status: {attrs['status']}")
+        #         lines.append(f"  Role: {attrs['role']}")
+        #         lines.append("")  # Blank line between humanoids
         text = '\n'.join(lines)
-        # Print at different x positions depending on side
+        # # Print at different x positions depending on side
         if side == 'left':
             self.inspect_canvas.create_text(10, 10, anchor='nw', text=text, font=("Arial", 12), tags='text')
             self.left_button_menu.buttons[0].config(state='disabled')

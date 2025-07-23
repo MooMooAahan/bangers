@@ -72,6 +72,8 @@ class ScoreKeeper(object):
         """
 
         for humanoid in image.humanoids:
+            if humanoid is None:
+                continue
             self.logger.append({"humanoid_class":humanoid.state,
                     "humanoid_fp":humanoid.fp,
                     "action":action,
@@ -104,6 +106,8 @@ class ScoreKeeper(object):
         time_bonus = 0
         # No longer add to ambulance_people here; handled by save_side_from_scenario
         for humanoid in image.humanoids:
+            if humanoid is None:
+                continue    
             if humanoid.is_zombie():
                 self.ambulance["zombie"] += 1
                 self.false_saves += 1
@@ -132,6 +136,8 @@ class ScoreKeeper(object):
         
         self.remaining_time -= ActionCost.SQUISH.value
         for humanoid in image.humanoids:
+            if humanoid is None:
+                continue
             if not (humanoid.is_zombie() or humanoid.is_corpse()):
                 self.scorekeeper["killed"] += 1
 
@@ -144,6 +150,8 @@ class ScoreKeeper(object):
         
         self.remaining_time -= ActionCost.SKIP.value
         for humanoid in image.humanoids:
+            if humanoid is None:
+                continue
             if humanoid.is_injured():
                 self.scorekeeper["killed"] += 1
 
@@ -154,15 +162,21 @@ class ScoreKeeper(object):
         self.log(image_right, 'skip')
         self.remaining_time -= ActionCost.SKIP.value
         for humanoid in image_left.humanoids:
+            if humanoid is None:
+                continue
             if humanoid.is_injured():
                 self.scorekeeper["killed"] += 1
         for humanoid in image_right.humanoids:
+            if humanoid is None:
+                continue
             if humanoid.is_injured():
                 self.scorekeeper["killed"] += 1
 
     def inspect(self, image, cost=None):
         """Logs an inspect action and deducts inspect cost."""
         for humanoid in image.humanoids:
+            if humanoid is None:
+                continue
             self.log(image, 'inspect')
 
         if cost is None:
@@ -170,7 +184,7 @@ class ScoreKeeper(object):
         self.remaining_time -= cost
 
     #TODO: fix this to be able to scram images and not humanoids + other number tweaks
-    def scram(self, huamonid, time_cost=None):
+    def scram(self, time_cost=None):
         """
         scrams
         updates scorekeeper
