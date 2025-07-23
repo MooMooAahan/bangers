@@ -6,7 +6,7 @@ from PIL import ImageTk, Image
 
 
 class GameViewer(object):
-    def __init__(self, root, w, h, data_fp, humanoid):
+    def __init__(self, root, w, h, data_fp, image):
         ### Had to change some values here so when you retry it doesnt shrink the images 
         ### when we do the moral machine two image thingy we need to change this but thats for
         ### future somebody :P
@@ -15,7 +15,7 @@ class GameViewer(object):
         self.img_buffer = 30
         # Load the image to get its original height
         from PIL import Image
-        img_path = join(data_fp, humanoid.fp)
+        img_path = join(data_fp, image.Filename) # adjusted to be image.Filename instead of humanoid.fp
         img = Image.open(img_path)
         orig_width, orig_height = img.size
         scale = min(self.img_width / orig_width, 1.0)  # Only downscale, never upscale

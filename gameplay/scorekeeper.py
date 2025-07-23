@@ -79,7 +79,7 @@ class ScoreKeeper(object):
                     "capacity":self.get_current_capacity(),
                     })
         
-    def save_log(self,):
+    def save_log(self):
         """
         Saves a single log.csv file containing the actions that were taken,and the humanoids presented at the time. 
         Note: will overwrite previous logs
@@ -169,14 +169,14 @@ class ScoreKeeper(object):
             cost = ActionCost.INSPECT.value
         self.remaining_time -= cost
 
-    #TODO: fix this to be able to scram images and not humanoids
+    #TODO: fix this to be able to scram images and not humanoids + other number tweaks
     def scram(self, huamonid, time_cost=None):
         """
         scrams
         updates scorekeeper
         """
-        if humanoid:
-            self.log(humanoid, 'scram')
+        if image:
+            self.log(image, 'scram')
         if time_cost is not None:
             self.remaining_time -= time_cost
         else:

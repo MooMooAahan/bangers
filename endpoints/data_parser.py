@@ -3,6 +3,7 @@ import pandas as pd
 from gameplay.humanoid import Humanoid
 from gameplay.enums import State
 import os
+from gameplay.image import Image
 
 
 class DataParser(object):
@@ -20,7 +21,6 @@ class DataParser(object):
         metadata_fp = os.path.join(data_fp, metadata_fn)
         self.fp = data_fp
         self.df = pd.read_csv(metadata_fp)
-        print(self.df) # test for debugging purposes
 
         # Add modified dataset if 
         # alt_modified_fp = os.path.join(data_fp, "metadata.csv")
@@ -54,15 +54,15 @@ class DataParser(object):
         
         # select a random index from unvisited that matches the side
         index = random.choice(self.unvisited)
-        while side != self.df.iloc[index]['Side']:
-            index = random.choice(self.unvisited)
+        # while side != self.df.iloc[index]['Side']:
+        #     index = random.choice(self.unvisited)
         # remove the index from unvisited and add to visited
         self.unvisited.remove(index)
         self.visited.append(index)
 
         datarow = self.df.iloc[index]
 
-        image = Image(fp=datarow['Filename'])
+        image = Image(datarow)
         return image
 
 

@@ -11,8 +11,8 @@ from PIL import Image, ImageTk
 import random
 
 class IntroScreen:
-    def __init__(self, on_start_callback):
-        self.root = tk.Tk()
+    def __init__(self, on_start_callback, root):
+        self.root = tk.Toplevel(root)
         self.root.title("Welcome to SGAI 2025 - Team Splice")
         self.root.geometry("600x350")
         self.root.resizable(False, False)
@@ -32,14 +32,15 @@ class IntroScreen:
         self.root.mainloop()
 
 class UI(object):
-    def __init__(self, data_parser, scorekeeper, data_fp, suggest, log):
+    def __init__(self, data_parser, scorekeeper, data_fp, suggest, log, root):
         # Base window setup
         self.data_parser = data_parser  # Store data_parser reference
         self.data_fp = data_fp  # Store data_fp reference
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         capacity = self.scorekeeper.capacity
         w, h = 1280, 800
-        self.root = tk.Tk()
+        self.root = root
+        self.root.deiconify()  # Ensure the main window is shown
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
         self.root.geometry(f"{w}x{h}")
         self.root.resizable(False, False)
@@ -54,7 +55,6 @@ class UI(object):
   
         #TODO: fix to be getting images, not humanoids
         self.image_left, self.image_right = data_parser.get_random(side='left'), data_parser.get_random(side='right')
-  
         # Track two humanoids for two images
         # self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc, self.scenario_humanoid_attributes = data_parser.get_scenario()
         # print(f"[UI DEBUG] Initial Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
@@ -99,7 +99,14 @@ class UI(object):
                                         data_parser,
                                         scorekeeper)])
         ]
-        self.button_menu = ButtonMenu(self.root, self.user_buttons)
+
+        # Debug and try/except for each major widget
+        try:
+            print("Creating button menu")
+            self.button_menu = ButtonMenu(self.root, self.user_buttons)
+            print("Button menu created")
+        except Exception as e:
+            print("Exception creating button menu:", e)
 
         # Patch: update Scram and Inspect button text after every action
 
@@ -158,20 +165,40 @@ class UI(object):
         center_x = (w - total_width) // 2
         y_top = 100 + 50  # Shift down by 50 pixels
         # Place left and right images side by side
-        self.game_viewer_left = GameViewer(self.root, image_width, h, data_fp, self.image_left)
-        self.game_viewer_right = GameViewer(self.root, image_width, h, data_fp, self.image_right)
+        try:
+            print("Creating game viewers (left and right)")
+            self.game_viewer_left = GameViewer(self.root, image_width, h, data_fp, self.image_left)
+            self.game_viewer_right = GameViewer(self.root, image_width, h, data_fp, self.image_right)
+            print("Game viewers (left and right) created")
+        except Exception as e:
+            print("Exception creating game viewers (left and right):", e)
         # Place the canvases - left on the left, right on the right, both at y_top
-        self.game_viewer_left.canvas.place(x=center_x, y=y_top)
-        self.game_viewer_right.canvas.place(x=center_x + image_width, y=y_top)
+        try:
+            print("Placing game viewers (left and right)")
+            self.game_viewer_left.canvas.place(x=center_x, y=y_top)
+            self.game_viewer_right.canvas.place(x=center_x + image_width, y=y_top)
+            print("Game viewers (left and right) placed")
+        except Exception as e:
+            print("Exception placing game viewers (left and right):", e)
         self.root.bind("<Delete>", self.game_viewer_left.delete_photo)
         self.root.bind("<Delete>", self.game_viewer_right.delete_photo)
         # Display the countdown
         init_h = 12
         init_m = 0
-        self.clock = Clock(self.root, w, h, init_h, init_m)
+        try:
+            print("Creating clock")
+            self.clock = Clock(self.root, w, h, init_h, init_m)
+            print("Clock created")
+        except Exception as e:
+            print("Exception creating clock:", e)
         def get_ambulance_people():
             return [f'{k}: {v}' for k, v in self.scorekeeper.ambulance.items() if v > 0]
-        self.capacity_meter = CapacityMeter(self.root, w, h, capacity, get_ambulance_contents=get_ambulance_people)
+        try:
+            print("Creating capacity meter")
+            self.capacity_meter = CapacityMeter(self.root, w, h, capacity, get_ambulance_contents=get_ambulance_people)
+            print("Capacity meter created")
+        except Exception as e:
+            print("Exception creating capacity meter:", e)
         rules_btn_width = 200
         rules_btn_x = 100
         rules_btn_y = 90
