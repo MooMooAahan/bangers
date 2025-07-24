@@ -34,6 +34,7 @@ class Image(object):
 
         # Extract all relevant fields
         classes = split_or_none(datarow['Class'])
+        roles = split_or_none(datarow['Role'])
         injureds = split_or_none(datarow['Injured'])
         genders = split_or_none(datarow['Gender'])
         items = split_or_none(datarow['Item'])
@@ -54,7 +55,7 @@ class Image(object):
             if self.humanoid_count > i and classes[i] not in (None, "", "nan"):
                 state = get_state(classes[i], injureds[i])
                 self.humanoids.append(
-                    Humanoid(fp=str(datarow['Filename']).strip(), state=state)
+                    Humanoid(fp=str(datarow['Filename']).strip(), state=state, role=roles[i])
                 )
             else:
                 self.humanoids.append(None)  # Null if not present

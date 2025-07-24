@@ -3,6 +3,7 @@ import tkinter as tk
 
 from os.path import join
 from PIL import ImageTk, Image
+import os
 
 
 class GameViewer(object):
@@ -13,9 +14,8 @@ class GameViewer(object):
         # Set image display size
         self.img_width = w  # Use the width parameter passed in (now 300)
         self.img_buffer = 30
-        # Load the image to get its original height
-        from PIL import Image
-        img_path = join(data_fp, image.Filename) # adjusted to be image.Filename instead of humanoid.fp
+        # Normalize the image path to handle any slashes in image.Filename
+        img_path = join(data_fp, *image.Filename.split('/'))
         img = Image.open(img_path)
         orig_width, orig_height = img.size
         scale = min(self.img_width / orig_width, 1.0)  # Only downscale, never upscale
@@ -35,7 +35,9 @@ class GameViewer(object):
     def create_photo(self, fp):
         ##Output needed to be different winfo_width() doesnt give us same sized images
         from PIL import Image
-        img = Image.open(fp)
+        # Normalize the path in case fp contains slashes
+        norm_fp = os.path.join(*fp.split('/'))
+        img = Image.open(norm_fp)
         orig_width, orig_height = img.size
         scale = min(self.img_width / orig_width, 1.0)
         display_width = int(orig_width * scale)
