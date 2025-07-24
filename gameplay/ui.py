@@ -465,8 +465,8 @@ class UI(object):
                         cure_message += f"• {humanoid_id}\n"
                     cure_message += "\nDoctors have made the ambulance safer!"
                     tk.messagebox.showinfo("Zombie Cure!", cure_message)
-                fp_left = join(data_fp, self.image_left.Filename)
-                fp_right = join(data_fp, self.image_right.Filename)
+                fp_left = os.path.join(data_fp, self.image_left.Filename)
+                fp_right = os.path.join(data_fp, self.image_right.Filename)
                 self.game_viewer_left.create_photo(fp_left)
                 self.game_viewer_right.create_photo(fp_right)
 
@@ -569,8 +569,8 @@ class UI(object):
         #TODO: fix to be getting images, not humanoids
         # self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
         # print(f"[UI DEBUG] Reset Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
-        fp_left = join(data_fp, self.image_left.fp)
-        fp_right = join(data_fp, self.image_right.fp)
+        fp_left = os.path.join(data_fp, self.image_left.fp)
+        fp_right = os.path.join(data_fp, self.image_right.fp)
 
         self.game_viewer_left.create_photo(fp_left)
         self.game_viewer_right.create_photo(fp_right)
