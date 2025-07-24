@@ -74,11 +74,11 @@ class TrainInterface(Env):
         self.get_humanoid()
         return self.observation_space
     
-    def get_humanoid(self):
+    def get_humanoid(self): ## TODO: this is currently hardcoded to left side
         """
         gets a random humanoid from the dataparser
         """
-        self.humanoid = self.data_parser.get_random()
+        self.humanoid = self.data_parser.get_random(side = 'left') ## TODO: this is currently hardcoded to left side
         img_ = Image.open(os.path.join(self.img_data_root, self.humanoid.fp))
         self.humanoid_probs = self.predictor.get_probs(img_) 
     

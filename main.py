@@ -10,6 +10,7 @@ from gameplay.scorekeeper import ScoreKeeper
 from gameplay.ui import UI
 from gameplay.enums import ActionCost
 from model_training.rl_training import train
+import tkinter as tk
 
 
 class Main(object):
@@ -24,24 +25,27 @@ class Main(object):
         capacity = 10
         self.scorekeeper = ScoreKeeper(shift_length, capacity)
 
+        # Create a single Tk root window and hide it
+        self.root = tk.Tk()
+        self.root.withdraw()
+
         if mode == 'heuristic':   # Run in background until all humanoids are processed
-            # TODO investigate why this just kills everything (follow humanoid to prediction to actions to scorekeeper)
             simon = HeuristicInterface(None, None, None, display = False)
             while len(self.data_parser.unvisited) > 0:
                 if self.scorekeeper.remaining_time <= 0:
                     print('Ran out of time')
                     break
                 else:
-                    humanoid = self.data_parser.get_random()
-                    action = simon.get_model_suggestion(humanoid, self.scorekeeper.at_capacity())
+                    image = self.data_parser.get_random(side = 'left') ## TODO: this is currently hardcoded to left side
+                    action = simon.get_model_suggestion(image, self.scorekeeper.at_capacity())
                     if action == ActionCost.SKIP:
-                        self.scorekeeper.skip(humanoid)
+                        self.scorekeeper.skip(image)
                     elif action == ActionCost.SQUISH:
-                        self.scorekeeper.squish(humanoid)
+                        self.scorekeeper.squish(image)
                     elif action == ActionCost.SAVE:
-                        self.scorekeeper.save(humanoid)
+                        self.scorekeeper.save(image)
                     elif action == ActionCost.SCRAM:
-                        self.scorekeeper.scram(humanoid)
+                        self.scorekeeper.scram(image)
                     else:
                         raise ValueError("Invalid action suggested")
             if log:
@@ -57,7 +61,7 @@ class Main(object):
                 if simon.scorekeeper.remaining_time <= 0:
                     break
                 else:
-                    humanoid = self.data_parser.get_random()
+                    humanoid = self.data_parser.get_random(side = 'left') ## TODO: this is currently hardcoded to left side
                     simon.act(humanoid)
             self.scorekeeper = simon.scorekeeper
             if log:
@@ -66,9 +70,14 @@ class Main(object):
             print(self.scorekeeper.get_score())
         else: # Launch UI gameplay
             def start_ui():
-                self.ui = UI(self.data_parser, self.scorekeeper, self.data_fp, log=log, suggest=False)
+                print("start_ui called")
+                try:
+                    self.root.deiconify()
+                    self.ui = UI(self.data_parser, self.scorekeeper, self.data_fp, False, log, root=self.root)
+                except Exception as e:
+                    print("Exception in UI creation:", e)
 
-            intro = IntroScreen(start_ui)
+            intro = IntroScreen(start_ui, self.root)
             intro.run()
 
 if __name__ == "__main__":
