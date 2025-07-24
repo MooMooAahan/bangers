@@ -187,6 +187,9 @@ class ScoreKeeper(object):
                         time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
             else:
                 pass
+                """
+        for doubled humanoids, lowk just bashed this out
+                """
         elif humanoid_count == 2:
             if classes[0] == "Zombie":
                 self.ambulance["zombie"] += 1
@@ -475,7 +478,7 @@ class ScoreKeeper(object):
         cure_chance = 0.0
         for person in self.ambulance_people.values():
             if person['role'] == 'Doctor':
-                if person['status'] == 'injured':
+                if person['injured'] == 'True':
                     cure_chance += 0.025
                 else:
                     cure_chance += 0.05
@@ -483,15 +486,19 @@ class ScoreKeeper(object):
             return []  # No cures possible
         cured_humanoids = []
         for humanoid_id, humanoid_data in list(self.ambulance_people.items()):
-            if humanoid_data["class"] == "zombie":
+            if humanoid_data["class"] == "Zombie":
                 if random.random() < cure_chance:
                     # Cure this zombie
-                    humanoid_data["class"] = "human"
+                    humanoid_data["class"] = "Default"
                     humanoid_data["role"] = "Civilian"
                     # Keep status (injured/healthy) the same
                     humanoid_data["original_status"] = "cured_zombie"
                     cured_humanoids.append(humanoid_id)
         return cured_humanoids
+
+
+
+
 
     def save_side_from_scenario(self, side, scenario_humanoid_attributes):
         """
