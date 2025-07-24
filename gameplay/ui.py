@@ -9,6 +9,7 @@ from ui_elements.machine_menu import MachineMenu
 from os.path import join
 from PIL import Image, ImageTk
 import random
+import os  
 
 
 class IntroScreen:
@@ -817,12 +818,14 @@ class UI(object):
         print(f"Attributes for {side} image:")
         for idx, humanoid in enumerate(image.humanoids):
             if humanoid is not None:
-                lines.append(f"  Humanoid {idx}:")
-                lines.append(f"    File path: {humanoid.fp}")
+                lines.append(f"  Humanoid {idx + 1}:")
+                #lines.append(f"    File path: {humanoid.fp}")
                 lines.append(f"    State: {humanoid.state}")
+                lines.append(f"    Role: {humanoid.role}")
                 # Add more attributes if you want, e.g. gender, item, etc.
             else:
-                lines.append(f"  Humanoid {idx}: None")
+                pass
+                # lines.append(f"  Humanoid {idx}: None")
 
 
         # for i in range(1, 4):
