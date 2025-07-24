@@ -39,7 +39,7 @@ class UI(object):
         self.data_fp = data_fp  # Store data_fp reference
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         capacity = self.scorekeeper.capacity
-        self.false_saves = 0
+        self.fasle_saves = 0
         w, h = 1280, 800
         self.root = root
         self.root.deiconify()  # Ensure the main window is shown
