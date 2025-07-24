@@ -10,6 +10,7 @@ from os.path import join
 from PIL import Image, ImageTk
 import random
 
+
 class IntroScreen:
     def __init__(self, on_start_callback, root):
         self.root = tk.Toplevel(root)
@@ -38,12 +39,14 @@ class UI(object):
         self.data_fp = data_fp  # Store data_fp reference
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         capacity = self.scorekeeper.capacity
+        self.fasle_saves = 0
         w, h = 1280, 800
         self.root = root
         self.root.deiconify()  # Ensure the main window is shown
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
         self.root.geometry(f"{w}x{h}")
         self.root.resizable(False, False)
+        self.fasle_saves = 0 
         # Time management variables
         self.total_time = 720  # 12 hours in minutes
         # self.elapsed_time removed; time is managed by ScoreKeeper
@@ -406,10 +409,20 @@ class UI(object):
             killed_label.pack()
             saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score()['saved']}", font=("Arial", 12))
             saved_label.pack()
+            
+        
             score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
             score_label.pack()
+
+        
+
             accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
             accuracy_label.pack()
+            zombies_saved_score_label = tk.Label(self.final_score_frame,
+                text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
+                font=("Arial", 12))
+            zombies_saved_score_label.pack()
+
             # Replay button
             self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
             self.replay_btn.pack(pady=(10, 0))
@@ -527,6 +540,7 @@ class UI(object):
                 pass
             self.replay_btn = None
         self.movement_count = 0  # Reset movement counter
+        self.false_saves = 0
         self.route_complete = False  # Reset route complete flag
         self.movement_label.config(text="Route Progress: 0/20")  # Reset movement label
         self.scorekeeper.reset()
@@ -690,8 +704,14 @@ class UI(object):
         saved_label.pack()
         score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
         score_label.pack()
+        zombie_ambu= tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.fasle_saves}", font=("Arial", 12))
+        zombie_ambu.pack()
         accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
         accuracy_label.pack()
+        zombies_saved_score_label = tk.Label(self.final_score_frame,
+                text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
+                font=("Arial", 12))
+        zombies_saved_score_label.pack()
         # Replay button
         self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(self.data_parser, self.data_fp))
         self.replay_btn.pack(pady=(10, 0))

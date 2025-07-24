@@ -22,6 +22,8 @@ timing system's global variables
 TIME_PENALTY_FOR_ZOMBIE = -15 #penalty for saving a zombie
 TIME_BONUS_FOR_SAVING_HUMAN = +15 #time bonus for saving a human
 
+
+
 class ScoreKeeper(object):
     def __init__(self, shift_len, capacity):
         
@@ -62,6 +64,7 @@ class ScoreKeeper(object):
         
         self.all_logs.append(self.logger)
         self.logger = []
+        
     
     def log(self, image, action):
         """
@@ -514,4 +517,8 @@ class ScoreKeeper(object):
                     "status": attrs['status'],
                     "role": attrs['role'],
                     "original_status": attrs['status']
+
                 }
+            if attrs['type'] == 'zombie':
+                self.false_saves += 1
+            
