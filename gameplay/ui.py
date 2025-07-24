@@ -10,9 +10,10 @@ from os.path import join
 from PIL import Image, ImageTk
 import random
 
+
 class IntroScreen:
-    def __init__(self, on_start_callback):
-        self.root = tk.Tk()
+    def __init__(self, on_start_callback, root):
+        self.root = tk.Toplevel(root)
         self.root.title("Welcome to SGAI 2025 - Team Splice")
         self.root.geometry("600x350")
         self.root.resizable(False, False)
@@ -32,14 +33,16 @@ class IntroScreen:
         self.root.mainloop()
 
 class UI(object):
-    def __init__(self, data_parser, scorekeeper, data_fp, suggest, log):
+    def __init__(self, data_parser, scorekeeper, data_fp, suggest, log, root):
         # Base window setup
         self.data_parser = data_parser  # Store data_parser reference
         self.data_fp = data_fp  # Store data_fp reference
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         capacity = self.scorekeeper.capacity
+        self.false_saves = 0
         w, h = 1280, 800
-        self.root = tk.Tk()
+        self.root = root
+        self.root.deiconify()  # Ensure the main window is shown
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
         self.root.geometry(f"{w}x{h}")
         self.root.resizable(False, False)
@@ -53,9 +56,11 @@ class UI(object):
         self.movement_count = 0  # Track number of ambulance movements
         self.route_complete = False  # Flag to track if route is complete
   
+        #TODO: fix to be getting images, not humanoids
+        self.image_left, self.image_right = data_parser.get_random(side='left'), data_parser.get_random(side='right')
         # Track two humanoids for two images
-        self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc, self.scenario_humanoid_attributes = data_parser.get_scenario()
-        print(f"[UI DEBUG] Initial Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
+        # self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc, self.scenario_humanoid_attributes = data_parser.get_scenario()
+        # print(f"[UI DEBUG] Initial Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
         self.log = log
         #replay button
         self.replay_btn = None
@@ -77,7 +82,7 @@ class UI(object):
         # We'll need to update the button text dynamically, so store the button objects
         self.user_buttons = [
             ("Skip (15 mins)", lambda: [
-                                  scorekeeper.skip_both(self.humanoid_left, self.humanoid_right),
+                                  scorekeeper.skip_both(self.image_left, self.image_right),
                                   self.move_ambulance_by_cell(),
                                   self.update_ui(scorekeeper),
                                   self.get_next(
@@ -89,7 +94,7 @@ class UI(object):
             ("Save (30 mins)", lambda: self.show_action_popup("Save")),
             (get_scram_text(), lambda: [
                                     print(f"[DEBUG] Scram penalty applied: {get_scram_time()} minutes"),
-                                    scorekeeper.scram(time_cost=get_scram_time()),
+                                    scorekeeper.scram(self.image_left, self.image_right, time_cost=get_scram_time()),
                                     self.move_ambulance_by_cell(),
                                     self.update_ui(scorekeeper),
                                     self.get_next(
@@ -97,7 +102,14 @@ class UI(object):
                                         data_parser,
                                         scorekeeper)])
         ]
-        self.button_menu = ButtonMenu(self.root, self.user_buttons)
+
+        # Debug and try/except for each major widget
+        try:
+            print("Creating button menu")
+            self.button_menu = ButtonMenu(self.root, self.user_buttons)
+            print("Button menu created")
+        except Exception as e:
+            print("Exception creating button menu:", e)
 
         # Patch: update Scram and Inspect button text after every action
 
@@ -118,9 +130,9 @@ class UI(object):
         # Add extra button menu with three buttons
         # Save references to left/right button actions for map movement
         self.left_action_callbacks = [
-            lambda: [self.print_scenario_side_attributes('left'), self.scorekeeper.inspect(self.humanoid_left, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0)), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Left
-            lambda: [self.scorekeeper.squish(self.humanoid_left), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)],  # Squish Left
-            lambda: [self.scorekeeper.save(self.humanoid_left), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)]  # Save Left
+            lambda: [self.print_scenario_side_attributes('left'), self.scorekeeper.inspect(self.image_left, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0)), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Left
+            lambda: [self.scorekeeper.squish(self.image_left), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)],  # Squish Left
+            lambda: [self.scorekeeper.save(self.image_left), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)]  # Save Left
         ]
         self.left_button_menu = LeftButtonMenu(self.root, [
             ("Inspect Left", self.left_action_callbacks[0]),
@@ -129,9 +141,9 @@ class UI(object):
         ])
 
         self.right_action_callbacks = [
-            lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.humanoid_right, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0)), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
-            lambda: [self.scorekeeper.squish(self.humanoid_right), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)],  # Squish Right
-            lambda: [self.scorekeeper.save(self.humanoid_right), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)]  # Save Right
+            lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0)), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
+            lambda: [self.scorekeeper.squish(self.image_right), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)],  # Squish Right
+            lambda: [self.scorekeeper.save(self.image_right), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)]  # Save Right
         ]
         self.right_button_menu = RightButtonMenu(self.root, [
             ("Inspect Right", self.right_action_callbacks[0]),
@@ -140,8 +152,8 @@ class UI(object):
         ])
         if suggest:
             machine_buttons = [
-                ("Suggest", lambda: [self.machine_interface.suggest(self.humanoid_left)]),
-                ("Act", lambda: [self.machine_interface.act(scorekeeper, self.humanoid_left),
+                ("Suggest", lambda: [self.machine_interface.suggest(self.image_left)]),
+                ("Act", lambda: [self.machine_interface.act(scorekeeper, self.image_left),
                                  self.update_ui(scorekeeper),
                                  self.get_next(data_fp, data_parser, scorekeeper)])
             ]
@@ -156,20 +168,40 @@ class UI(object):
         center_x = (w - total_width) // 2
         y_top = 100 + 50  # Shift down by 50 pixels
         # Place left and right images side by side
-        self.game_viewer_left = GameViewer(self.root, image_width, h, data_fp, self.humanoid_left)
-        self.game_viewer_right = GameViewer(self.root, image_width, h, data_fp, self.humanoid_right)
+        try:
+            print("Creating game viewers (left and right)")
+            self.game_viewer_left = GameViewer(self.root, image_width, h, data_fp, self.image_left)
+            self.game_viewer_right = GameViewer(self.root, image_width, h, data_fp, self.image_right)
+            print("Game viewers (left and right) created")
+        except Exception as e:
+            print("Exception creating game viewers (left and right):", e)
         # Place the canvases - left on the left, right on the right, both at y_top
-        self.game_viewer_left.canvas.place(x=center_x, y=y_top)
-        self.game_viewer_right.canvas.place(x=center_x + image_width, y=y_top)
+        try:
+            print("Placing game viewers (left and right)")
+            self.game_viewer_left.canvas.place(x=center_x, y=y_top)
+            self.game_viewer_right.canvas.place(x=center_x + image_width, y=y_top)
+            print("Game viewers (left and right) placed")
+        except Exception as e:
+            print("Exception placing game viewers (left and right):", e)
         self.root.bind("<Delete>", self.game_viewer_left.delete_photo)
         self.root.bind("<Delete>", self.game_viewer_right.delete_photo)
         # Display the countdown
         init_h = 12
         init_m = 0
-        self.clock = Clock(self.root, w, h, init_h, init_m)
+        try:
+            print("Creating clock")
+            self.clock = Clock(self.root, w, h, init_h, init_m)
+            print("Clock created")
+        except Exception as e:
+            print("Exception creating clock:", e)
         def get_ambulance_people():
             return [f'{k}: {v}' for k, v in self.scorekeeper.ambulance.items() if v > 0]
-        self.capacity_meter = CapacityMeter(self.root, w, h, capacity, get_ambulance_contents=get_ambulance_people)
+        try:
+            print("Creating capacity meter")
+            self.capacity_meter = CapacityMeter(self.root, w, h, capacity, get_ambulance_contents=get_ambulance_people)
+            print("Capacity meter created")
+        except Exception as e:
+            print("Exception creating capacity meter:", e)
         rules_btn_width = 200
         rules_btn_x = 100
         rules_btn_y = 90
@@ -401,8 +433,10 @@ class UI(object):
         else:
             # Only load new images if route is not complete
             if not self.route_complete:
-                self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc, self.scenario_humanoid_attributes = data_parser.get_scenario()
-                print(f"[UI DEBUG] Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
+                self.image_left, self.image_right = data_parser.get_random(side='left'), data_parser.get_random(side='right')
+  
+                # self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc, self.scenario_humanoid_attributes = data_parser.get_scenario()
+                # print(f"[UI DEBUG] Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
                 # Clear inspect canvas text
                 self.inspect_canvas.delete('text')
                 # Process zombie infections at the start of each turn
@@ -431,8 +465,8 @@ class UI(object):
                         cure_message += f"• {humanoid_id}\n"
                     cure_message += "\nDoctors have made the ambulance safer!"
                     tk.messagebox.showinfo("Zombie Cure!", cure_message)
-                fp_left = join(data_fp, self.humanoid_left.fp)
-                fp_right = join(data_fp, self.humanoid_right.fp)
+                fp_left = join(data_fp, self.image_left.Filename)
+                fp_right = join(data_fp, self.image_right.Filename)
                 self.game_viewer_left.create_photo(fp_left)
                 self.game_viewer_right.create_photo(fp_right)
 
@@ -506,6 +540,7 @@ class UI(object):
                 pass
             self.replay_btn = None
         self.movement_count = 0  # Reset movement counter
+        self.false_saves = 0
         self.route_complete = False  # Reset route complete flag
         self.movement_label.config(text="Route Progress: 0/20")  # Reset movement label
         self.scorekeeper.reset()
@@ -530,10 +565,13 @@ class UI(object):
         self.rules_btn.config(state='normal')
         self.upgrade_btn.config(state='normal')
         # 4. Get a new scenario
-        self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc, self.scenario_humanoid_attributes = data_parser.get_scenario()
-        print(f"[UI DEBUG] Reset Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
-        fp_left = join(data_fp, self.humanoid_left.fp)
-        fp_right = join(data_fp, self.humanoid_right.fp)
+        self.image_left, self.image_right = data_parser.get_random(side='left'), data_parser.get_random(side='right')
+        #TODO: fix to be getting images, not humanoids
+        # self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
+        # print(f"[UI DEBUG] Reset Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
+        fp_left = join(data_fp, self.image_left.fp)
+        fp_right = join(data_fp, self.image_right.fp)
+
         self.game_viewer_left.create_photo(fp_left)
         self.game_viewer_right.create_photo(fp_right)
         self.update_ui(self.scorekeeper)
@@ -670,6 +708,10 @@ class UI(object):
         zombie_ambu.pack()
         accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
         accuracy_label.pack()
+        zombies_saved_score_label = tk.Label(self.final_score_frame,
+                text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
+                font=("Arial", 12))
+        zombies_saved_score_label.pack()
         # Replay button
         self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(self.data_parser, self.data_fp))
         self.replay_btn.pack(pady=(10, 0))
@@ -749,23 +791,51 @@ class UI(object):
                     shop.destroy()
                     self.show_upgrade_shop()  # Refresh the popup
 
-            btn_text = f"{upgrade_label} (Level {level}) - ${cost}"
-            tk.Button(shop, text=btn_text, font=("Arial", 12),
-                  command=make_purchase).pack(pady=5)
+            btn_text = f"{upgrade_label} (Level {level})"
+            if level >= self.scorekeeper.upgrade_manager.upgrades[name]["max"]:
+                btn_text += " (MAX)"
+                btn = tk.Button(shop, text=btn_text, font=("Arial", 12),
+                    state='disabled',bg="#dddddd", disabledforeground="gray")
+            else:
+                btn_text += f" - ${cost}"
+                btn = tk.Button(shop, text=btn_text, font=("Arial", 12),
+                    command=make_purchase)
+
+            btn.pack(pady=5)
 
     def print_scenario_side_attributes(self, side):
+
+        if side == 'left':
+            image = self.image_left
+        elif side == 'right':
+            image = self.image_right
+        else:
+            print(f"Unknown side: {side}")
+            return
+
         lines = [f"{side.title()} side:"]
-        for i in range(1, 4):
-            key = f"{side}_humanoid{i}"
-            attrs = self.scenario_humanoid_attributes.get(key, {})
-            if attrs and attrs.get('type', '').strip():
-                lines.append(f"{key}:")
-                lines.append(f"  Type: {attrs['type']}")
-                lines.append(f"  Status: {attrs['status']}")
-                lines.append(f"  Role: {attrs['role']}")
-                lines.append("")  # Blank line between humanoids
+        print(f"Attributes for {side} image:")
+        for idx, humanoid in enumerate(image.humanoids):
+            if humanoid is not None:
+                lines.append(f"  Humanoid {idx}:")
+                lines.append(f"    File path: {humanoid.fp}")
+                lines.append(f"    State: {humanoid.state}")
+                # Add more attributes if you want, e.g. gender, item, etc.
+            else:
+                lines.append(f"  Humanoid {idx}: None")
+
+
+        # for i in range(1, 4):
+        #     key = f"{side}_humanoid{i}"
+        #     attrs = self.scenario_humanoid_attributes.get(key, {})
+        #     if attrs and attrs.get('type', '').strip():
+        #         lines.append(f"{key}:")
+        #         lines.append(f"  Type: {attrs['type']}")
+        #         lines.append(f"  Status: {attrs['status']}")
+        #         lines.append(f"  Role: {attrs['role']}")
+        #         lines.append("")  # Blank line between humanoids
         text = '\n'.join(lines)
-        # Print at different x positions depending on side
+        # # Print at different x positions depending on side
         if side == 'left':
             self.inspect_canvas.create_text(10, 10, anchor='nw', text=text, font=("Arial", 12), tags='text')
             self.left_button_menu.buttons[0].config(state='disabled')    
