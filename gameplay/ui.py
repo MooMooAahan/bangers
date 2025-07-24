@@ -740,7 +740,7 @@ class UI(object):
             if level >= self.scorekeeper.upgrade_manager.upgrades[name]["max"]:
                 btn_text += " (MAX)"
                 btn = tk.Button(shop, text=btn_text, font=("Arial", 12),
-                    state='disabled', disabledforeground="gray")
+                    state='disabled',bg="#dddddd", disabledforeground="gray")
             else:
                 btn_text += f" - ${cost}"
                 btn = tk.Button(shop, text=btn_text, font=("Arial", 12),
