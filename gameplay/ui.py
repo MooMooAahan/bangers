@@ -736,9 +736,17 @@ class UI(object):
                     shop.destroy()
                     self.show_upgrade_shop()  # Refresh the popup
 
-            btn_text = f"{upgrade_label} (Level {level}) - ${cost}"
-            tk.Button(shop, text=btn_text, font=("Arial", 12),
-                  command=make_purchase).pack(pady=5)
+            btn_text = f"{upgrade_label} (Level {level})"
+            if level >= self.scorekeeper.upgrade_manager.upgrades[name]["max"]:
+                btn_text += " (MAX)"
+                btn = tk.Button(shop, text=btn_text, font=("Arial", 12),
+                    state='disabled', disabledforeground="gray")
+            else:
+                btn_text += f" - ${cost}"
+                btn = tk.Button(shop, text=btn_text, font=("Arial", 12),
+                    command=make_purchase)
+
+            btn.pack(pady=5)
 
     def print_scenario_side_attributes(self, side):
         lines = [f"{side.title()} side:"]
