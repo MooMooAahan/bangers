@@ -162,6 +162,10 @@ class ScoreKeeper(object):
             classes[1] = classes[1].capitalize()
             injuries = status_val.split('|')
             roles = roles_val.split('|')
+            if classes[0] == "Zombie":
+                roles[0] = "Blank"
+            if classes[1] == "Zombie":
+                roles[1] = "Blank"
             self.ambulance_people[filename + "_1"] = {
                 "class": classes[0],
                 "injured": injuries[0],
@@ -264,31 +268,30 @@ class ScoreKeeper(object):
             else:
                 import tkinter.messagebox
                 tkinter.messagebox.showinfo('Police Action', 'There were no zombies for your police to kill!')
-        elif roles[0] == "Police" or roles[1] == "Police":
+        elif humanoid_count == 2:
+            if roles[0] == "Police" or roles[1] == "Police":
                                 # Police effect: if you pick up a police, kill 1 zombie in the ambulance
-            zombie_removed = False
-            for humanoid_id, person in list(self.ambulance_people.items()):
-                if person.get('class') == 'Zombie':
-                    del self.ambulance_people[humanoid_id]
-                    zombie_removed = True
-                    print(f'[DEBUG] Police picked up: Removed zombie entry {humanoid_id} from ambulance_people.')
-                    break
-            if zombie_removed:
-                if self.ambulance['zombie'] > 0:
-                    self.ambulance['zombie'] -= 1
-                    self.scorekeeper['zombie_killed'] += 1
-                    print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
-                # Show popup message
-                try:
+                zombie_removed = False
+                for humanoid_id, person in list(self.ambulance_people.items()):
+                    if person.get('class') == 'Zombie':
+                        del self.ambulance_people[humanoid_id]
+                        zombie_removed = True
+                        print(f'[DEBUG] Police picked up: Removed zombie entry {humanoid_id} from ambulance_people.')
+                        break
+                if zombie_removed:
+                    if self.ambulance['zombie'] > 0:
+                        self.ambulance['zombie'] -= 1
+                        self.scorekeeper['zombie_killed'] += 1
+                        print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
+                    # Show popup message
+                    try:
+                        import tkinter.messagebox
+                        tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
+                    except Exception as e:
+                        print(f'[DEBUG] Could not show popup: {e}')
+                else:
                     import tkinter.messagebox
-                    tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
-                except Exception as e:
-                    print(f'[DEBUG] Could not show popup: {e}')
-            else:
-                import tkinter.messagebox
-                tkinter.messagebox.showinfo('Police Action', 'There were no zombies for your police to kill!')    
-
-
+                    tkinter.messagebox.showinfo('Police Action', 'There were no zombies for your police to kill!')    
 
         else: 
             pass
