@@ -7,6 +7,7 @@ class Image(object):
     Stores all metadata for an image and references to up to two Humanoid objects.
     """
     def __init__(self, datarow):
+        self.datarow = datarow  # Store the original datarow for later access
         # Store all metadata fields as attributes
         for col in datarow.index:
             val = datarow[col]

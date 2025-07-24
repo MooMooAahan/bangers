@@ -30,7 +30,6 @@ class DataParser(object):
         self.visited = []
         # Standardize 'Class' and 'Injured' columns for consistent filtering
         self.df['Class'] = self.df['Class'].astype(str).str.strip().str.capitalize()
-        self.df['Injured'] = self.df['Injured'].map(lambda x: True if str(x).strip().lower() == 'true' else False)
 
     def reset(self):
         """
@@ -72,5 +71,6 @@ class DataParser(object):
 
         image = Image(datarow)
         return image
+        return datarow
 
 

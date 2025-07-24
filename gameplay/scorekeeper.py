@@ -134,6 +134,37 @@ class ScoreKeeper(object):
         self.remaining_time -= ActionCost.SAVE.value
         time_bonus = 0
         # No longer add to ambulance_people here; handled by save_side_from_scenario
+        filename = image.datarow['Filename']
+        class_val = image.datarow['Class']
+        humanoid_count = image.datarow['HumanoidCount']
+        status_val = image.datarow['Injured']
+        print(f"[DEBUG] Fileaaname: {filename}, Class: {class_val}, Status: {status_val}, HumanoidCount: {humanoid_count}")
+
+        if humanoid_count == 1:
+            self.ambulance_people[filename] = {
+                "class": class_val,
+                "injured": status_val,
+                "role": "Civilian"
+            }
+            print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
+        elif humanoid_count == 2:
+            classes = class_val.split('|')
+            injuries = status_val.split('|')
+            self.ambulance_people[filename + "_1"] = {
+                "class": classes[0],
+                "injured": injuries[0],
+                "role": "Civilian"
+            }
+            self.ambulance_people[filename + "_2"] = {
+                "class": classes[1],
+                "injured": injuries[1],
+                "role": "Civilian"
+            }
+        else:
+            pass
+        
+        print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
+
         for humanoid in image.humanoids:
             if humanoid is None:
                 continue    
