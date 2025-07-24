@@ -11,10 +11,11 @@ MAP_ACTION_INT_TO_STR = [s.value for s in ActionState]
 scoring system's global variables
 """
 # Score for each type of person at the end of the game
-SCORE_HEALTHY = 10
-SCORE_INJURED = 5
-SCORE_ZOMBIE = -20
+SCORE_HEALTHY = 20
+SCORE_INJURED = 10
+SCORE_ZOMBIE = -15
 SCORE_KILLED = -10
+SCORE_SAVED = 20
 """
 timing system's global variables
 """
@@ -59,6 +60,10 @@ class ScoreKeeper(object):
         self.scorekeeper = {
             "killed": 0,
             "saved": 0,
+            "zombie_cured": 0,
+            "human_infected": 0,
+            "zombie_killed": 0,
+            "human_killed": 0
         }
         self.remaining_time = int(self.shift_len)  # minutes
         
@@ -148,7 +153,7 @@ class ScoreKeeper(object):
                 "class": class_val,
                 "injured": status_val,
                 "role": "Civilian",
-                "original_status": "injured" if status_val == 'True' else "healthy"
+                "original_status": class_val
             }
             print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
         elif humanoid_count == 2:
@@ -159,13 +164,13 @@ class ScoreKeeper(object):
                 "class": classes[0],
                 "injured": injuries[0],
                 "role": "Civilian",
-                "original_status": "injured" if injuries[0] == 'True' else "healthy"
+                "original_status": classes[0]
             }
             self.ambulance_people[filename + "_2"] = {
                 "class": classes[1],
                 "injured": injuries[1],
                 "role": "Civilian",
-                "original_status": "injured" if injuries[1] == 'True' else "healthy"
+                "original_status": classes[1]
             }
         else:
             pass
@@ -243,13 +248,40 @@ class ScoreKeeper(object):
         updates scorekeeper
         """
         self.log(image, 'squish')
-        
+
+        filename = image.datarow['Filename']
+        class_val = image.datarow['Class']
+        humanoid_count = image.datarow['HumanoidCount']
+        status_val = image.datarow['Injured']
+
         self.remaining_time -= ActionCost.SQUISH.value
-        for humanoid in image.humanoids:
-            if humanoid is None:
-                continue
-            if not (humanoid.is_zombie() or humanoid.is_corpse()):
-                self.scorekeeper["killed"] += 1
+        if humanoid_count == 1:
+            if class_val == "Zombie":
+                self.scorekeeper["zombie_killed"] += 1
+            elif class_val == "Default":
+                self.scorekeeper["human_killed"] += 1
+            else:
+                pass
+        
+        elif humanoid_count == 2:
+            classes = class_val.split('|')
+            classes[1] = classes[1].capitalize()
+            injuries = status_val.split('|')
+            if classes[0] == "Zombie":
+                self.scorekeeper["zombie_killed"] += 1
+            elif classes[0] == "Default":
+                self.scorekeeper["human_killed"] += 1
+            else:
+                pass
+
+            if classes[1] == "Zombie":
+                self.scorekeeper["zombie_killed"] += 1
+            elif classes[1] == "Default":
+                self.scorekeeper["human_killed"] += 1
+            else:
+                pass
+        else:
+            pass
 
     def skip(self, image):
         """
@@ -309,9 +341,6 @@ class ScoreKeeper(object):
         self.scorekeeper["killed"] += self.ambulance["zombie"]
         self.scorekeeper["saved"] += self.ambulance["injured"] + self.ambulance["healthy"]
 
-        self.remaining_time += self.ambulance_time_adjustment
-        self.ambulance_time_adjustment = 0
-       
         if hasattr(self, "upgrade_manager"):
             num_humans = self.ambulance["healthy"] + self.ambulance["injured"]
             earnings = num_humans * 10
@@ -385,7 +414,7 @@ class ScoreKeeper(object):
         self.scram()
         return self.scorekeeper
     
-    def get_final_score(self):
+    def get_final_score(self, route_complete=True):
         """
         Calculate the final score based on saved/killed and also on time remaining
         """
@@ -394,7 +423,14 @@ class ScoreKeeper(object):
         score += self.ambulance["injured"] * SCORE_INJURED
         score += self.ambulance["zombie"] * SCORE_ZOMBIE
         score += self.scorekeeper["killed"] * SCORE_KILLED
+        score += self.scorekeeper["saved"] * SCORE_SAVED
+        score += self.scorekeeper["zombie_cured"] * 25
+        score += self.scorekeeper["human_infected"] * -15
+        score += self.scorekeeper["zombie_killed"] * 10
+        score += self.scorekeeper["human_killed"] * -10
         score += self.remaining_time
+        if not route_complete:
+            score -= 500
         return score
     
     def get_accuracy(self):
@@ -457,15 +493,15 @@ class ScoreKeeper(object):
                 if random.random() < infection_chance:
                     # Turn this human into a zombie
                     humanoid_data["class"] = "Zombie"
-                    humanoid_data["status"] = "True"
                     humanoid_data["role"] = "blank"
 
                     # Update ambulance counts
-                    if humanoid_data.get("original_status") == "injured":
+                    if humanoid_data.get("status") == "True":
                         self.ambulance["injured"] -= 1
                     else:
                         self.ambulance["healthy"] -= 1
                     self.ambulance["zombie"] += 1
+                    self.scorekeeper["human_infected"] += 1
 
                     infected_humanoids.append(humanoid_id)
 
@@ -496,6 +532,7 @@ class ScoreKeeper(object):
                     humanoid_data["role"] = "Civilian"
                     # Keep status (injured/healthy) the same
                     humanoid_data["original_status"] = "cured_zombie"
+                    self.scorekeeper["zombie_cured"] += 1
                     cured_humanoids.append(humanoid_id)
         return cured_humanoids
 

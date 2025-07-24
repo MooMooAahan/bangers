@@ -45,7 +45,8 @@ class Main(object):
                     elif action == ActionCost.SAVE:
                         self.scorekeeper.save(image)
                     elif action == ActionCost.SCRAM:
-                        self.scorekeeper.scram(image)
+                        # Pass image for both left and right (or duplicate if only one side in heuristic mode)
+                        self.scorekeeper.scram(image, image)
                     else:
                         raise ValueError("Invalid action suggested")
             if log:

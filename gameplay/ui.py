@@ -385,12 +385,14 @@ class UI(object):
         remaining_time = scorekeeper.remaining_time
         # Ran out of humanoids or time? End game
         if remaining == 0 or remaining_time <= 0:
+            self.update_ui(scorekeeper)  # Ensure clock and UI are updated before game end
             if self.log:
                 scorekeeper.save_log()
             self.capacity_meter.update_fill(0)
             self.game_viewer_left.delete_photo(None)
             self.game_viewer_right.delete_photo(None)
-            final_score = scorekeeper.get_final_score()
+            route_complete = getattr(self, 'movement_count', 0) >= 20 if hasattr(self, 'movement_count') else False
+            final_score = scorekeeper.get_final_score(route_complete=route_complete)
             accuracy = round(scorekeeper.get_accuracy() * 100, 2)
             # Remove any previous final score frame
             if hasattr(self, 'final_score_frame') and self.final_score_frame:
@@ -398,12 +400,20 @@ class UI(object):
             # Create a new frame for the final score block
             self.final_score_frame = tk.Frame(self.root, width=300, height=300)
             self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
-            # 'Game Complete' label
-            game_complete_label = tk.Label(self.final_score_frame, text="Game Complete", font=("Arial", 40))
-            game_complete_label.pack(pady=(10, 5))
+            # 'Game Complete' label 
+            if route_complete:
+                final_score = self.scorekeeper.get_final_score(route_complete=True)
+                game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40))
+                game_complete_label.pack(pady=(10, 5))
+                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16))
+                final_score_label.pack(pady=(5, 2))
+            else:
+                final_score = self.scorekeeper.get_final_score(route_complete=False)
+                game_complete_label = tk.Label(self.final_score_frame, text="Game Complete", font=("Arial", 40))
+                game_complete_label.pack(pady=(10, 5))
+                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16))
+                final_score_label.pack(pady=(5, 2))
             # 'Final Score' label
-            final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE", font=("Arial", 16))
-            final_score_label.pack(pady=(5, 2))
             # Scoring details
             killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score()['killed']}", font=("Arial", 12))
             killed_label.pack()
@@ -477,41 +487,51 @@ class UI(object):
         """Check if game should end due to time running out"""
         remaining_time = scorekeeper.remaining_time
         if remaining_time <= 0:
+            self.update_ui(scorekeeper)  # Ensure clock and UI are updated before end screen
             if self.log:
                 scorekeeper.save_log()
             self.capacity_meter.update_fill(0)
             self.game_viewer_left.delete_photo(None)
             self.game_viewer_right.delete_photo(None)
-            
-            final_score = scorekeeper.get_final_score()
+            route_complete = getattr(self, 'movement_count', 0) >= 20 if hasattr(self, 'movement_count') else False
             accuracy = round(scorekeeper.get_accuracy() * 100, 2)
-            self.game_viewer_left.display_score(scorekeeper.get_score(), final_score, accuracy)
-            # Clear the right box and show a message
+            # Remove any previous final score frame
+            if hasattr(self, 'final_score_frame') and self.final_score_frame:
+                self.final_score_frame.destroy()
+            # Create a new frame for the final score block
+            self.final_score_frame = tk.Frame(self.root, width=300, height=300)
+            self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
+            # End screen label
+            if route_complete:
+                final_score = self.scorekeeper.get_final_score(route_complete=True)
+                end_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40))
+                end_label.pack(pady=(10, 5))
+                final_score_label = tk.Label(self.final_score_frame, text="FIssssNAL SCORE: " + f" {final_score}", font=("Arial", 16))
+                final_score_label.pack(pady=(5, 2))
+            else:
+                final_score = self.scorekeeper.get_final_score(route_complete=False)
+                end_label = tk.Label(self.final_score_frame, text="Gamerr Complete", font=("Arial", 40))
+                end_label.pack(pady=(10, 5))
+                final_score_label = tk.Label(self.final_score_frame, text="FINssssAL SCORE: " + f" {final_score}", font=("Arial", 16))
+                final_score_label.pack(pady=(5, 2))
+            # Scoring details
+            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score()['killed']}", font=("Arial", 12))
+            killed_label.pack()
+            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score()['saved']}", font=("Arial", 12))
+            saved_label.pack()
+            score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
+            score_label.pack()
+            zombies_saved_score_label = tk.Label(self.final_score_frame,
+                text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
+                font=("Arial", 12))
+            zombies_saved_score_label.pack()
+            accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
+            accuracy_label.pack()
+            # Replay button
+            self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
+            self.replay_btn.pack(pady=(10, 0))
+            # Remove any content from the right canvas
             self.game_viewer_right.canvas.delete('all')
-            # Get canvas dimensions for positioning
-            canvas_width = self.game_viewer_right.canvas.winfo_width()
-            canvas_height = self.game_viewer_right.canvas.winfo_height()
-            center_x = canvas_width // 2
-            center_y = canvas_height // 2
-            
-            # Create "Game Complete" text
-            self.game_viewer_right.canvas.create_text(
-                center_x,
-                center_y,
-                text="Game Complete",
-                font=("Arial", 20),
-                fill="black"
-            )
-            
-            # Place replay button on top of the "Game Complete" text
-            # Get the canvas position on the window
-            canvas_x = self.game_viewer_right.canvas.winfo_x()
-            canvas_y = self.game_viewer_right.canvas.winfo_y()
-            # Position button at the center of the right canvas
-            button_x = canvas_x + center_x - 50  # Center the button (assuming button width ~100px)
-            button_y = canvas_y + center_y + 30  # Position below the text
-            self.replay_btn = tk.Button(self.root, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
-            self.replay_btn.place(x=button_x, y=button_y)
             # Disable all buttons when game ends
             self.disable_buttons_if_insufficient_time(0, 0, False)
 
@@ -678,12 +698,13 @@ class UI(object):
     def trigger_end_screen(self):
         """Trigger the end screen when 20 movements are reached"""
         self.route_complete = True  # Set flag to prevent new images from loading
+        self.update_ui(self.scorekeeper)  # Ensure clock and UI are updated before end screen
         if self.log:
             self.scorekeeper.save_log()
         self.capacity_meter.update_fill(0)
         self.game_viewer_left.delete_photo(None)
         self.game_viewer_right.delete_photo(None)
-        final_score = self.scorekeeper.get_final_score()
+        final_score = self.scorekeeper.get_final_score(route_complete=True)
         accuracy = round(self.scorekeeper.get_accuracy() * 100, 2)
         # Remove any previous final score frame
         if hasattr(self, 'final_score_frame') and self.final_score_frame:
@@ -695,7 +716,7 @@ class UI(object):
         game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40))
         game_complete_label.pack(pady=(10, 5))
         # 'Final Score' label
-        final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE", font=("Arial", 16))
+        final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16))
         final_score_label.pack(pady=(5, 2))
         # Scoring details
         killed_label = tk.Label(self.final_score_frame, text=f"Killed {self.scorekeeper.get_score()['killed']}", font=("Arial", 12))
@@ -712,6 +733,8 @@ class UI(object):
                 text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
                 font=("Arial", 12))
         zombies_saved_score_label.pack()
+        accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
+        accuracy_label.pack()
         # Replay button
         self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(self.data_parser, self.data_fp))
         self.replay_btn.pack(pady=(10, 0))
