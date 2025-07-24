@@ -144,47 +144,91 @@ class ScoreKeeper(object):
             self.ambulance_people[filename] = {
                 "class": class_val,
                 "injured": status_val,
-                "role": "Civilian"
+                "role": "Civilian",
+                "original_status": "injured" if status_val == 'True' else "healthy"
             }
             print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
         elif humanoid_count == 2:
             classes = class_val.split('|')
+            classes[1] = classes[1].capitalize()
             injuries = status_val.split('|')
             self.ambulance_people[filename + "_1"] = {
                 "class": classes[0],
                 "injured": injuries[0],
-                "role": "Civilian"
+                "role": "Civilian",
+                "original_status": "injured" if injuries[0] == 'True' else "healthy"
             }
             self.ambulance_people[filename + "_2"] = {
                 "class": classes[1],
                 "injured": injuries[1],
-                "role": "Civilian"
+                "role": "Civilian",
+                "original_status": "injured" if injuries[1] == 'True' else "healthy"
             }
         else:
             pass
         
         print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
 
-        for humanoid in image.humanoids:
-            if humanoid is None:
-                continue    
-            if humanoid.is_zombie():
+        if humanoid_count == 1:
+            if class_val == "Zombie":
                 self.ambulance["zombie"] += 1
                 self.false_saves += 1
                 time_bonus = TIME_PENALTY_FOR_ZOMBIE
-            elif humanoid.is_injured():
-                self.correct_saves += 1
-                self.ambulance["injured"] += 1
-                if random.random() < 0.8:
-                    time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
-            elif humanoid.is_healthy():
-                self.correct_saves += 1
-                self.ambulance["healthy"] += 1
-                if random.random() < 0.8:
-                    time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
-            self.ambulance_time_adjustment += time_bonus
-            print(f"[DEBUG] Time adjustment: adding {time_bonus} minutes to remaining time, time remaining {self.remaining_time}")
-            print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
+            elif class_val == "Default":
+                if status_val == 'True':
+                    self.correct_saves += 1
+                    self.ambulance["injured"] += 1
+                    if random.random() < 0.8:
+                        time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+                else:
+                    self.ambulance["healthy"] += 1
+                    self.correct_saves += 1
+                    if random.random() < 0.8:
+                        time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+            else:
+                pass
+        elif humanoid_count == 2:
+            if classes[0] == "Zombie":
+                self.ambulance["zombie"] += 1
+                self.false_saves += 1
+                time_bonus = TIME_PENALTY_FOR_ZOMBIE
+            elif classes[0] == "Default":
+                if injuries[0] == 'True':
+                    self.correct_saves += 1
+                    self.ambulance["injured"] += 1
+                    if random.random() < 0.8:
+                        time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+                else:
+                    self.ambulance["healthy"] += 1
+                    self.correct_saves += 1
+                    if random.random() < 0.8:
+                        time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+            else:
+                pass
+
+            if classes[1] == "Zombie":
+                self.ambulance["zombie"] += 1
+                self.false_saves += 1
+                time_bonus = TIME_PENALTY_FOR_ZOMBIE
+            elif classes[1] == "Default":
+                if injuries[1] == 'True':
+                    self.correct_saves += 1
+                    self.ambulance["injured"] += 1
+                    if random.random() < 0.8:
+                        time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+                else:
+                    self.ambulance["healthy"] += 1
+                    self.correct_saves += 1
+                    if random.random() < 0.8:
+                        time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+            else:
+                pass
+        else:
+            pass
+
+    """
+    end of those annoying shenanigans
+    """
         
 
     def squish(self, image):
@@ -385,7 +429,7 @@ class ScoreKeeper(object):
         injured_militants = 0
         for person in self.ambulance_people.values():
             if person['role'] == 'Militant':
-                if person['status'] == 'injured':
+                if person['injured'] == 'True':
                     injured_militants += 1
                 else:
                     healthy_militants += 1
@@ -397,7 +441,7 @@ class ScoreKeeper(object):
 
         # Check each humanoid in the ambulance
         for humanoid_id, humanoid_data in list(self.ambulance_people.items()):
-            if humanoid_data["class"] == "human":
+            if humanoid_data["class"] == "Default":
                 # Each zombie has a 5% chance to infect this human
                 infection_chance = zombie_count * 0.05
                 # Subtract militant protection
@@ -406,8 +450,8 @@ class ScoreKeeper(object):
                 infection_chance = max(0, infection_chance)  # Don't allow negative chance
                 if random.random() < infection_chance:
                     # Turn this human into a zombie
-                    humanoid_data["class"] = "zombie"
-                    humanoid_data["status"] = "healthy"
+                    humanoid_data["class"] = "Zombie"
+                    humanoid_data["status"] = "True"
                     humanoid_data["role"] = "blank"
 
                     # Update ambulance counts
