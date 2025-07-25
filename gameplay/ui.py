@@ -389,7 +389,9 @@ class UI(object):
         if remaining == 0 or remaining_time <= 0:
             self.update_ui(scorekeeper)  # Ensure clock and UI are updated before game end
             if self.log:
-                scorekeeper.save_log()
+                # End-of-game: log scram for all remaining, then write log and increment run id
+                scorekeeper.end_scram(route_position=self.movement_count)
+                scorekeeper.save_log(final=True)
             self.capacity_meter.update_fill(0)
             self.game_viewer_left.delete_photo(None)
             self.game_viewer_right.delete_photo(None)
@@ -703,7 +705,9 @@ class UI(object):
         self.route_complete = True  # Set flag to prevent new images from loading
         self.update_ui(self.scorekeeper)  # Ensure clock and UI are updated before end screen
         if self.log:
-            self.scorekeeper.save_log()
+            # End-of-game: log scram for all remaining, then write log and increment run id
+            self.scorekeeper.end_scram(route_position=self.movement_count)
+            self.scorekeeper.save_log(final=True)
         self.capacity_meter.update_fill(0)
         self.game_viewer_left.delete_photo(None)
         self.game_viewer_right.delete_photo(None)
