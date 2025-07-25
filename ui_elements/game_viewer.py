@@ -3,19 +3,19 @@ import tkinter as tk
 
 from os.path import join
 from PIL import ImageTk, Image
+import os
 
 
 class GameViewer(object):
-    def __init__(self, root, w, h, data_fp, humanoid):
+    def __init__(self, root, w, h, data_fp, image):
         ### Had to change some values here so when you retry it doesnt shrink the images 
         ### when we do the moral machine two image thingy we need to change this but thats for
         ### future somebody :P
         # Set image display size
         self.img_width = w  # Use the width parameter passed in (now 300)
         self.img_buffer = 30
-        # Load the image to get its original height
-        from PIL import Image
-        img_path = join(data_fp, humanoid.fp)
+        # Normalize the image path to handle any slashes in image.Filename
+        img_path = join(data_fp, *image.Filename.split('/'))
         img = Image.open(img_path)
         orig_width, orig_height = img.size
         scale = min(self.img_width / orig_width, 1.0)  # Only downscale, never upscale
@@ -35,7 +35,9 @@ class GameViewer(object):
     def create_photo(self, fp):
         ##Output needed to be different winfo_width() doesnt give us same sized images
         from PIL import Image
-        img = Image.open(fp)
+        # Normalize the path in case fp contains slashes
+        norm_fp = os.path.join(*fp.split('/'))
+        img = Image.open(norm_fp)
         orig_width, orig_height = img.size
         scale = min(self.img_width / orig_width, 1.0)
         display_width = int(orig_width * scale)

@@ -11,16 +11,19 @@ MAP_ACTION_INT_TO_STR = [s.value for s in ActionState]
 scoring system's global variables
 """
 # Score for each type of person at the end of the game
-SCORE_HEALTHY = 10
-SCORE_INJURED = 5
-SCORE_ZOMBIE = -20
+SCORE_HEALTHY = 20
+SCORE_INJURED = 10
+SCORE_ZOMBIE = -15
 SCORE_KILLED = -10
+SCORE_SAVED = 20
 """
 timing system's global variables
 """
 
 TIME_PENALTY_FOR_ZOMBIE = -15 #penalty for saving a zombie
 TIME_BONUS_FOR_SAVING_HUMAN = +15 #time bonus for saving a human
+
+
 
 class ScoreKeeper(object):
     def __init__(self, shift_len, capacity):
@@ -57,27 +60,65 @@ class ScoreKeeper(object):
         self.scorekeeper = {
             "killed": 0,
             "saved": 0,
+            "zombie_cured": 0,
+            "human_infected": 0,
+            "zombie_killed": 0,
+            "human_killed": 0
         }
         self.remaining_time = int(self.shift_len)  # minutes
         
         self.all_logs.append(self.logger)
         self.logger = []
+        
     
-    def log(self, humanoid, action):
+    def log(self, image, action):
         """
         logs current action taken against a humanoid
         
         humanoid : the humanoid presented
         action : the action taken
         """
-        self.logger.append({"humanoid_class":humanoid.state,
-                            "humanoid_fp":humanoid.fp,
-                            "action":action,
-                            "remaining_time":self.remaining_time,
-                            "capacity":self.get_current_capacity(),
-                            })
+
+        for humanoid in image.humanoids:
+            if humanoid is None:
+                continue
+            self.logger.append({"humanoid_class":humanoid.state,
+                    "humanoid_fp":humanoid.fp,
+                    "action":action,
+                    "remaining_time":self.remaining_time,
+                    "capacity":self.get_current_capacity(),
+                    })
+    
+    def logScram(self, image_left, image_right, action = 'scram'):
+        """
+        version for two images aka scram
+
+        logs current action taken against a humanoid
         
-    def save_log(self,):
+        humanoid : the humanoid presented
+        action : the action taken
+        """
+
+        for humanoid in image_left.humanoids:
+            if humanoid is None:
+                continue
+            self.logger.append({"humanoid_class":humanoid.state,
+                    "humanoid_fp":humanoid.fp,
+                    "action":action,
+                    "remaining_time":self.remaining_time,
+                    "capacity":self.get_current_capacity(),
+                    })
+        for humanoid in image_right.humanoids:
+            if humanoid is None:
+                continue
+            self.logger.append({"humanoid_class":humanoid.state,
+                    "humanoid_fp":humanoid.fp,
+                    "action":action,
+                    "remaining_time":self.remaining_time,
+                    "capacity":self.get_current_capacity(),
+                    })
+        
+    def save_log(self):
         """
         Saves a single log.csv file containing the actions that were taken,and the humanoids presented at the time. 
         Note: will overwrite previous logs
@@ -92,80 +133,265 @@ class ScoreKeeper(object):
         logs = pd.DataFrame(logs)
         logs.to_csv('log.csv')
 
-    def save(self, humanoid):
+    def save(self, image):
         """
         saves the humanoid
         updates scorekeeper
         """
-        self.log(humanoid, 'save')
+        self.log(image, 'save')
         self.remaining_time -= ActionCost.SAVE.value
         time_bonus = 0
         # No longer add to ambulance_people here; handled by save_side_from_scenario
-        if humanoid.is_zombie():
-            self.ambulance["zombie"] += 1
-            self.false_saves += 1
-            time_bonus = TIME_PENALTY_FOR_ZOMBIE
-        elif humanoid.is_injured():
-            self.correct_saves += 1
-            self.ambulance["injured"] += 1
-            if random.random() < 0.8:
-                time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
-        elif humanoid.is_healthy():
-            self.correct_saves += 1
-            self.ambulance["healthy"] += 1
-            if random.random() < 0.8:
-                time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
-        self.ambulance_time_adjustment += time_bonus
-        print(f"[DEBUG] Time adjustment: adding {time_bonus} minutes to remaining time, time remaining {self.remaining_time}")
+        filename = image.datarow['Filename']
+        class_val = image.datarow['Class']
+        humanoid_count = image.datarow['HumanoidCount']
+        status_val = image.datarow['Injured']
+        roles_val = image.datarow['Role']
+        print(f"[DEBUG] Fileaaname: {filename}, Class: {class_val}, Status: {status_val}, HumanoidCount: {humanoid_count}, Role: {roles_val}")
+
+        if humanoid_count == 1:
+            self.ambulance_people[filename] = {
+                "class": class_val,
+                "injured": status_val,
+                "role": roles_val if class_val == "Default" else "Blank",
+                "original_status": class_val
+            }
+            print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
+        elif humanoid_count == 2:
+            classes = class_val.split('|')
+            classes[1] = classes[1].capitalize()
+            injuries = status_val.split('|')
+            roles = roles_val.split('|')
+            if classes[0] == "Zombie":
+                roles[0] = "Blank"
+            if classes[1] == "Zombie":
+                roles[1] = "Blank"
+            self.ambulance_people[filename + "_1"] = {
+                "class": classes[0],
+                "injured": injuries[0],
+                "role": roles[0] if class_val == "Default" else "Blank",
+                "original_status": classes[0]
+            }
+            self.ambulance_people[filename + "_2"] = {
+                "class": classes[1],
+                "injured": injuries[1],
+                "role": roles[1] if class_val == "Default" else "Blank",
+                "original_status": classes[1]
+            }
+        else:
+            pass
+        
         print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
+
+        if humanoid_count == 1:
+            if class_val == "Zombie":
+                self.ambulance["zombie"] += 1
+                self.false_saves += 1
+                time_bonus = TIME_PENALTY_FOR_ZOMBIE
+            elif class_val == "Default":
+                if status_val == 'True':
+                    self.correct_saves += 1
+                    self.ambulance["injured"] += 1
+                    if random.random() < 0.8:
+                        time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+                else:
+                    self.ambulance["healthy"] += 1
+                    self.correct_saves += 1
+                    if random.random() < 0.8:
+                        time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+            else:
+                pass
+                """
+        for doubled humanoids, lowk just bashed this out
+                """
+        elif humanoid_count == 2:
+            if classes[0] == "Zombie":
+                self.ambulance["zombie"] += 1
+                self.false_saves += 1
+                time_bonus = TIME_PENALTY_FOR_ZOMBIE
+            elif classes[0] == "Default":
+                if injuries[0] == 'True':
+                    self.correct_saves += 1
+                    self.ambulance["injured"] += 1
+                    if random.random() < 0.8:
+                        time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+                else:
+                    self.ambulance["healthy"] += 1
+                    self.correct_saves += 1
+                    if random.random() < 0.8:
+                        time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+            else:
+                pass
+
+            if classes[1] == "Zombie":
+                self.ambulance["zombie"] += 1
+                self.false_saves += 1
+                time_bonus = TIME_PENALTY_FOR_ZOMBIE
+            elif classes[1] == "Default":
+                if injuries[1] == 'True':
+                    self.correct_saves += 1
+                    self.ambulance["injured"] += 1
+                    if random.random() < 0.8:
+                        time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+                else:
+                    self.ambulance["healthy"] += 1
+                    self.correct_saves += 1
+                    if random.random() < 0.8:
+                        time_bonus = TIME_BONUS_FOR_SAVING_HUMAN
+            else:
+                pass
+        else:
+            pass
+        """
+        This is the police effect stuff, when you pick em up they kill a zombie
+        """
+        if class_val == "Default" and roles_val == "Police":
+                    # Police effect: if you pick up a police, kill 1 zombie in the ambulance
+            zombie_removed = False
+            for humanoid_id, person in list(self.ambulance_people.items()):
+                if person.get('class') == 'Zombie':
+                    del self.ambulance_people[humanoid_id]
+                    zombie_removed = True
+                    print(f'[DEBUG] Police picked up: Removed zombie entry {humanoid_id} from ambulance_people.')
+                    break
+            if zombie_removed:
+                if self.ambulance['zombie'] > 0:
+                    self.ambulance['zombie'] -= 1
+                    self.scorekeeper['zombie_killed'] += 1
+                    print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
+                # Show popup message
+                try:
+                    import tkinter.messagebox
+                    tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
+                except Exception as e:
+                    print(f'[DEBUG] Could not show popup: {e}')
+            else:
+                import tkinter.messagebox
+                tkinter.messagebox.showinfo('Police Action', 'There were no zombies for your police to kill!')
+        elif humanoid_count == 2:
+            if roles[0] == "Police" or roles[1] == "Police":
+                                # Police effect: if you pick up a police, kill 1 zombie in the ambulance
+                zombie_removed = False
+                for humanoid_id, person in list(self.ambulance_people.items()):
+                    if person.get('class') == 'Zombie':
+                        del self.ambulance_people[humanoid_id]
+                        zombie_removed = True
+                        print(f'[DEBUG] Police picked up: Removed zombie entry {humanoid_id} from ambulance_people.')
+                        break
+                if zombie_removed:
+                    if self.ambulance['zombie'] > 0:
+                        self.ambulance['zombie'] -= 1
+                        self.scorekeeper['zombie_killed'] += 1
+                        print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
+                    # Show popup message
+                    try:
+                        import tkinter.messagebox
+                        tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
+                    except Exception as e:
+                        print(f'[DEBUG] Could not show popup: {e}')
+                else:
+                    import tkinter.messagebox
+                    tkinter.messagebox.showinfo('Police Action', 'There were no zombies for your police to kill!')    
+
+        else: 
+            pass
+            
+        
+    """
+    end of those annoying shenanigans
+    """
         
 
-    def squish(self, humanoid):
+    def squish(self, image):
         """
         squishes the humanoid
         updates scorekeeper
         """
-        self.log(humanoid, 'squish')
-        
-        self.remaining_time -= ActionCost.SQUISH.value
-        if not (humanoid.is_zombie() or humanoid.is_corpse()):
-            self.scorekeeper["killed"] += 1
+        self.log(image, 'squish')
 
-    def skip(self, humanoid):
+        filename = image.datarow['Filename']
+        class_val = image.datarow['Class']
+        humanoid_count = image.datarow['HumanoidCount']
+        status_val = image.datarow['Injured']
+
+        self.remaining_time -= ActionCost.SQUISH.value
+        if humanoid_count == 1:
+            if class_val == "Zombie":
+                self.scorekeeper["zombie_killed"] += 1
+            elif class_val == "Default":
+                self.scorekeeper["human_killed"] += 1
+            else:
+                pass
+        
+        elif humanoid_count == 2:
+            classes = class_val.split('|')
+            classes[1] = classes[1].capitalize()
+            injuries = status_val.split('|')
+            if classes[0] == "Zombie":
+                self.scorekeeper["zombie_killed"] += 1
+            elif classes[0] == "Default":
+                self.scorekeeper["human_killed"] += 1
+            else:
+                pass
+
+            if classes[1] == "Zombie":
+                self.scorekeeper["zombie_killed"] += 1
+            elif classes[1] == "Default":
+                self.scorekeeper["human_killed"] += 1
+            else:
+                pass
+        else:
+            pass
+
+    def skip(self, image):
         """
         skips the humanoid
         updates scorekeeper
         """
-        self.log(humanoid, 'skip')
+        self.log(image, 'skip')
         
         self.remaining_time -= ActionCost.SKIP.value
-        if humanoid.is_injured():
-            self.scorekeeper["killed"] += 1
+        for humanoid in image.humanoids:
+            if humanoid is None:
+                continue
+            if humanoid.is_injured():
+                self.scorekeeper["killed"] += 1
 
-    def skip_both(self, humanoid_left, humanoid_right):
+    def skip_both(self, image_left, image_right):
         """Skips both humanoids but only deducts 15 minutes total."""
-        self.log(humanoid_left, 'skip')
-        self.log(humanoid_right, 'skip')
+        # access image humanoids and log them 
+        self.log(image_left, 'skip')
+        self.log(image_right, 'skip')
         self.remaining_time -= ActionCost.SKIP.value
-        if humanoid_left.is_injured():
-            self.scorekeeper["killed"] += 1
-        if humanoid_right.is_injured():
-            self.scorekeeper["killed"] += 1
+        for humanoid in image_left.humanoids:
+            if humanoid is None:
+                continue
+            if humanoid.is_injured():
+                self.scorekeeper["killed"] += 1
+        for humanoid in image_right.humanoids:
+            if humanoid is None:
+                continue
+            if humanoid.is_injured():
+                self.scorekeeper["killed"] += 1
 
-    def inspect(self, humanoid, cost=None):
+    def inspect(self, image, cost=None):
         """Logs an inspect action and deducts inspect cost."""
-        self.log(humanoid, 'inspect')
+        for humanoid in image.humanoids:
+            if humanoid is None:
+                continue
+            self.log(image, 'inspect')
+
         if cost is None:
             cost = ActionCost.INSPECT.value
         self.remaining_time -= cost
 
-    def scram(self, humanoid=None, time_cost=None):
+    #TODO: fix this to be able to scram images and not humanoids + other number tweaks
+    def scram(self, image_left, image_right, time_cost=None):
         """
         scrams
         updates scorekeeper
         """
-        if humanoid:
-            self.log(humanoid, 'scram')
+        self.logScram(image_left, image_right, 'scram')
         if time_cost is not None:
             self.remaining_time -= time_cost
         else:
@@ -175,9 +401,6 @@ class ScoreKeeper(object):
         self.scorekeeper["killed"] += self.ambulance["zombie"]
         self.scorekeeper["saved"] += self.ambulance["injured"] + self.ambulance["healthy"]
 
-        self.remaining_time += self.ambulance_time_adjustment
-        self.ambulance_time_adjustment = 0
-       
         if hasattr(self, "upgrade_manager"):
             num_humans = self.ambulance["healthy"] + self.ambulance["injured"]
             earnings = num_humans * 10
@@ -251,16 +474,24 @@ class ScoreKeeper(object):
         self.scram()
         return self.scorekeeper
     
-    def get_final_score(self):
+    def get_final_score(self, route_complete=True):
         """
         Calculate the final score based on saved/killed and also on time remaining
         """
         score = 0
+        print(f"[Debug] Ambulance: {self.ambulance}, Scorekeeper: {self.scorekeeper}, Remaining Time: {self.remaining_time}")
         score += self.ambulance["healthy"] * SCORE_HEALTHY
         score += self.ambulance["injured"] * SCORE_INJURED
         score += self.ambulance["zombie"] * SCORE_ZOMBIE
         score += self.scorekeeper["killed"] * SCORE_KILLED
-        score += self.remaining_time
+        score += self.scorekeeper["saved"] * SCORE_SAVED
+        score += self.scorekeeper["zombie_cured"] * 25
+        score += self.scorekeeper["human_infected"] * -15
+        score += self.scorekeeper["zombie_killed"] * 10
+        score += self.scorekeeper["human_killed"] * -10
+        score += self.remaining_time * 0.2
+        if not route_complete:
+            score -= 500
         return score
     
     def get_accuracy(self):
@@ -301,7 +532,7 @@ class ScoreKeeper(object):
         injured_militants = 0
         for person in self.ambulance_people.values():
             if person['role'] == 'Militant':
-                if person['status'] == 'injured':
+                if person['injured'] == 'True':
                     injured_militants += 1
                 else:
                     healthy_militants += 1
@@ -313,7 +544,7 @@ class ScoreKeeper(object):
 
         # Check each humanoid in the ambulance
         for humanoid_id, humanoid_data in list(self.ambulance_people.items()):
-            if humanoid_data["class"] == "human":
+            if humanoid_data["class"] == "Default":
                 # Each zombie has a 5% chance to infect this human
                 infection_chance = zombie_count * 0.05
                 # Subtract militant protection
@@ -322,16 +553,16 @@ class ScoreKeeper(object):
                 infection_chance = max(0, infection_chance)  # Don't allow negative chance
                 if random.random() < infection_chance:
                     # Turn this human into a zombie
-                    humanoid_data["class"] = "zombie"
-                    humanoid_data["status"] = "healthy"
+                    humanoid_data["class"] = "Zombie"
                     humanoid_data["role"] = "blank"
 
                     # Update ambulance counts
-                    if humanoid_data.get("original_status") == "injured":
+                    if humanoid_data.get("status") == "True":
                         self.ambulance["injured"] -= 1
                     else:
                         self.ambulance["healthy"] -= 1
                     self.ambulance["zombie"] += 1
+                    self.scorekeeper["human_infected"] += 1
 
                     infected_humanoids.append(humanoid_id)
 
@@ -347,7 +578,7 @@ class ScoreKeeper(object):
         cure_chance = 0.0
         for person in self.ambulance_people.values():
             if person['role'] == 'Doctor':
-                if person['status'] == 'injured':
+                if person['injured'] == 'True':
                     cure_chance += 0.025
                 else:
                     cure_chance += 0.05
@@ -355,15 +586,20 @@ class ScoreKeeper(object):
             return []  # No cures possible
         cured_humanoids = []
         for humanoid_id, humanoid_data in list(self.ambulance_people.items()):
-            if humanoid_data["class"] == "zombie":
+            if humanoid_data["class"] == "Zombie":
                 if random.random() < cure_chance:
                     # Cure this zombie
-                    humanoid_data["class"] = "human"
+                    humanoid_data["class"] = "Default"
                     humanoid_data["role"] = "Civilian"
                     # Keep status (injured/healthy) the same
                     humanoid_data["original_status"] = "cured_zombie"
+                    self.scorekeeper["zombie_cured"] += 1
                     cured_humanoids.append(humanoid_id)
         return cured_humanoids
+
+
+
+
 
     def save_side_from_scenario(self, side, scenario_humanoid_attributes):
         """
@@ -379,4 +615,8 @@ class ScoreKeeper(object):
                     "status": attrs['status'],
                     "role": attrs['role'],
                     "original_status": attrs['status']
+
                 }
+            if attrs['type'] == 'zombie':
+                self.false_saves += 1
+            

@@ -8,9 +8,10 @@ class Humanoid(object):
     Are they a human or a zombie???
     """
     
-    def __init__(self, fp, state, value = 0):
+    def __init__(self, fp, state, role, value = 0):
         self.fp = fp
         self.state = state
+        self.role = role
         # self.value = value
 
     def is_zombie(self):
@@ -24,6 +25,9 @@ class Humanoid(object):
 
     def is_corpse(self):
         return self.state == State.CORPSE.value
+
+    def get_role(self):
+        return self.role
     
     @staticmethod
     def get_state_idx(class_string):
