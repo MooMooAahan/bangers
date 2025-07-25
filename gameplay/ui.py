@@ -197,7 +197,7 @@ class UI(object):
         self.grid_rows = len(self.map_array)
         self.grid_cols = len(self.map_array[0])
         self.cell_size = 44  # Small for better fit
-        self.grid_origin = (20, 500)  # Lower left, but higher up
+        self.grid_origin = (985, 495)  # location of map
         self.create_grid_map_canvas()  # Create the canvas first
         self.reset_map()               # Now it's safe to call reset_map()
         self.draw_grid_map()           # Draw the map with background image
@@ -210,7 +210,7 @@ class UI(object):
         self.movement_label = tk.Label(self.root, text="Route Progress: 0/20", 
                                       font=("Arial", 12), bg="#000000", fg="#2E86AB",
                                       relief="solid", bd=1, padx=10, pady=5)
-        self.movement_label.place(x=500, y=rules_btn_y)
+        self.movement_label.place(x=1050, y=460)
 
         # Initialize the UI with the current state
         self.update_ui(scorekeeper)
