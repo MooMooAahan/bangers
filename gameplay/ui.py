@@ -408,12 +408,30 @@ class UI(object):
                 game_complete_label.pack(pady=(10, 5))
                 final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16))
                 final_score_label.pack(pady=(5, 2))
+                self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
+                self.replay_btn.pack(pady=(10, 0))
+                self.replay_btn.lift()
+                self.replay_btn.config(state='normal')
+                self.left_button_menu.disable_buttons(0, 0, True)
+                self.right_button_menu.disable_buttons(0, 0, True)
+                self.button_menu.disable_buttons(0, 0, True)
+                self.map_canvas.place_forget()
+                self.draw_grid_map()
             else:
                 final_score = self.scorekeeper.get_final_score(route_complete=False)
                 game_complete_label = tk.Label(self.final_score_frame, text="Game Complete", font=("Arial", 40))
                 game_complete_label.pack(pady=(10, 5))
                 final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16))
                 final_score_label.pack(pady=(5, 2))
+                self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
+                self.replay_btn.pack(pady=(10, 0))
+                self.replay_btn.lift()
+                self.replay_btn.config(state='normal')
+                self.left_button_menu.disable_buttons(0, 0, True)
+                self.right_button_menu.disable_buttons(0, 0, True)
+                self.button_menu.disable_buttons(0, 0, True)
+                self.map_canvas.place_forget()
+                self.draw_grid_map()
             # 'Final Score' label
             # Scoring details
             killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score()['killed']}", font=("Arial", 12))
@@ -437,9 +455,12 @@ class UI(object):
             # Replay button
             self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
             self.replay_btn.pack(pady=(10, 0))
-            # Remove any content from the right canvas
-            self.game_viewer_right.canvas.delete('all')
-            self.hide_map = True # Hide the map when game ends
+            self.replay_btn.lift()  # Ensure the replay button is visible on top
+            # Disable all left side buttons and hide the map on game end
+            self.left_button_menu.disable_buttons(0, 0, True)
+            self.right_button_menu.disable_buttons(0, 0, True)
+            self.button_menu.disable_buttons(0, 0, True)
+            self.map_canvas.place_forget()
             self.draw_grid_map() # Redraw the map to hide it
         else:
             # Only load new images if route is not complete
@@ -585,16 +606,16 @@ class UI(object):
             self.machine_menu.enable_all_buttons()
         self.rules_btn.config(state='normal')
         self.upgrade_btn.config(state='normal')
-        # 4. Get a new scenario
+        # 4. Get a new scenario (ensure new images are generated)
         self.image_left, self.image_right = data_parser.get_random(side='left'), data_parser.get_random(side='right')
-        #TODO: fix to be getting images, not humanoids
-        # self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc = data_parser.get_scenario()
-        # print(f"[UI DEBUG] Reset Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
-        fp_left = os.path.join(data_fp, self.image_left.fp)
-        fp_right = os.path.join(data_fp, self.image_right.fp)
-
+        fp_left = join(data_fp, self.image_left.Filename)
+        fp_right = join(data_fp, self.image_right.Filename)
         self.game_viewer_left.create_photo(fp_left)
         self.game_viewer_right.create_photo(fp_right)
+        # 5. Reset scram cost to starting value
+        if hasattr(self.scorekeeper, 'scram_time_reduction'):
+            self.scorekeeper.scram_time_reduction = 0
+        self.button_menu.buttons[4].config(text="Scram (5 mins)")
         self.update_ui(self.scorekeeper)
         # Clear any widgets in both canvases
         for widget in self.game_viewer_left.canvas.pack_slaves():
@@ -713,6 +734,16 @@ class UI(object):
         # Create a new frame for the final score block
         self.final_score_frame = tk.Frame(self.root, width=300, height=300)
         self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
+        # Replay button (moved to top)
+        self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(self.data_parser, self.data_fp))
+        self.replay_btn.pack(pady=(10, 0))
+        self.replay_btn.lift()  # Ensure the replay button is visible on top
+        self.replay_btn.config(state='normal')
+        # Disable all left, right, and main button menus and hide the map on game end
+        self.left_button_menu.disable_buttons(0, 0, True)
+        self.right_button_menu.disable_buttons(0, 0, True)
+        self.button_menu.disable_buttons(0, 0, True)
+        self.map_canvas.place_forget()  # Hide the map
         # 'Route Complete' label
         game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40))
         game_complete_label.pack(pady=(10, 5))

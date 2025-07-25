@@ -479,6 +479,7 @@ class ScoreKeeper(object):
         Calculate the final score based on saved/killed and also on time remaining
         """
         score = 0
+        print(f"[Debug] Ambulance: {self.ambulance}, Scorekeeper: {self.scorekeeper}, Remaining Time: {self.remaining_time}")
         score += self.ambulance["healthy"] * SCORE_HEALTHY
         score += self.ambulance["injured"] * SCORE_INJURED
         score += self.ambulance["zombie"] * SCORE_ZOMBIE
@@ -488,7 +489,7 @@ class ScoreKeeper(object):
         score += self.scorekeeper["human_infected"] * -15
         score += self.scorekeeper["zombie_killed"] * 10
         score += self.scorekeeper["human_killed"] * -10
-        score += self.remaining_time
+        score += self.remaining_time * 0.2
         if not route_complete:
             score -= 500
         return score
