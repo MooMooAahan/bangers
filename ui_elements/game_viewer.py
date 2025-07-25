@@ -23,7 +23,7 @@ class GameViewer(object):
         self.img_display_height = int(orig_height * scale)
         canvas_height = self.img_display_height + self.img_buffer
         canvas_width = self.img_display_width
-        self.canvas = tk.Canvas(root, width=canvas_width, height=canvas_height)
+        self.canvas = tk.Canvas(root, width=canvas_width, height=canvas_height,bg="black",highlightthickness=0)
         self.canvas.update()
         self.photo = None
         self.create_photo(img_path)

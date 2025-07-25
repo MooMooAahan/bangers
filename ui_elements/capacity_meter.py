@@ -7,10 +7,10 @@ import tkinter.messagebox  # <-- Add this import
 
 class CapacityMeter(object):
     def __init__(self, root, w, h, max_cap, get_ambulance_contents=None):
-        self.canvas = tk.Canvas(root, width=math.floor(0.2 * w), height=math.floor(0.5 * h))
+        self.canvas = tk.Canvas(root, width=math.floor(0.2 * w), height=math.floor(0.5 * h),bg="black",highlightthickness=0)
         # Align with the clock (placed at x=math.floor(0.75 * w))
-        x_pos = math.floor(0.75 * w)
-        y_pos = math.floor(0.4 * h) - 20  # move up by 20px
+        x_pos = math.floor(0.775 * w)
+        y_pos = math.floor(0.15 * h) - 20  # move up by 20px
         self.canvas.place(x=x_pos, y=y_pos)
         self.__units = []
         self.unit_size = 14  # Half the previous size (was 40)
@@ -63,7 +63,7 @@ class CapacityMeter(object):
         for unit in self.__units:
             self.canvas.delete(unit)
         self.__units = []
-        tk.Label(self.canvas, text="Capacity", font=("Arial", 15)).place(x=100, y=0)
+        tk.Label(self.canvas, text="Capacity", font=("Arial", 15),bg="black",fg="white").place(x=107, y=0)
 
         # Always use 2 columns, stack extra dots below
         cols = 2

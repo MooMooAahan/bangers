@@ -208,7 +208,7 @@ class UI(object):
 
         # Movement progress label
         self.movement_label = tk.Label(self.root, text="Route Progress: 0/20", 
-                                      font=("Arial", 12), bg="#E8F4FD", fg="#2E86AB",
+                                      font=("Arial", 12), bg="#000000", fg="#2E86AB",
                                       relief="solid", bd=1, padx=10, pady=5)
         self.movement_label.place(x=500, y=rules_btn_y)
 
