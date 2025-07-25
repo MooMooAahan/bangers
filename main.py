@@ -37,6 +37,7 @@ class Main(object):
                     break
                 else:
                     image = self.data_parser.get_random(side = 'left') ## TODO: this is currently hardcoded to left side
+                    # Fix: Use image.Filename instead of image.fp for Image objects
                     action = simon.get_model_suggestion(image, self.scorekeeper.at_capacity())
                     if action == ActionCost.SKIP:
                         self.scorekeeper.skip(image)
