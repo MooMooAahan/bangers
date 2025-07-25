@@ -642,22 +642,22 @@ class UI(object):
         if hasattr(self, 'final_score_frame') and self.final_score_frame:
             self.final_score_frame.destroy()
         # Create a new frame for the final score block
-        self.final_score_frame = tk.Frame(self.root, width=300, height=300)
+        self.final_score_frame = tk.Frame(self.root, width=300, height=300,bg="black",highlightthickness=0)
         self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
         # 'Route Complete' label
-        game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40))
+        game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40),fg="white",bg="black",highlightthickness=0)
         game_complete_label.pack(pady=(10, 5))
         # 'Final Score' label
-        final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE", font=("Arial", 16))
+        final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE", font=("Arial", 16),fg="white",bg="black",highlightthickness=0)
         final_score_label.pack(pady=(5, 2))
         # Scoring details
-        killed_label = tk.Label(self.final_score_frame, text=f"Killed {self.scorekeeper.get_score()['killed']}", font=("Arial", 12))
+        killed_label = tk.Label(self.final_score_frame, text=f"Killed {self.scorekeeper.get_score()['killed']}", font=("Arial", 12),fg="white")
         killed_label.pack()
-        saved_label = tk.Label(self.final_score_frame, text=f"Saved {self.scorekeeper.get_score()['saved']}", font=("Arial", 12))
+        saved_label = tk.Label(self.final_score_frame, text=f"Saved {self.scorekeeper.get_score()['saved']}", font=("Arial", 12),fg="white")
         saved_label.pack()
-        score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
+        score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12),fg="white")
         score_label.pack()
-        accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
+        accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12),fg="white")
         accuracy_label.pack()
         # Replay button
         self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(self.data_parser, self.data_fp))
