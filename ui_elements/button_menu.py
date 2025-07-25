@@ -7,9 +7,12 @@ from gameplay.enums import ActionCost
 class ButtonMenu(object):
     def __init__(self, root, items):
         self.canvas = tk.Canvas(root, width=500, height=80)
-        self.canvas.place(x=35, y=100)
+        self.canvas.place(x=35, y=52)
         self.buttons = create_buttons(self.canvas, items)
         create_menu(self.buttons)
+        for i, btn in enumerate(self.buttons):
+            btn.update_idletasks()
+            print(f"[DEBUG] Main button {i} y={btn.winfo_y()}, height={btn.winfo_height()}")
 
     def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity):
         for button in self.buttons:
@@ -39,13 +42,7 @@ class ButtonMenu(object):
         """Enables button for when you need to retry"""
         for button in self.buttons:
             button.config(state="normal")
-            
-    
-            
-            
-            
-            
-            
+                    
 def create_buttons(canvas, items):
     buttons = []
     for item in items:
@@ -71,49 +68,47 @@ def create_buttons(canvas, items):
 
 def create_menu(buttons):
     for button in buttons:
-        button.pack(side=tk.TOP, pady=10)
+        button.pack(side=tk.TOP, pady=20)
 
 
 class LeftButtonMenu(object):
     def __init__(self, root, items):
-        self.canvas = tk.Canvas(root, width=500, height=80)
-        self.canvas.place(x=200, y=160)  # Shifted to x=400 instead of x=100
-        self.buttons = self.create_extra_buttons(self.canvas, items)
-        create_menu(self.buttons)
-    
-    def create_extra_buttons(self, canvas, items):
-        button_colors= [
-        COLOR_LEFT_AND_RIGHT_SQUISH_BUTTONS,
-        COLOR_LEFT_AND_RIGHT_SAVE_BUTTONS,
-        COLOR_LEFT_AND_RIGHT_INSPECT_BUTTONS
-    ]
-        buttons = []
+        self.buttons = []
+        x = 35           # Horizontal position of "L" buttons
+        y_start = 215       # Matches y-position of "Skip" button
+        y_gap = 92
         
+        button_colors = [
+            COLOR_LEFT_AND_RIGHT_INSPECT_BUTTONS,
+            COLOR_LEFT_AND_RIGHT_SAVE_BUTTONS,
+            COLOR_LEFT_AND_RIGHT_SQUISH_BUTTONS
+        ]
+
         for i, item in enumerate(items):
             _, action = item
             color = button_colors[i]
             button = tk.Button(
-                canvas,
+                root,
                 text="L",
-                height=2,
-                width=5,
+                height=1,
+                width=7,
                 font=BUTTON_FONT,
                 bg=color,
                 fg=FG_COLOR_FOR_BUTTON_TEXT,
                 activebackground=color,
+                relief="raised",
+                bd=2,
                 command=action
             )
-            buttons.append(button)
-        
-        return buttons
+            button.place(x=x, y=y_start + y_gap * i)
+            self.buttons.append(button)
 
     def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity):
         for button in self.buttons:
             button.config(state="normal")
         if remaining_humanoids == 0 or remaining_time <= 0:
-            for i in range(0, len(self.buttons)):
-                self.buttons[i].config(state="disabled")
-        #  Not enough time left? Disable action
+            for button in self.buttons:
+                button.config(state="disabled")
         if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SKIP.value:
             self.buttons[0].config(state="disabled")  # Inspect
         if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SQUISH.value:
@@ -121,47 +116,46 @@ class LeftButtonMenu(object):
         if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SAVE.value:
             self.buttons[2].config(state="disabled")  # Save
         if at_capacity:
-            self.buttons[0].config(state="disabled")  # Inspect
-            self.buttons[1].config(state="disabled")  # Squish
-            self.buttons[2].config(state="disabled")  # Save
+            self.buttons[0].config(state="disabled")
+            self.buttons[1].config(state="disabled")
+            self.buttons[2].config(state="disabled")
 
     def enable_all_buttons(self):
-        """Enables button for when you need to retry"""
         for button in self.buttons:
             button.config(state="normal")
             
 
 class RightButtonMenu(object):
     def __init__(self, root, items):
-        self.canvas = tk.Canvas(root, width=500, height=80)
-        self.canvas.place(x=270, y=210) 
-        self.buttons = self.create_extra_buttons(self.canvas, items)
-        create_menu(self.buttons)
-    
-    def create_extra_buttons(self, canvas, items):
-        button_colors =[
-        COLOR_LEFT_AND_RIGHT_INSPECT_BUTTONS,
-        COLOR_LEFT_AND_RIGHT_SAVE_BUTTONS,
-        COLOR_LEFT_AND_RIGHT_SQUISH_BUTTONS
-    ]
-        buttons = []
+        self.buttons = []
+        x = 115            # Adjust horizontally to right side of main buttons
+        y_start = 215      # Match LeftButtonMenu start (below Inspect)
+        y_gap = 92         # Match spacing of main buttons
+
+        button_colors = [
+            COLOR_LEFT_AND_RIGHT_INSPECT_BUTTONS,
+            COLOR_LEFT_AND_RIGHT_SAVE_BUTTONS,
+            COLOR_LEFT_AND_RIGHT_SQUISH_BUTTONS
+        ]
+
         for i, item in enumerate(items):
             _, action = item
             color = button_colors[i]
             button = tk.Button(
-                canvas,
+                root,
                 text="R",
-                height=2,
-                width=5,
+                height=1,
+                width=7,
                 font=BUTTON_FONT,
                 bg=color,
                 fg=FG_COLOR_FOR_BUTTON_TEXT,
                 activebackground=color,
+                relief="raised",
+                bd=2,
                 command=action
             )
-            buttons.append(button)
-        
-        return buttons
+            button.place(x=x, y=y_start + i * y_gap)
+            self.buttons.append(button)
 
     def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity):
         for button in self.buttons:
