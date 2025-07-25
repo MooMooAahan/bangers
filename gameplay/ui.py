@@ -218,21 +218,25 @@ class UI(object):
         self.time_warning_shown = False  # Track if the limited time warning popup has been shown
 
         # Restore to a single inspect_canvas as before
-        self.inspect_canvas = tk.Canvas(self.root, width=600, height=150, bg="lightgreen", highlightthickness=0)
-        self.inspect_canvas.place(x=341, y=468)
-        self.inspect_canvas.create_rectangle(
-            1, 1, 599, 149,  # Slightly inside the canvas bounds to show full border
-            outline="black",
-            width=2
-        )
-        self.inspect_canvas.create_line(
-            300, 0, 300, 150,  # From top middle to bottom middle
-            fill="black",
-            width=2
-        )
-        self.inspect_canvas.tkraise()
+                # Add dual inspect canvases under each image
+        inspect_height = 150
+        canvas_gap_y = 10  # space between image and inspect canvas
+        image_y = y_top
+        image_height = self.game_viewer_left.canvas.winfo_reqheight()
 
+        # Left canvas under left image
+        self.inspect_canvas_left = tk.Canvas(self.root, width=image_width, height=inspect_height, bg="lightgreen", highlightthickness=0)
+        self.inspect_canvas_left.place(x=center_x - offset, y=image_y + image_height + canvas_gap_y)
+        self.inspect_canvas_left.create_rectangle(
+        1, 1, image_width - 2, inspect_height - 2, outline="black", width=2
+        )
+        # Right canvas under right image
+        self.inspect_canvas_right = tk.Canvas(self.root, width=image_width, height=inspect_height, bg="lightgreen", highlightthickness=0)
+        self.inspect_canvas_right.place(x=center_x - offset + image_width + horizontal_gap, y=image_y + image_height + canvas_gap_y)
         self.root.mainloop()
+        self.inspect_canvas_right.create_rectangle(
+        1, 1, image_width - 2, inspect_height - 2, outline="black", width=2
+        )
     
     def clear_main_ui(self):
         for widget in self.root.winfo_children():
@@ -401,7 +405,8 @@ class UI(object):
                 self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc, self.scenario_humanoid_attributes = data_parser.get_scenario()
                 print(f"[UI DEBUG] Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
                 # Clear inspect canvas text
-                self.inspect_canvas.delete('text')
+                self.inspect_canvas_left.delete('all')
+                self.inspect_canvas_right.delete('all')
                 # Process zombie infections at the start of each turn
                 infected_humanoids = scorekeeper.process_zombie_infections()
                 if infected_humanoids:
@@ -540,19 +545,8 @@ class UI(object):
         for widget in self.game_viewer_right.canvas.pack_slaves():
             widget.destroy()
         # Clear inspect canvas
-        self.inspect_canvas.delete('all')
-        # Redraw inspect canvas border and center line
-        self.inspect_canvas.create_rectangle(
-            1, 1, 599, 149,  # Slightly inside the canvas bounds to show full border
-            outline="black",
-            width=2
-        )
-        self.inspect_canvas.create_line(
-            300, 0, 300, 150,  # From top middle to bottom middle
-            fill="black",
-            width=2
-        )
-        self.inspect_canvas.tkraise()
+        self.inspect_canvas_left.delete('all')
+        self.inspect_canvas_right.delete('all')
         self.time_warning_shown = False  # Reset the warning flag for a new game
     def create_grid_map_canvas(self):
         w = self.grid_cols * self.cell_size + 2 * 10
@@ -769,13 +763,18 @@ class UI(object):
                 lines.append(f"  Role: {attrs['role']}")
                 lines.append("")  # Blank line between humanoids
         text = '\n'.join(lines)
-        # Print at different x positions depending on side
+
+        # Select the correct canvas
         if side == 'left':
-            self.inspect_canvas.create_text(10, 10, anchor='nw', text=text, font=("Arial", 12), tags='text')
-            self.left_button_menu.buttons[0].config(state='disabled')    
+            canvas = self.inspect_canvas_left
+            self.left_button_menu.buttons[0].config(state='disabled')
         else:
-            self.inspect_canvas.create_text(310, 10, anchor='nw', text=text, font=("Arial", 12), tags='text')
+            canvas = self.inspect_canvas_right
             self.right_button_menu.buttons[0].config(state='disabled')
+
+        canvas.delete('all')
+        canvas.create_rectangle(1, 1, canvas.winfo_reqwidth() - 2, canvas.winfo_reqheight() - 2, outline="black", width=2)
+        canvas.create_text(10, 10, anchor='nw', text=text, font=("Arial", 12))
 
     def add_elapsed_time(self, minutes):
         self.scorekeeper.remaining_time -= minutes
