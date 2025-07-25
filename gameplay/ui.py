@@ -83,7 +83,7 @@ class UI(object):
         # We'll need to update the button text dynamically, so store the button objects
         self.user_buttons = [
             ("Skip (15 mins)", lambda: [
-                                  scorekeeper.skip_both(self.image_left, self.image_right),
+                                  scorekeeper.skip_both(self.image_left, self.image_right, route_position=self.movement_count),
                                   self.move_ambulance_by_cell(),
                                   self.update_ui(scorekeeper),
                                   self.get_next(
@@ -95,7 +95,7 @@ class UI(object):
             ("Save (30 mins)", lambda: self.show_action_popup("Save")),
             (get_scram_text(), lambda: [
                                     print(f"[DEBUG] Scram penalty applied: {get_scram_time()} minutes"),
-                                    scorekeeper.scram(self.image_left, self.image_right, time_cost=get_scram_time()),
+                                    scorekeeper.scram(self.image_left, self.image_right, time_cost=get_scram_time(), route_position=self.movement_count),
                                     self.move_ambulance_by_cell(),
                                     self.update_ui(scorekeeper),
                                     self.get_next(
@@ -131,9 +131,9 @@ class UI(object):
         # Add extra button menu with three buttons
         # Save references to left/right button actions for map movement
         self.left_action_callbacks = [
-            lambda: [self.print_scenario_side_attributes('left'), self.scorekeeper.inspect(self.image_left, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0)), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Left
-            lambda: [self.scorekeeper.squish(self.image_left), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)],  # Squish Left
-            lambda: [self.scorekeeper.save(self.image_left), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)]  # Save Left
+            lambda: [self.print_scenario_side_attributes('left'), self.scorekeeper.inspect(self.image_left, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0), route_position=self.movement_count, side='left'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Left
+            lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)],  # Squish Left
+            lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)]  # Save Left
         ]
         self.left_button_menu = LeftButtonMenu(self.root, [
             ("Inspect Left", self.left_action_callbacks[0]),
@@ -142,9 +142,9 @@ class UI(object):
         ])
 
         self.right_action_callbacks = [
-            lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0)), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
-            lambda: [self.scorekeeper.squish(self.image_right), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)],  # Squish Right
-            lambda: [self.scorekeeper.save(self.image_right), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)]  # Save Right
+            lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0), route_position=self.movement_count, side='right'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
+            lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)],  # Squish Right
+            lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)]  # Save Right
         ]
         self.right_button_menu = RightButtonMenu(self.root, [
             ("Inspect Right", self.right_action_callbacks[0]),

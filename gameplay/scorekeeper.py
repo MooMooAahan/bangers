@@ -2,6 +2,8 @@ from gameplay.upgrades_manager import UpgradeManager
 from gameplay.enums import ActionCost, ActionState
 import pandas as pd
 import random
+import os
+from datetime import datetime
 
 
 MAP_ACTION_STR_TO_INT = {s.value:i for i,s in enumerate(ActionState)}
@@ -71,74 +73,128 @@ class ScoreKeeper(object):
         self.logger = []
         
     
-    def log(self, image, action):
+    def log(self, image, action, route_position=None, side=None, chosen_side=None):
         """
-        logs current action taken against a humanoid
+        Logs current action taken against a humanoid for both sides.
+        If this side is not chosen, action is None.
         
-        humanoid : the humanoid presented
-        action : the action taken
+        image: the Image object (left or right)
+        action: the action taken (or None)
+        route_position: the place on the route (0-19)
+        side: 'left' or 'right'
+        chosen_side: which side was chosen for the action
         """
-
+        timestamp = datetime.now().isoformat()
         for humanoid in image.humanoids:
             if humanoid is None:
                 continue
-            self.logger.append({"humanoid_class":humanoid.state,
-                    "humanoid_fp":humanoid.fp,
-                    "action":action,
-                    "remaining_time":self.remaining_time,
-                    "capacity":self.get_current_capacity(),
-                    })
-    
-    def logScram(self, image_left, image_right, action = 'scram'):
-        """
-        version for two images aka scram
+            is_inspected = (action == 'inspect')
+            log_action = action if side == chosen_side else None
+            self.logger.append({
+                "timestamp": timestamp,
+                "local_run_id": None,  # Will be filled in save_log
+                "route_position": route_position,
+                "side": side,
+                "humanoid_fp": humanoid.fp,
+                "humanoid_class": humanoid.state,
+                "capacity": self.get_current_capacity(),
+                "remaining_time": self.remaining_time,
+                "role": humanoid.role,
+                "inspected": is_inspected,
+                "action": log_action
+            })
 
-        logs current action taken against a humanoid
-        
-        humanoid : the humanoid presented
-        action : the action taken
+    def log_both_sides(self, image_left, image_right, action, route_position=None, chosen_side=None):
         """
+        Logs both left and right sides for an action. For the chosen side, log the action; for the other, log action as None.
+        """
+        self.log(image_left, action, route_position=route_position, side='left', chosen_side=chosen_side)
+        self.log(image_right, action, route_position=route_position, side='right', chosen_side=chosen_side)
 
-        for humanoid in image_left.humanoids:
-            if humanoid is None:
-                continue
-            self.logger.append({"humanoid_class":humanoid.state,
-                    "humanoid_fp":humanoid.fp,
-                    "action":action,
-                    "remaining_time":self.remaining_time,
-                    "capacity":self.get_current_capacity(),
-                    })
-        for humanoid in image_right.humanoids:
-            if humanoid is None:
-                continue
-            self.logger.append({"humanoid_class":humanoid.state,
-                    "humanoid_fp":humanoid.fp,
-                    "action":action,
-                    "remaining_time":self.remaining_time,
-                    "capacity":self.get_current_capacity(),
-                    })
-        
+    def logScram(self, image_left, image_right, action='scram', route_position=None):
+        """
+        Logs both sides for scram action (both sides are chosen).
+        """
+        timestamp = datetime.now().isoformat()
+        for side, image in zip(['left', 'right'], [image_left, image_right]):
+            for humanoid in image.humanoids:
+                if humanoid is None:
+                    continue
+                self.logger.append({
+                    "timestamp": timestamp,
+                    "local_run_id": None,  # Will be filled in save_log
+                    "route_position": route_position,
+                    "side": side,
+                    "humanoid_fp": humanoid.fp,
+                    "humanoid_class": humanoid.state,
+                    "capacity": self.get_current_capacity(),
+                    "remaining_time": self.remaining_time,
+                    "role": humanoid.role,
+                    "inspected": False,
+                    "action": action
+                })
+
     def save_log(self):
         """
-        Saves a single log.csv file containing the actions that were taken,and the humanoids presented at the time. 
-        Note: will overwrite previous logs
+        Appends the current logger to log.csv, always, regardless of whether it's empty.
+        Uses local_run_id as a round identifier by incrementing from the last value in log.csv (if it exists).
         """
-        if len(self.logger) > 0:
-            self.all_logs.append(self.logger)
-        logs = []
-        for i, log in enumerate(self.all_logs):
-            log = pd.DataFrame(log)
-            log['local_run_id'] = i
-            logs.append(log)
-        logs = pd.DataFrame(logs)
-        logs.to_csv('log.csv')
+        # Prepare new log DataFrame
+        new_log = pd.DataFrame(self.logger)
+        if new_log.empty:
+            # Still write an empty log for this round, for traceability
+            new_log = pd.DataFrame([{"humanoid_class": None, "humanoid_fp": None, "action": None, "remaining_time": None, "capacity": None, "scenario_pos": None, "role": None}])
 
-    def save(self, image):
+        # Determine the next local_run_id
+        log_path = 'log.csv'
+        if os.path.exists(log_path):
+            try:
+                existing = pd.read_csv(log_path)
+                if 'local_run_id' in existing.columns and not existing.empty:
+                    last_id = existing['local_run_id'].max()
+                    next_id = last_id + 1
+                else:
+                    next_id = 0
+            except Exception:
+                next_id = 0
+        else:
+            next_id = 0
+        new_log['local_run_id'] = next_id
+
+        # Reorder columns
+        col_order = [
+            'timestamp', 'local_run_id', 'route_position', 'side',
+            'humanoid_fp', 'humanoid_class', 'capacity', 'remaining_time',
+            'role', 'inspected', 'action'
+        ]
+        new_log = new_log[col_order]
+
+        # Append to file
+        if os.path.exists(log_path):
+            try:
+                existing = pd.read_csv(log_path)
+                combined = pd.concat([existing, new_log], ignore_index=True)
+            except Exception:
+                combined = new_log
+        else:
+            combined = new_log
+        combined.to_csv(log_path, index=False)
+
+        # Reset logger for next round
+        self.logger = []
+
+    def save(self, image, route_position=None, side=None):
         """
         saves the humanoid
         updates scorekeeper
         """
-        self.log(image, 'save')
+        self.log_both_sides(
+            image_left=self.image_left if hasattr(self, 'image_left') else image,
+            image_right=self.image_right if hasattr(self, 'image_right') else image,
+            action='save',
+            route_position=route_position,
+            chosen_side=side
+        )
         self.remaining_time -= ActionCost.SAVE.value
         time_bonus = 0
         # No longer add to ambulance_people here; handled by save_side_from_scenario
@@ -302,12 +358,18 @@ class ScoreKeeper(object):
     """
         
 
-    def squish(self, image):
+    def squish(self, image, route_position=None, side=None):
         """
         squishes the humanoid
         updates scorekeeper
         """
-        self.log(image, 'squish')
+        self.log_both_sides(
+            image_left=self.image_left if hasattr(self, 'image_left') else image,
+            image_right=self.image_right if hasattr(self, 'image_right') else image,
+            action='squish',
+            route_position=route_position,
+            chosen_side=side
+        )
 
         filename = image.datarow['Filename']
         class_val = image.datarow['Class']
@@ -343,12 +405,18 @@ class ScoreKeeper(object):
         else:
             pass
 
-    def skip(self, image):
+    def skip(self, image, route_position=None, side=None):
         """
         skips the humanoid
         updates scorekeeper
         """
-        self.log(image, 'skip')
+        self.log_both_sides(
+            image_left=self.image_left if hasattr(self, 'image_left') else image,
+            image_right=self.image_right if hasattr(self, 'image_right') else image,
+            action='skip',
+            route_position=route_position,
+            chosen_side=side
+        )
         
         self.remaining_time -= ActionCost.SKIP.value
         for humanoid in image.humanoids:
@@ -357,11 +425,10 @@ class ScoreKeeper(object):
             if humanoid.is_injured():
                 self.scorekeeper["killed"] += 1
 
-    def skip_both(self, image_left, image_right):
+    def skip_both(self, image_left, image_right, route_position=None):
         """Skips both humanoids but only deducts 15 minutes total."""
-        # access image humanoids and log them 
-        self.log(image_left, 'skip')
-        self.log(image_right, 'skip')
+        # For skip both, neither side is chosen, so both get action 'skip'
+        self.log_both_sides(image_left, image_right, action='skip', route_position=route_position, chosen_side=None)
         self.remaining_time -= ActionCost.SKIP.value
         for humanoid in image_left.humanoids:
             if humanoid is None:
@@ -374,24 +441,27 @@ class ScoreKeeper(object):
             if humanoid.is_injured():
                 self.scorekeeper["killed"] += 1
 
-    def inspect(self, image, cost=None):
+    def inspect(self, image, cost=None, route_position=None, side=None):
         """Logs an inspect action and deducts inspect cost."""
-        for humanoid in image.humanoids:
-            if humanoid is None:
-                continue
-            self.log(image, 'inspect')
+        self.log_both_sides(
+            image_left=self.image_left if hasattr(self, 'image_left') else image,
+            image_right=self.image_right if hasattr(self, 'image_right') else image,
+            action='inspect',
+            route_position=route_position,
+            chosen_side=side
+        )
 
         if cost is None:
             cost = ActionCost.INSPECT.value
         self.remaining_time -= cost
 
     #TODO: fix this to be able to scram images and not humanoids + other number tweaks
-    def scram(self, image_left, image_right, time_cost=None):
+    def scram(self, image_left, image_right, time_cost=None, route_position=None):
         """
         scrams
         updates scorekeeper
         """
-        self.logScram(image_left, image_right, 'scram')
+        self.logScram(image_left, image_right, action='scram', route_position=route_position)
         if time_cost is not None:
             self.remaining_time -= time_cost
         else:
