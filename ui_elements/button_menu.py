@@ -1,13 +1,13 @@
 import tkinter as tk
 import os
 from PIL import ImageTk, Image
-
+from ui_elements.theme import FG_COLOR_FOR_BUTTON_TEXT, BUTTON_FONT,COLOR_LEFT_AND_RIGHT_INSPECT_BUTTONS,COLOR_LEFT_AND_RIGHT_SAVE_BUTTONS,COLOR_LEFT_AND_RIGHT_SQUISH_BUTTONS
 from gameplay.enums import ActionCost
 
 class ButtonMenu(object):
     def __init__(self, root, items):
         self.canvas = tk.Canvas(root, width=500, height=80)
-        self.canvas.place(x=100, y=150)
+        self.canvas.place(x=35, y=100)
         self.buttons = create_buttons(self.canvas, items)
         create_menu(self.buttons)
 
@@ -49,21 +49,27 @@ class ButtonMenu(object):
 def create_buttons(canvas, items):
     buttons = []
     for item in items:
-        (text, action) = item
-        buttons.append(tk.Button(canvas, text=text, height=2, width=15,
-                                 command=action))
+        if len(item) == 3:
+            text, action, color = item
+        else:
+            text, action = item
+            color = "#cccccc"  # fallback
+
+        buttons.append(tk.Button(
+            canvas,
+            text=text,
+            height=2,
+            width=15,
+            command=action,
+            font=BUTTON_FONT,
+            bg=color,
+            fg=FG_COLOR_FOR_BUTTON_TEXT,
+            activebackground=color
+        ))
     return buttons
 
 
 def create_menu(buttons):
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'graphics', 'logo.png')
-    logo = ImageTk.PhotoImage(Image.open(path).resize((300, 50), Image.LANCZOS))
-    label = tk.Label(image=logo)
-    label.image = logo
-
-    # Position image
-    label.place(x=10, y=10)
-
     for button in buttons:
         button.pack(side=tk.TOP, pady=10)
 
@@ -71,16 +77,34 @@ def create_menu(buttons):
 class LeftButtonMenu(object):
     def __init__(self, root, items):
         self.canvas = tk.Canvas(root, width=500, height=80)
-        self.canvas.place(x=220, y=210)  # Shifted to x=400 instead of x=100
+        self.canvas.place(x=200, y=160)  # Shifted to x=400 instead of x=100
         self.buttons = self.create_extra_buttons(self.canvas, items)
         create_menu(self.buttons)
     
     def create_extra_buttons(self, canvas, items):
+        button_colors= [
+        COLOR_LEFT_AND_RIGHT_SQUISH_BUTTONS,
+        COLOR_LEFT_AND_RIGHT_SAVE_BUTTONS,
+        COLOR_LEFT_AND_RIGHT_INSPECT_BUTTONS
+    ]
         buttons = []
-        for item in items:
-            (text, action) = item
-            buttons.append(tk.Button(canvas, text="L", height=2, width=5,
-                                     command=action))
+        
+        for i, item in enumerate(items):
+            _, action = item
+            color = button_colors[i]
+            button = tk.Button(
+                canvas,
+                text="L",
+                height=2,
+                width=5,
+                font=BUTTON_FONT,
+                bg=color,
+                fg=FG_COLOR_FOR_BUTTON_TEXT,
+                activebackground=color,
+                command=action
+            )
+            buttons.append(button)
+        
         return buttons
 
     def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity):
@@ -110,16 +134,33 @@ class LeftButtonMenu(object):
 class RightButtonMenu(object):
     def __init__(self, root, items):
         self.canvas = tk.Canvas(root, width=500, height=80)
-        self.canvas.place(x=270, y=210)  # Shifted to x=400 instead of x=100
+        self.canvas.place(x=270, y=210) 
         self.buttons = self.create_extra_buttons(self.canvas, items)
         create_menu(self.buttons)
     
     def create_extra_buttons(self, canvas, items):
+        button_colors =[
+        COLOR_LEFT_AND_RIGHT_INSPECT_BUTTONS,
+        COLOR_LEFT_AND_RIGHT_SAVE_BUTTONS,
+        COLOR_LEFT_AND_RIGHT_SQUISH_BUTTONS
+    ]
         buttons = []
-        for item in items:
-            (text, action) = item
-            buttons.append(tk.Button(canvas, text="R", height=2, width=5,
-                                     command=action))
+        for i, item in enumerate(items):
+            _, action = item
+            color = button_colors[i]
+            button = tk.Button(
+                canvas,
+                text="R",
+                height=2,
+                width=5,
+                font=BUTTON_FONT,
+                bg=color,
+                fg=FG_COLOR_FOR_BUTTON_TEXT,
+                activebackground=color,
+                command=action
+            )
+            buttons.append(button)
+        
         return buttons
 
     def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity):

@@ -9,6 +9,7 @@ from ui_elements.machine_menu import MachineMenu
 from os.path import join
 from PIL import Image, ImageTk
 import random
+from ui_elements.theme import COLOR_SAVE, COLOR_SKIP, COLOR_SCRAM, COLOR_SQUISH, COLOR_INSPECT
 
 class IntroScreen:
     def __init__(self, on_start_callback):
@@ -40,6 +41,7 @@ class UI(object):
         capacity = self.scorekeeper.capacity
         w, h = 1280, 800
         self.root = tk.Tk()
+        self.create_menu_bar()
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
         self.root.geometry(f"{w}x{h}")
         self.root.resizable(False, False)
@@ -82,10 +84,10 @@ class UI(object):
                                   self.get_next(
                                       data_fp,
                                       data_parser,
-                                      scorekeeper)]),
-            (f"Inspect ({get_inspect_cost()} mins)", lambda: [self.show_action_popup("Inspect")]),
-            ("Squish (5 mins)", lambda: self.show_action_popup("Squish")),
-            ("Save (30 mins)", lambda: self.show_action_popup("Save")),
+                                      scorekeeper)],COLOR_SKIP),
+            (f"Inspect ({get_inspect_cost()} mins)", lambda: [self.show_action_popup("Inspect")],COLOR_INSPECT),
+            ("Squish (5 mins)", lambda: self.show_action_popup("Squish"),COLOR_SQUISH),
+            ("Save (30 mins)", lambda: self.show_action_popup("Save"),COLOR_SAVE),
             (get_scram_text(), lambda: [
                                     print(f"[DEBUG] Scram penalty applied: {get_scram_time()} minutes"),
                                     scorekeeper.scram(time_cost=get_scram_time()),
@@ -94,7 +96,7 @@ class UI(object):
                                     self.get_next(
                                         data_fp,
                                         data_parser,
-                                        scorekeeper)])
+                                        scorekeeper)],COLOR_SCRAM)
         ]
         self.button_menu = ButtonMenu(self.root, self.user_buttons)
 
@@ -126,7 +128,6 @@ class UI(object):
             ("Squish Left", self.left_action_callbacks[1]),
             ("Save Left", self.left_action_callbacks[2])
         ])
-
         self.right_action_callbacks = [
             lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.humanoid_right, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0)), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
             lambda: [self.scorekeeper.squish(self.humanoid_right), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)],  # Squish Right
@@ -172,11 +173,6 @@ class UI(object):
         rules_btn_width = 200
         rules_btn_x = 100
         rules_btn_y = 90
-        self.rules_btn = tk.Button(self.root, text="Rules", command=self.show_rules, 
-                                  font=("Arial", 18), bg="#4CAF50", fg="white", 
-                                  relief="raised", bd=2, width=12)
-        self.rules_btn.place(x=rules_btn_x, y=rules_btn_y)
-
         # 2D grid map setup (bottom left)
         # 1 = up, 2 = down, 3 = right, 4 = left, 5 = base
         self.map_array = [
@@ -198,12 +194,6 @@ class UI(object):
         self.direction_idx = 0  # Start facing right
         # self.create_grid_map_canvas() # This line is moved
         # self.draw_grid_map() # This line is moved
-
-        self.upgrade_btn = tk.Button(self.root, text="Upgrade Shop",
-                                command=self.show_upgrade_shop,
-                                font=("Arial", 18), bg="#F39C12", fg="white",
-                                relief="raised", bd=2, width=12)
-        self.upgrade_btn.place(x=300, y=rules_btn_y)
 
         # Movement progress label
         self.movement_label = tk.Label(self.root, text="Route Progress: 0/20", 
@@ -231,6 +221,15 @@ class UI(object):
         self.inspect_canvas.tkraise()
 
         self.root.mainloop()
+    
+    def clear_main_ui(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+     
+    def rebuild_main_ui(self):
+    # Simply destroy the root window and restart the game
+        self.root.destroy()
+        IntroScreen(lambda: UI(self.data_parser, self.scorekeeper, self.data_fp, suggest=False, log=self.log))   
     
     def show_leftright_instructions(self):
         leftright_text = (
@@ -283,6 +282,9 @@ class UI(object):
 
 
     def show_rules(self):
+        self.clear_main_ui()
+        tk.Label(self.root, text="Game Rules", font=("Arial", 24, "bold")).pack(pady=20)
+        
         rules_text = (
             "Game Rules:\n"
             "- The goal is to complete the ambulance route (20 movements).\n"
@@ -303,16 +305,10 @@ class UI(object):
             "- This is where we can add more rules in case we need to. \n\n"
         )
 
-        rules_window = tk.Toplevel(self.root)
-        rules_window.title("Game Rules")
-        rules_window.geometry("1200x500")
-        rules_window.resizable(False, False)
+        tk.Label(self.root, text=rules_text, font=("Arial", 12), justify="left", padx=20).pack()
 
-        label = tk.Label(rules_window, text=rules_text, justify="left", padx=10, pady=10, font=("Helvetica", 11))
-        label.pack(expand=True, fill="both")
-
-        close_btn = tk.Button(rules_window, text="Close", command=rules_window.destroy)
-        close_btn.pack(pady=10)
+        tk.Button(self.root, text="Back to Game", font=("Arial", 14),
+              command=self.rebuild_main_ui).pack(pady=30)
 
     def update_ui(self, scorekeeper):     
         # Use elapsed time to drive the clock forward
@@ -713,16 +709,16 @@ class UI(object):
         self.draw_grid_map()
 
     def show_upgrade_shop(self):
-        shop = tk.Toplevel(self.root)
-        shop.title("Upgrade Shop")
-        shop.geometry("400x300")
-        shop.resizable(False, False)
+        self.clear_main_ui()
 
-    # Show current money
+    # Title
+        tk.Label(self.root, text="Upgrade Shop", font=("Arial", 24, "bold")).pack(pady=20)
+
+    # Money display
         money = self.scorekeeper.upgrade_manager.get_money()
-        tk.Label(shop, text=f"Money: ${money}", font=("Arial", 16)).pack(pady=10)
+        tk.Label(self.root, text=f"Money: ${money}", font=("Arial", 16)).pack(pady=10)
 
-    # Show each upgrade
+    # Each upgrade
         for name, info in self.scorekeeper.upgrade_manager.upgrades.items():
             upgrade_label = name.replace("_", " ").title()
             level = info["level"]
@@ -730,23 +726,24 @@ class UI(object):
 
             def make_purchase(n=name):
                 if self.scorekeeper.upgrade_manager.purchase(n):
-                    # If ambulance capacity was upgraded, update the capacity meter
                     if n == "ambulance_capacity":
                         self.capacity_meter.render(self.scorekeeper.capacity, self.capacity_meter.unit_size)
-                    shop.destroy()
-                    self.show_upgrade_shop()  # Refresh the popup
+                    self.show_upgrade_shop()  # Refresh the shop view
 
             btn_text = f"{upgrade_label} (Level {level})"
             if level >= self.scorekeeper.upgrade_manager.upgrades[name]["max"]:
                 btn_text += " (MAX)"
-                btn = tk.Button(shop, text=btn_text, font=("Arial", 12),
-                    state='disabled',bg="#dddddd", disabledforeground="gray")
+                btn = tk.Button(self.root, text=btn_text, font=("Arial", 12),
+                            state='disabled', bg="#dddddd", disabledforeground="gray")
             else:
                 btn_text += f" - ${cost}"
-                btn = tk.Button(shop, text=btn_text, font=("Arial", 12),
-                    command=make_purchase)
+                btn = tk.Button(self.root, text=btn_text, font=("Arial", 12), command=make_purchase)
 
             btn.pack(pady=5)
+
+    # Back button
+        tk.Button(self.root, text="Back to Game", font=("Arial", 14),
+                command=self.rebuild_main_ui).pack(pady=30)
 
     def print_scenario_side_attributes(self, side):
         lines = [f"{side.title()} side:"]
@@ -771,4 +768,18 @@ class UI(object):
     def add_elapsed_time(self, minutes):
         self.scorekeeper.remaining_time -= minutes
 
+    def create_menu_bar(self):
+        self.menu_bar = tk.Frame(self.root, bg="#eeeeee", height=50)
+        self.menu_bar.place(x=0, y=0, width=1280, height=50)
 
+    # Styled buttons
+        btn_font = ("Helvetica", 14, "bold")
+
+        tk.Button(self.menu_bar, text="Upgrades", font=btn_font, bg="#ffffff", fg="#2E86AB",
+              relief="raised", padx=10, pady=5, command=self.show_upgrade_shop).pack(side="left", padx=1)
+
+        tk.Button(self.menu_bar, text="Rules", font=btn_font, bg="#ffffff", fg="#2E86AB",
+              relief="raised", padx=10, pady=5, command=self.show_rules).pack(side="left", padx=1)
+
+        tk.Button(self.menu_bar, text="Exit", font=btn_font, bg="#ffffff", fg="#AA0000",
+              relief="raised", padx=10, pady=5, command=self.root.quit).pack(side="left", padx=1)
