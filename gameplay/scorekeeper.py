@@ -297,10 +297,40 @@ class ScoreKeeper(object):
             pass
             
         
-    """
-    end of those annoying shenanigans
-    """
-        
+        """
+        end of those annoying shenanigans, start of beaver functionality
+        """
+
+        if class_val == "Beaver":
+            # Transform all injured and zombie people in the ambulance to healthy
+            beaver_transformed = False
+            # Update ambulance_people
+            for humanoid_id, person in self.ambulance_people.items():
+                if person["class"] == "Zombie":
+                    person["class"] = "Default"
+                    person["injured"] = "False"
+                    person["role"] = "Civilian"
+                    beaver_transformed = True
+                elif person["class"] == "Default" and person["injured"] == "True":
+                    person["injured"] = "False"
+                    beaver_transformed = True
+            # Count how many were previously injured and zombies
+            num_injured = self.ambulance["injured"]
+            num_zombie = self.ambulance["zombie"]
+            # All become healthy
+            self.ambulance["healthy"] += num_injured + num_zombie
+            self.ambulance["injured"] = 0
+            self.ambulance["zombie"] = 0
+            # Show popup message
+            if beaver_transformed:
+                try:
+                    import tkinter.messagebox
+                    tkinter.messagebox.showinfo('Beaver Magic', 'The Transformational Beaver made everyone in your ambulance healthy!')
+                except Exception as e:
+                    print(f'[DEBUG] Could not show popup: {e}')
+            else:
+                import tkinter.messagebox
+                tkinter.messagebox.showinfo('Beaver Magic', 'You encountered the Magical Beaver... but there was no one to save!')
 
     def squish(self, image):
         """
