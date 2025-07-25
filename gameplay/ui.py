@@ -15,7 +15,13 @@ class IntroScreen:
     def __init__(self, on_start_callback):
         self.root = tk.Tk()
         self.root.title("Welcome to SGAI 2025 - Team Splice")
-        self.root.geometry("600x350")
+        window_width = 600
+        window_height = 350
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        x = (screen_width // 2) - (window_width // 2)
+        y = (screen_height // 2) - (window_height // 2)
+        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
         self.root.resizable(False, False)
         self.on_start_callback = on_start_callback
         self.setup_ui()
@@ -43,7 +49,11 @@ class UI(object):
         self.root = tk.Tk()
         self.create_menu_bar()
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
-        self.root.geometry(f"{w}x{h}")
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        x = (screen_width // 2) - (w // 2)
+        y = (screen_height // 2) - (h // 2)
+        self.root.geometry(f"{w}x{h}+{x}+{y}")
         self.root.resizable(False, False)
         # Time management variables
         self.total_time = 720  # 12 hours in minutes
