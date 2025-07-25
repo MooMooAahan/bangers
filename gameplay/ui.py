@@ -40,14 +40,14 @@ class UI(object):
         self.data_fp = data_fp  # Store data_fp reference
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         capacity = self.scorekeeper.capacity
-        self.fasle_saves = 0
+        self.false_saves = 0
         w, h = 1280, 800
         self.root = root
         self.root.deiconify()  # Ensure the main window is shown
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
         self.root.geometry(f"{w}x{h}")
         self.root.resizable(False, False)
-        self.fasle_saves = 0 
+        self.false_saves = 0 
         # Time management variables
         self.total_time = 720  # 12 hours in minutes
         # self.elapsed_time removed; time is managed by ScoreKeeper
@@ -89,7 +89,7 @@ class UI(object):
                                   self.get_next(
                                       data_fp,
                                       data_parser,
-                                      scorekeeper)]),
+                                      scorekeeper) if not getattr(self, 'route_complete', False) else None]),
             (f"Inspect ({get_inspect_cost()} mins)", lambda: [self.show_action_popup("Inspect")]),
             ("Squish (5 mins)", lambda: self.show_action_popup("Squish")),
             ("Save (30 mins)", lambda: self.show_action_popup("Save")),
@@ -101,7 +101,7 @@ class UI(object):
                                     self.get_next(
                                         data_fp,
                                         data_parser,
-                                        scorekeeper)])
+                                        scorekeeper) if not getattr(self, 'route_complete', False) else None])
         ]
 
         # Debug and try/except for each major widget
@@ -132,8 +132,8 @@ class UI(object):
         # Save references to left/right button actions for map movement
         self.left_action_callbacks = [
             lambda: [self.print_scenario_side_attributes('left'), self.scorekeeper.inspect(self.image_left, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0), route_position=self.movement_count, side='left'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Left
-            lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)],  # Squish Left
-            lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)]  # Save Left
+            lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Left
+            lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Left
         ]
         self.left_button_menu = LeftButtonMenu(self.root, [
             ("Inspect Left", self.left_action_callbacks[0]),
@@ -143,8 +143,8 @@ class UI(object):
 
         self.right_action_callbacks = [
             lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0), route_position=self.movement_count, side='right'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
-            lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)],  # Squish Right
-            lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper)]  # Save Right
+            lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Right
+            lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Right
         ]
         self.right_button_menu = RightButtonMenu(self.root, [
             ("Inspect Right", self.right_action_callbacks[0]),
@@ -156,7 +156,7 @@ class UI(object):
                 ("Suggest", lambda: [self.machine_interface.suggest(self.image_left)]),
                 ("Act", lambda: [self.machine_interface.act(scorekeeper, self.image_left),
                                  self.update_ui(scorekeeper),
-                                 self.get_next(data_fp, data_parser, scorekeeper)])
+                                 self.get_next(data_fp, data_parser, scorekeeper) if not getattr(self, 'route_complete', False) else None])
             ]
             self.machine_menu = MachineMenu(self.root, machine_buttons)
         # Display two stacked (vertically) photos, centered horizontally
@@ -542,6 +542,10 @@ class UI(object):
 
     def disable_buttons_if_insufficient_time(self, remaining_time, remaining_humanoids, at_capacity):
         """Disable buttons based on remaining time and other constraints"""
+        # Don't re-enable buttons if the game is complete
+        if hasattr(self, 'route_complete') and self.route_complete:
+            return
+            
         # Use the existing ButtonMenu.disable_buttons method
         # Note: ButtonMenu now handles Skip (index 0), Inspect (index 1), Squish (index 2), Save (index 3)
         self.button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity)
@@ -732,7 +736,7 @@ class UI(object):
         saved_label.pack()
         score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
         score_label.pack()
-        zombie_ambu= tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.fasle_saves}", font=("Arial", 12))
+        zombie_ambu= tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=("Arial", 12))
         zombie_ambu.pack()
         accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
         accuracy_label.pack()
@@ -750,9 +754,9 @@ class UI(object):
         self.game_viewer_right.delete_photo(None)
         #self.game_viewer_right.canvas.delete('all') # not sure if necessary
         # Disable all button functionality when route is complete
-        self.button_menu.disable_buttons(0, 0, True)
-        self.left_button_menu.disable_buttons(0, 0, True)
-        self.right_button_menu.disable_buttons(0, 0, True)
+        self.button_menu.force_disable_all_buttons()
+        self.left_button_menu.force_disable_all_buttons()
+        self.right_button_menu.force_disable_all_buttons()
         if hasattr(self, 'machine_menu'):
             self.machine_menu.disable_buttons(0, 0, True)
         self.rules_btn.config(state='disabled')
@@ -852,6 +856,7 @@ class UI(object):
                 lines.append(f"  Humanoid {idx + 1}:")
                 #lines.append(f"    File path: {humanoid.fp}")
                 lines.append(f"    State: {humanoid.state}")
+                # Always display the original role, regardless of state
                 lines.append(f"    Role: {humanoid.role}")
                 # Add more attributes if you want, e.g. gender, item, etc.
             else:

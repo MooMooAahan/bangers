@@ -249,7 +249,7 @@ class ScoreKeeper(object):
             self.ambulance_people[filename] = {
                 "class": class_val,
                 "injured": status_val,
-                "role": roles_val if class_val == "Default" else "Blank",
+                "role": roles_val,  # Always preserve the original role
                 "original_status": class_val
             }
             # print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
@@ -258,20 +258,17 @@ class ScoreKeeper(object):
             classes[1] = classes[1].capitalize()
             injuries = status_val.split('|')
             roles = roles_val.split('|')
-            if classes[0] == "Zombie":
-                roles[0] = "Blank"
-            if classes[1] == "Zombie":
-                roles[1] = "Blank"
+            # Always preserve the original roles, regardless of state
             self.ambulance_people[filename + "_1"] = {
                 "class": classes[0],
                 "injured": injuries[0],
-                "role": roles[0] if class_val == "Default" else "Blank",
+                "role": roles[0],  # Always preserve the original role
                 "original_status": classes[0]
             }
             self.ambulance_people[filename + "_2"] = {
                 "class": classes[1],
                 "injured": injuries[1],
-                "role": roles[1] if class_val == "Default" else "Blank",
+                "role": roles[1],  # Always preserve the original role
                 "original_status": classes[1]
             }
         else:
@@ -665,7 +662,7 @@ class ScoreKeeper(object):
                 if random.random() < infection_chance:
                     # Turn this human into a zombie
                     humanoid_data["class"] = "Zombie"
-                    humanoid_data["role"] = "blank"
+                    # Keep the original role, don't change it to "blank"
 
                     # Update ambulance counts
                     if humanoid_data.get("status") == "True":
@@ -701,7 +698,7 @@ class ScoreKeeper(object):
                 if random.random() < cure_chance:
                     # Cure this zombie
                     humanoid_data["class"] = "Default"
-                    humanoid_data["role"] = "Civilian"
+                    # Keep the original role, don't change it to "Civilian"
                     # Keep status (injured/healthy) the same
                     humanoid_data["original_status"] = "cured_zombie"
                     self.scorekeeper["zombie_cured"] += 1

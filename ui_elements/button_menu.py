@@ -40,6 +40,11 @@ class ButtonMenu(object):
         for button in self.buttons:
             button.config(state="normal")
             
+    def force_disable_all_buttons(self):
+        """Force disable all buttons regardless of conditions (for game end)"""
+        for button in self.buttons:
+            button.config(state="disabled")
+            
     
             
             
@@ -106,6 +111,11 @@ class LeftButtonMenu(object):
         for button in self.buttons:
             button.config(state="normal")
             
+    def force_disable_all_buttons(self):
+        """Force disable all buttons regardless of conditions (for game end)"""
+        for button in self.buttons:
+            button.config(state="disabled")
+            
 
 class RightButtonMenu(object):
     def __init__(self, root, items):
@@ -144,6 +154,11 @@ class RightButtonMenu(object):
         """Enables button for when you need to retry"""
         for button in self.buttons:
             button.config(state="normal")
+            
+    def force_disable_all_buttons(self):
+        """Force disable all buttons regardless of conditions (for game end)"""
+        for button in self.buttons:
+            button.config(state="disabled")
             
             
             
