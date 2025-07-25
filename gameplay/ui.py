@@ -196,7 +196,8 @@ class UI(object):
         except Exception as e:
             print("Exception creating clock:", e)
         def get_ambulance_people():
-            return [f'{k}: {v}' for k, v in self.scorekeeper.ambulance.items() if v > 0]
+            # Return a list of dicts from ambulance_people
+            return list(self.scorekeeper.ambulance_people.values())
         try:
             print("Creating capacity meter")
             self.capacity_meter = CapacityMeter(self.root, w, h, capacity, get_ambulance_contents=get_ambulance_people)
