@@ -6,7 +6,7 @@ from gameplay.enums import ActionCost
 
 class ButtonMenu(object):
     def __init__(self, root, items):
-        self.canvas = tk.Canvas(root, width=500, height=80)
+        self.canvas = tk.Canvas(root, width=500, height=80,bg="black",highlightthickness=0)
         self.canvas.place(x=35, y=52)
         self.buttons = create_buttons(self.canvas, items)
         create_menu(self.buttons)

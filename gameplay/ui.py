@@ -47,6 +47,7 @@ class UI(object):
         capacity = self.scorekeeper.capacity
         w, h = 1280, 800
         self.root = tk.Tk()
+        self.root.configure(bg="black")
         self.create_menu_bar()
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
         screen_width = self.root.winfo_screenwidth()
@@ -196,7 +197,7 @@ class UI(object):
         self.grid_rows = len(self.map_array)
         self.grid_cols = len(self.map_array[0])
         self.cell_size = 44  # Small for better fit
-        self.grid_origin = (20, 470)  # Lower left, but higher up
+        self.grid_origin = (20, 500)  # Lower left, but higher up
         self.create_grid_map_canvas()  # Create the canvas first
         self.reset_map()               # Now it's safe to call reset_map()
         self.draw_grid_map()           # Draw the map with background image
@@ -779,7 +780,7 @@ class UI(object):
         self.scorekeeper.remaining_time -= minutes
 
     def create_menu_bar(self):
-        self.menu_bar = tk.Frame(self.root, bg="#eeeeee", height=50)
+        self.menu_bar = tk.Frame(self.root, bg="#000000", height=50)
         self.menu_bar.place(x=0, y=0, width=1280, height=50)
 
     # Styled buttons
