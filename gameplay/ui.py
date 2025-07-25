@@ -158,20 +158,21 @@ class UI(object):
             ]
             self.machine_menu = MachineMenu(self.root, machine_buttons)
         # Display two stacked (vertically) photos, centered horizontally
-        image_width = 300
-        vertical_gap = 30  # pixels between images
+        image_width = 375
+        horizontal_gap = 30  # pixels between images
         w, h = 1280, 800
         # Calculate total width for both images side by side
         total_width = image_width * 2
         # Center the pair of images
         center_x = (w - total_width) // 2
-        y_top = 100 + 50  # Shift down by 50 pixels
+        y_top = 70 + 50 # Shift down by 50 pixels
+        offset = 65 #shifting the images horizontally
         # Place left and right images side by side
         self.game_viewer_left = GameViewer(self.root, image_width, h, data_fp, self.humanoid_left)
         self.game_viewer_right = GameViewer(self.root, image_width, h, data_fp, self.humanoid_right)
         # Place the canvases - left on the left, right on the right, both at y_top
-        self.game_viewer_left.canvas.place(x=center_x, y=y_top)
-        self.game_viewer_right.canvas.place(x=center_x + image_width, y=y_top)
+        self.game_viewer_left.canvas.place(x=center_x - offset, y=y_top)
+        self.game_viewer_right.canvas.place(x=center_x - offset + image_width + horizontal_gap, y=y_top)
         self.root.bind("<Delete>", self.game_viewer_left.delete_photo)
         self.root.bind("<Delete>", self.game_viewer_right.delete_photo)
         # Display the countdown
