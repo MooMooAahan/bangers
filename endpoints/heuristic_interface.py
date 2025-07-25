@@ -29,19 +29,61 @@ class Predictor(object):
 
     def _load_model(self, weights_path, num_classes=4):
         try:
-            self.net = DefaultCNN(num_classes)
-            self.net.load_state_dict(torch.load(weights_path))
+            # First, try loading as new multi-task model
+            self.net = DefaultCNN(num_classes, legacy_mode=False)
+            state_dict = torch.load(weights_path, map_location=self.device)
+            self.net.load_state_dict(state_dict)
+            print("✅ Loaded new multi-task CNN model")
             return True
-        except Exception as e:  # file not found, maybe others?
-            print(e)
-            return False
+        except Exception as e1:
+            try:
+                # If that fails, try loading as legacy model
+                print("⚠️  New model failed, trying legacy model...")
+                self.net = DefaultCNN(num_classes, legacy_mode=True)
+                state_dict = torch.load(weights_path, map_location=self.device)
+                self.net.load_state_dict(state_dict)
+                print("✅ Loaded legacy CNN model")
+                return True
+            except Exception as e2:
+                print(f"❌ Failed to load both new and legacy models:")
+                print(f"   New model error: {e1}")
+                print(f"   Legacy model error: {e2}")
+                return False
 
     def get_probs(self, img_):
+        """Get probabilities from both legacy and multi-task CNN"""
         if self.is_model_loaded:
-            img_ = self.transforms(img_).float().unsqueeze(0).to(self.device)
-            with torch.no_grad():
-                outputs = self.net(img_)
-                probs = torch.nn.functional.softmax(outputs, 1)[0].cpu().numpy()
+            try:
+                # Ensure RGB format
+                if img_.mode != 'RGB':
+                    img_ = img_.convert('RGB')
+                
+                img_tensor = self.transforms(img_).float().unsqueeze(0).to(self.device)
+                
+                with torch.no_grad():
+                    outputs = self.net(img_tensor)
+                    
+                    # Handle both legacy and new CNN outputs
+                    if isinstance(outputs, dict):
+                        # New multi-task CNN
+                        person1_probs, person2_probs, count_probs = self.net.get_probs(outputs)
+                        
+                        # For backward compatibility, return average of valid person predictions
+                        # Weight by count predictions
+                        if count_probs[0] > 0.5:  # Likely 0 people
+                            # Default to neutral/healthy distribution if no people detected
+                            probs = np.array([0.1, 0.6, 0.2, 0.1])  # [zombie, healthy, injured, corpse]
+                        elif count_probs[1] > 0.5:  # Likely 1 person
+                            probs = person1_probs
+                        else:  # Likely 2 people, take average
+                            probs = (person1_probs + person2_probs) / 2
+                    else:
+                        # Legacy single-task CNN - simple tensor output
+                        probs = torch.nn.functional.softmax(outputs, 1)[0].cpu().numpy()
+                        
+            except Exception as e:
+                print(f"CNN prediction error: {e}")
+                probs = np.ones(self.classes) / self.classes
         else:
             probs = np.ones(self.classes) / self.classes
         return probs
@@ -101,13 +143,43 @@ class HeuristicInterface(object):
     def get_random_suggestion():
         return random.choice(list(ActionCost))
 
-    def get_model_suggestion(self, humanoid, is_capacity_full) -> ActionCost:
-        img_ = Image.open(os.path.join(self.img_data_root, humanoid.fp))
+    def get_model_suggestion(self, image_or_humanoid, is_capacity_full) -> ActionCost:
+        # Handle both Image objects (from main.py) and Humanoid objects
+        if hasattr(image_or_humanoid, 'fp'):
+            # It's a Humanoid object
+            image_path = image_or_humanoid.fp
+            actual_state = State(image_or_humanoid.state)
+            occupation = getattr(image_or_humanoid, 'role', 'Unknown')
+        else:
+            # It's an Image object
+            image_path = image_or_humanoid.Filename
+            # For Image objects, get the actual state from the first humanoid
+            first_humanoid = next((h for h in image_or_humanoid.humanoids if h is not None), None)
+            if first_humanoid:
+                actual_state = State(first_humanoid.state)
+                occupation = getattr(first_humanoid, 'role', 'Unknown')
+            else:
+                actual_state = State.HEALTHY  # Default fallback
+                occupation = 'Unknown'
+        
+        img_ = Image.open(os.path.join(self.img_data_root, image_path))
         probs: np.ndarray = self.predictor.get_probs(img_)
 
         predicted_ind: int = np.argmax(probs, 0)
         class_string = Humanoid.get_all_states()[predicted_ind]
         predicted_state = State(class_string)
+
+        # 🔍 DEBUG: CNN Accuracy Testing
+        confidence = probs[predicted_ind]
+        
+        print(f"🧠 CNN DEBUG - Image: {image_path}")
+        print(f"   📊 Predictions: {dict(zip(Humanoid.get_all_states(), probs))}")
+        print(f"   🎯 Predicted: {predicted_state.value} (confidence: {confidence:.3f})")
+        print(f"   ✅ Actual: {actual_state.value}")
+        print(f"   {'✅ CORRECT' if predicted_state == actual_state else '❌ WRONG'}")
+        print(f"   🏥 Occupation: {occupation}")
+        print(f"   ⚡ Recommended Action: {self._map_class_to_action_default(predicted_state, is_capacity_full).name}")
+        print("-" * 60)
 
         # given the model's class prediction, recommend an action
         recommended_action = self._map_class_to_action_default(predicted_state, is_capacity_full)
