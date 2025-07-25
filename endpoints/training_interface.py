@@ -49,12 +49,15 @@ class TrainInterface(Env):
 
         self.action_space = spaces.Discrete(self.environment_params['num_actions'])
         
-        self.predictor = Predictor(classes=self.environment_params['num_classes'], model_file=classifier_model_file)
+        # Initialize CNN predictor for observations
+        self.predictor = Predictor(classes=self.environment_params['num_classes'], 
+                                 model_file=classifier_model_file)
         
-        # Helper variables
-        self.current_image = None
-        self.current_humanoid_probs = None
-        self.previous_cum_reward = 0
+        # Initialize state
+        self.current_image_left = None
+        self.current_image_right = None
+        self.current_humanoid_probs_left = np.ones(self.environment_params['num_classes']) / self.environment_params['num_classes']
+        self.current_humanoid_probs_right = np.ones(self.environment_params['num_classes']) / self.environment_params['num_classes']
         
         self.reset()
 
@@ -74,7 +77,7 @@ class TrainInterface(Env):
         """
         # Reset observation space
         self.observation_space = {
-            "variables": np.zeros(3),
+            "variables": np.zeros(4),  # Updated: time, reward, capacity, zombie_count
             "vehicle_storage_class_probs": np.zeros((self.environment_params['car_capacity'], self.environment_params['num_classes'])),
             "humanoid_class_probs": np.zeros(self.environment_params['num_classes'] * 2),  # Both left and right
             "doable_actions": np.ones(self.environment_params['num_actions'], dtype=np.int64),
@@ -99,9 +102,17 @@ class TrainInterface(Env):
             self.current_image_left = self.data_parser.get_random(side='left')
             self.current_image_right = self.data_parser.get_random(side='right')
             
-            # Load both images for CNN prediction
-            img_path_left = os.path.join(self.img_data_root, self.current_image_left.fp)
-            img_path_right = os.path.join(self.img_data_root, self.current_image_right.fp)
+            # Handle both Image objects (with .Filename) and Humanoid objects (with .fp)
+            def get_image_path(image_obj):
+                if hasattr(image_obj, 'fp'):
+                    # It's a Humanoid object
+                    return image_obj.fp
+                else:
+                    # It's an Image object  
+                    return image_obj.Filename
+            
+            img_path_left = os.path.join(self.img_data_root, get_image_path(self.current_image_left))
+            img_path_right = os.path.join(self.img_data_root, get_image_path(self.current_image_right))
             
             pil_img_left = Image.open(img_path_left)
             pil_img_right = Image.open(img_path_right)
@@ -146,6 +157,15 @@ class TrainInterface(Env):
                         0  # corpse placeholder
                     ])
         
+        # Add strategic information: zombie count (for police effect awareness)
+        zombie_count_normalized = min(self.scorekeeper.ambulance.get("zombie", 0) / self.scorekeeper.capacity, 1.0)
+        self.observation_space['variables'] = np.array([
+            self.scorekeeper.remaining_time / self.scorekeeper.shift_len,  # Normalize to [0,1]
+            self.previous_cum_reward / 100.0,  # Scale reward
+            sum(self.scorekeeper.ambulance.values()) / self.scorekeeper.capacity,  # Capacity ratio
+            zombie_count_normalized,  # Zombie ratio (important for police effect)
+        ])
+        
     def step(self, action_idx):
         """
         Acts on the environment and returns the observation state, reward, etc.
@@ -153,6 +173,15 @@ class TrainInterface(Env):
         action_idx : the index of the action being taken
         Actions: 0=SKIP_BOTH, 1=SQUISH_LEFT, 2=SQUISH_RIGHT, 3=SAVE_LEFT, 4=SAVE_RIGHT, 5=SCRAM
         """
+        
+        # 🧟 Process zombie infections and cures at start of each turn (like main game)
+        infected_humanoids = self.scorekeeper.process_zombie_infections()
+        if infected_humanoids:
+            print(f"[RL TRAINING] Zombie infection occurred: {infected_humanoids}")
+            
+        cured_humanoids = self.scorekeeper.process_zombie_cures()
+        if cured_humanoids:
+            print(f"[RL TRAINING] Zombie cure occurred: {cured_humanoids}")
         
         reward = 0
         finished = False  # is game over

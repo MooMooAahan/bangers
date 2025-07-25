@@ -37,7 +37,7 @@ class RolloutBuffer:
 class BaseModel(nn.Module):
     def __init__(self,):
         super(BaseModel, self).__init__()
-        self.external_variables = 3
+        self.external_variables = 4  # Updated: time, reward, capacity, zombie_count
         self.storage_cap = 10
         self.humanoid_classes = 4
         self.action_dim = 6  # Updated: SKIP_BOTH, SQUISH_LEFT, SQUISH_RIGHT, SAVE_LEFT, SAVE_RIGHT, SCRAM

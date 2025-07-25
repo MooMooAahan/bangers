@@ -6,6 +6,7 @@ from ui_elements.clock import Clock
 from endpoints.heuristic_interface import HeuristicInterface
 from ui_elements.game_viewer import GameViewer
 from ui_elements.machine_menu import MachineMenu
+from gameplay.scorekeeper import _safe_show_popup
 from os.path import join
 from PIL import Image, ImageTk
 import random
@@ -485,7 +486,7 @@ class UI(object):
                         infection_message += f"• {humanoid_id}\n"
                     infection_message += "\nThe ambulance is now more dangerous!"
                     # Show popup
-                    tk.messagebox.showwarning("Zombie Infection!", infection_message)
+                    _safe_show_popup("Zombie Infection!", infection_message, 'warning')
 
                 # Process zombie cures at the start of each turn
                 cured_humanoids = scorekeeper.process_zombie_cures()
@@ -497,7 +498,7 @@ class UI(object):
                     for humanoid_id in cured_humanoids:
                         cure_message += f"• {humanoid_id}\n"
                     cure_message += "\nDoctors have made the ambulance safer!"
-                    tk.messagebox.showinfo("Zombie Cure!", cure_message)
+                    _safe_show_popup("Zombie Cure!", cure_message)
                 fp_left = os.path.join(data_fp, self.image_left.Filename)
                 fp_right = os.path.join(data_fp, self.image_right.Filename)
                 self.game_viewer_left.create_photo(fp_left)

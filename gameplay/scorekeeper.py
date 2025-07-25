@@ -2,10 +2,27 @@ from gameplay.upgrades_manager import UpgradeManager
 from gameplay.enums import ActionCost, ActionState
 import pandas as pd
 import random
+import sys
 
 
 MAP_ACTION_STR_TO_INT = {s.value:i for i,s in enumerate(ActionState)}
 MAP_ACTION_INT_TO_STR = [s.value for s in ActionState]
+
+def _is_automated_mode():
+    """Check if we're in training or heuristic mode to suppress UI popups"""
+    return any(mode in sys.argv for mode in ['-m', 'train', 'heuristic'])
+
+def _safe_show_popup(title, message, popup_type='info'):
+    """Show popup only if not in automated mode"""
+    if not _is_automated_mode():
+        try:
+            import tkinter.messagebox
+            if popup_type == 'warning':
+                tkinter.messagebox.showwarning(title, message)
+            else:
+                tkinter.messagebox.showinfo(title, message)
+        except Exception as e:
+            print(f'[DEBUG] Could not show popup: {e}')
 
 """
 scoring system's global variables
@@ -259,15 +276,10 @@ class ScoreKeeper(object):
                     self.ambulance['zombie'] -= 1
                     self.scorekeeper['zombie_killed'] += 1
                     print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
-                # Show popup message
-                try:
-                    import tkinter.messagebox
-                    tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
-                except Exception as e:
-                    print(f'[DEBUG] Could not show popup: {e}')
+                # Show popup message  
+                _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
             else:
-                import tkinter.messagebox
-                tkinter.messagebox.showinfo('Police Action', 'There were no zombies for your police to kill!')
+                _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')
         elif humanoid_count == 2:
             if roles[0] == "Police" or roles[1] == "Police":
                                 # Police effect: if you pick up a police, kill 1 zombie in the ambulance
@@ -284,14 +296,9 @@ class ScoreKeeper(object):
                         self.scorekeeper['zombie_killed'] += 1
                         print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
                     # Show popup message
-                    try:
-                        import tkinter.messagebox
-                        tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
-                    except Exception as e:
-                        print(f'[DEBUG] Could not show popup: {e}')
+                    _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
                 else:
-                    import tkinter.messagebox
-                    tkinter.messagebox.showinfo('Police Action', 'There were no zombies for your police to kill!')    
+                    _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')    
 
         else: 
             pass

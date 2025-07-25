@@ -48,7 +48,7 @@ def train(env=None, data_root='data', model_file=os.path.join('models', 'baselin
 
     env_name = "ZombieRL"
     
-    has_continuous_action_space = False  # discrete action space (4 actions)
+    has_continuous_action_space = False  # discrete action space (6 actions: SKIP_BOTH, SQUISH_LEFT, SQUISH_RIGHT, SAVE_LEFT, SAVE_RIGHT, SCRAM)
 
     max_ep_len = 100                    # max timesteps in one episode (reduced for initial testing)
     max_training_timesteps = int(1e4)   # break training loop if timesteps > max_training_timesteps (reduced for testing)
