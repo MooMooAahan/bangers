@@ -119,33 +119,49 @@ class InferInterface(Env):
     
     def act(self, humanoid):
         """
-        Acts on the environment according the the humanoid given and its observation state
+        Acts on the environment according to the humanoid given and its observation state
         
-        humanoid : the humanoid being presented
+        humanoid : the individual Humanoid object being presented
         """
-        img_ = Image.open(os.path.join(self.img_data_root, humanoid.fp))
-        humanoid_probs = self.prob_predictor.get_probs(img_)
-        self.observation_space["humanoid_class_probs"] = humanoid_probs
+        # Load image for CNN prediction using humanoid.fp
+        img_path = os.path.join(self.img_data_root, humanoid.fp)
         
-        action_idx = self.action_predictor.get_action(self.get_observation_space())
-        action = ScoreKeeper.get_action_string(action_idx)
-        
-        self.scorekeeper.map_do_action(action_idx, humanoid)
-        if action == "save":
-            self.observation_space["vehicle_storage_class_probs"][self.scorekeeper.get_current_capacity()-1] = humanoid_probs
-        elif action == "scram":
-            self.observation_space["vehicle_storage_class_probs"] = np.zeros((self.environment_params['car_capacity'],self.environment_params['num_classes']))
+        try:
+            img_ = Image.open(img_path)
+            humanoid_probs = self.prob_predictor.get_probs(img_)
+            self.observation_space["humanoid_class_probs"] = humanoid_probs
+            
+            action_idx = self.action_predictor.get_action(self.get_observation_space())
+            action = ScoreKeeper.get_action_string(action_idx)
+            
+            # Execute the action using the simplified ScoreKeeper methods
+            self.scorekeeper.map_do_action(action_idx, humanoid)
+            
+            # Update observation space based on action
+            if action == "save":
+                current_capacity = self.scorekeeper.get_current_capacity()
+                if current_capacity > 0 and current_capacity <= len(self.observation_space["vehicle_storage_class_probs"]):
+                    self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = humanoid_probs
+            elif action == "scram":
+                self.observation_space["vehicle_storage_class_probs"] = np.zeros((self.environment_params['car_capacity'],self.environment_params['num_classes']))
+                
+        except Exception as e:
+            print(f"Error in inference act: {e}")
     
     def suggest(self, humanoid):
         """
-        Suggests an action on the environment according the the humanoid given and its observation state
+        Suggests an action for the given humanoid
         
-        humanoid : the humanoid being presented
+        humanoid : the individual Humanoid object being presented
         """
-        img_ = Image.open(os.path.join(self.img_data_root, humanoid.fp))
-        humanoid_probs = self.prob_predictor.get_probs(img_)
-        self.observation_space["humanoid_class_probs"] = humanoid_probs
-        
-        action_idx = self.action_predictor.get_action(self.get_observation_space())
-        action = ScoreKeeper.get_action_string(action_idx)
-        return action
+        try:
+            img_path = os.path.join(self.img_data_root, humanoid.fp)
+            img_ = Image.open(img_path)
+            humanoid_probs = self.prob_predictor.get_probs(img_)
+            self.observation_space["humanoid_class_probs"] = humanoid_probs
+            
+            action_idx = self.action_predictor.get_action(self.get_observation_space())
+            return ScoreKeeper.get_action_string(action_idx)
+        except Exception as e:
+            print(f"Error in inference suggest: {e}")
+            return "skip"  # Default fallback action

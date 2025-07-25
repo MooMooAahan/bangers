@@ -40,17 +40,18 @@ class BaseModel(nn.Module):
         self.external_variables = 3
         self.storage_cap = 10
         self.humanoid_classes = 4
-        self.action_dim = 4
+        self.action_dim = 6  # Updated: SKIP_BOTH, SQUISH_LEFT, SQUISH_RIGHT, SAVE_LEFT, SAVE_RIGHT, SCRAM
         
+        # Updated calculation for both left and right humanoid probabilities
         self.output_shape = self.external_variables+\
-                            self.humanoid_classes+\
+                            (self.humanoid_classes * 2)+\
                             self.humanoid_classes+\
                             self.action_dim
     def forward(self, inputs):
         x_v = inputs['variables']
-        x_p = inputs['humanoid_class_probs']
+        x_p = inputs['humanoid_class_probs']  # Now contains both left and right (8 values)
         x_s = inputs['vehicle_storage_class_probs']
-        x_a = inputs["doable_actions"]
+        x_a = inputs["doable_actions"]  # Now 6 values
         
         x_s = torch.sum(x_s,1) # simple: get sum of class probabilities along vehicle storage
 
@@ -62,11 +63,14 @@ class ActorCritic(nn.Module):
         super(ActorCritic, self).__init__()
 
         self.has_continuous_action_space = has_continuous_action_space
-        self.action_dim = 4
+        self.action_dim = 6  # Updated for new action space
+        
+        # Updated input size: 3 + 8 + 4 + 6 = 21
+        input_size = 21
         
         self.actor = nn.Sequential(
                         BaseModel(),
-                        nn.Linear(15, 32),
+                        nn.Linear(input_size, 32),
                         nn.ReLU(),
                         nn.Linear(32,32),
                         nn.ReLU(),
@@ -76,7 +80,7 @@ class ActorCritic(nn.Module):
         # critic
         self.critic = nn.Sequential(
                         BaseModel(),
-                        nn.Linear(15,32),
+                        nn.Linear(input_size, 32),
                         nn.ReLU(),
                         nn.Linear(32,32),
                         nn.ReLU(),
