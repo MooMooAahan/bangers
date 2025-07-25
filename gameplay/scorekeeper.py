@@ -392,10 +392,40 @@ class ScoreKeeper(object):
             pass
             
         
-    """
-    end of those annoying shenanigans
-    """
-        
+        """
+        end of those annoying shenanigans, start of beaver functionality
+        """
+
+        if class_val == "Beaver":
+            # Transform all injured and zombie people in the ambulance to healthy
+            beaver_transformed = False
+            # Update ambulance_people
+            for humanoid_id, person in self.ambulance_people.items():
+                if person["class"] == "Zombie":
+                    person["class"] = "Default"
+                    person["injured"] = "False"
+                    person["role"] = "Civilian"
+                    beaver_transformed = True
+                elif person["class"] == "Default" and person["injured"] == "True":
+                    person["injured"] = "False"
+                    beaver_transformed = True
+            # Count how many were previously injured and zombies
+            num_injured = self.ambulance["injured"]
+            num_zombie = self.ambulance["zombie"]
+            # All become healthy
+            self.ambulance["healthy"] += num_injured + num_zombie
+            self.ambulance["injured"] = 0
+            self.ambulance["zombie"] = 0
+            # Show popup message
+            if beaver_transformed:
+                try:
+                    import tkinter.messagebox
+                    tkinter.messagebox.showinfo('Beaver Magic', 'The Transformational Beaver made everyone in your ambulance healthy!')
+                except Exception as e:
+                    print(f'[DEBUG] Could not show popup: {e}')
+            else:
+                import tkinter.messagebox
+                tkinter.messagebox.showinfo('Beaver Magic', 'You encountered the Magical Beaver... but there was no one to save!')
 
     def squish(self, image, route_position=None, side=None):
         """
@@ -588,6 +618,7 @@ class ScoreKeeper(object):
         Calculate the final score based on saved/killed and also on time remaining
         """
         score = 0
+        print(f"[Debug] Ambulance: {self.ambulance}, Scorekeeper: {self.scorekeeper}, Remaining Time: {self.remaining_time}")
         score += self.ambulance["healthy"] * SCORE_HEALTHY
         score += self.ambulance["injured"] * SCORE_INJURED
         score += self.ambulance["zombie"] * SCORE_ZOMBIE
@@ -597,7 +628,7 @@ class ScoreKeeper(object):
         score += self.scorekeeper["human_infected"] * -15
         score += self.scorekeeper["zombie_killed"] * 10
         score += self.scorekeeper["human_killed"] * -10
-        score += self.remaining_time
+        score += self.remaining_time * 0.2
         if not route_complete:
             score -= 500
         return score
