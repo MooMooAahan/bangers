@@ -470,8 +470,8 @@ class ScoreKeeper(object):
     def at_capacity(self):
         return sum(self.ambulance.values()) >= self.capacity
 
-    def get_score(self):
-        self.scram()
+    def get_score(self, image_left, image_right):
+        self.scram(image_left, image_right)
         return self.scorekeeper
     
     def get_final_score(self, route_complete=True):

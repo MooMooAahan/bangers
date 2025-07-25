@@ -417,9 +417,9 @@ class UI(object):
                 final_score_label.pack(pady=(5, 2))
             # 'Final Score' label
             # Scoring details
-            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score()['killed']}", font=("Arial", 12))
+            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=("Arial", 12))
             killed_label.pack()
-            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score()['saved']}", font=("Arial", 12))
+            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=("Arial", 12))
             saved_label.pack()
             
         
@@ -517,9 +517,9 @@ class UI(object):
                 final_score_label = tk.Label(self.final_score_frame, text="FINssssAL SCORE: " + f" {final_score}", font=("Arial", 16))
                 final_score_label.pack(pady=(5, 2))
             # Scoring details
-            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score()['killed']}", font=("Arial", 12))
+            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=("Arial", 12))
             killed_label.pack()
-            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score()['saved']}", font=("Arial", 12))
+            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=("Arial", 12))
             saved_label.pack()
             score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
             score_label.pack()
@@ -721,9 +721,9 @@ class UI(object):
         final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16))
         final_score_label.pack(pady=(5, 2))
         # Scoring details
-        killed_label = tk.Label(self.final_score_frame, text=f"Killed {self.scorekeeper.get_score()['killed']}", font=("Arial", 12))
+        killed_label = tk.Label(self.final_score_frame, text=f"Killed {self.scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=("Arial", 12))
         killed_label.pack()
-        saved_label = tk.Label(self.final_score_frame, text=f"Saved {self.scorekeeper.get_score()['saved']}", font=("Arial", 12))
+        saved_label = tk.Label(self.final_score_frame, text=f"Saved {self.scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=("Arial", 12))
         saved_label.pack()
         score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
         score_label.pack()
