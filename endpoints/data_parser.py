@@ -4,6 +4,7 @@ from gameplay.humanoid import Humanoid
 from gameplay.enums import State
 import os
 from gameplay.image import Image
+import torchvision.transforms as transforms
 
 
 class DataParser(object):
@@ -71,6 +72,78 @@ class DataParser(object):
 
         image = Image(datarow)
         return image
-        return datarow
+    
+    def get_augmented_transforms(self):
+        """
+        Returns data augmentation transforms for training
+        Designed for character images with backgrounds - 5x data multiplication
+        """
+        return transforms.Compose([
+            transforms.Resize((512, 512)),  # Standardize input size
+            transforms.RandomHorizontalFlip(p=0.5),  # Mirror scenes - very effective
+            transforms.RandomRotation(degrees=10),   # Slight camera angle variation
+            transforms.ColorJitter(
+                brightness=0.3,    # Day/night lighting conditions
+                contrast=0.2,      # Weather/visibility variations
+                saturation=0.2,    # Environmental effects
+                hue=0.1           # Slight color shifts
+            ),
+            transforms.RandomResizedCrop(512, scale=(0.9, 1.0)),  # Slight zoom variation
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+    
+    def get_validation_transforms(self):
+        """Returns transforms for validation/testing (no augmentation)"""
+        return transforms.Compose([
+            transforms.Resize((512, 512)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+    
+    def create_enhanced_label(self, row):
+        """
+        Create enhanced 21-class label from metadata row
+        Args:
+            row: DataFrame row with Class, Injured, Role columns
+        Returns:
+            Enhanced class string like 'zombie_police'
+        """
+        # Parse class (Zombie or Default)
+        class_val = row.get('Class', 'Default')
+        injured_val = row.get('Injured', 'False')
+        role_val = row.get('Role', 'Civilian')
+        
+        # Convert class to status
+        if str(class_val).lower() == 'zombie':
+            if str(injured_val).lower() == 'true':
+                status = 'corpse'  # Injured zombie = corpse
+            else:
+                status = 'zombie'  # Healthy zombie
+        else:  # Default
+            if str(injured_val).lower() == 'true':
+                status = 'injured'  # Injured human
+            else:
+                status = 'healthy'  # Healthy human
+        
+        # Clean up occupation
+        occupation = str(role_val).lower().strip()
+        
+        # Map common variations to standard occupations
+        occupation_map = {
+            'blank': 'civilian',
+            'unknown': 'civilian',
+            '': 'civilian',
+            'police': 'police',
+            'doctor': 'doctor',
+            'child': 'child',
+            'civilian': 'civilian',
+            'militant': 'militant'
+        }
+        
+        occupation = occupation_map.get(occupation, 'civilian')
+        
+        # Create enhanced class using Humanoid helper
+        return Humanoid.create_enhanced_class(status, occupation)
 
 

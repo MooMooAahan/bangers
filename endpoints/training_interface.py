@@ -40,8 +40,9 @@ class TrainInterface(Env):
         }
         
         # Initialize observation space structure
+        # Variables: [time_ratio, reward_scaled, capacity_ratio, zombie_ratio]
         self.observation_space = {
-            "variables": np.zeros(3),
+            "variables": np.zeros(4),
             "vehicle_storage_class_probs": np.zeros((self.environment_params['car_capacity'], self.environment_params['num_classes'])),
             "humanoid_class_probs": np.zeros(self.environment_params['num_classes'] * 2),  # Both left and right
             "doable_actions": np.ones(self.environment_params['num_actions'], dtype=np.int64),
@@ -75,9 +76,9 @@ class TrainInterface(Env):
         resets game for a new episode to run.
         returns observation space
         """
-        # Reset observation space
+        # Reset observation space - maintain consistent 4-element structure
         self.observation_space = {
-            "variables": np.zeros(4),  # Updated: time, reward, capacity, zombie_count
+            "variables": np.zeros(4),  # [time_ratio, reward_scaled, capacity_ratio, zombie_ratio]
             "vehicle_storage_class_probs": np.zeros((self.environment_params['car_capacity'], self.environment_params['num_classes'])),
             "humanoid_class_probs": np.zeros(self.environment_params['num_classes'] * 2),  # Both left and right
             "doable_actions": np.ones(self.environment_params['num_actions'], dtype=np.int64),
@@ -129,13 +130,7 @@ class TrainInterface(Env):
     def get_observation_space(self):
         """
         Updates the observation space with current game state including both left and right scenarios
-        """
-        self.observation_space['variables'] = np.array([
-            self.scorekeeper.remaining_time, 
-            self.previous_cum_reward,
-            sum(self.scorekeeper.ambulance.values()),
-        ])
-        
+        """        
         self.observation_space["doable_actions"] = np.array(self.scorekeeper.available_action_space(), dtype=np.int64)
         
         # Include both left and right humanoid probabilities
@@ -157,13 +152,13 @@ class TrainInterface(Env):
                         0  # corpse placeholder
                     ])
         
-        # Add strategic information: zombie count (for police effect awareness)
+        # Strategic information: consistent 4-element variables array
         zombie_count_normalized = min(self.scorekeeper.ambulance.get("zombie", 0) / self.scorekeeper.capacity, 1.0)
         self.observation_space['variables'] = np.array([
-            self.scorekeeper.remaining_time / self.scorekeeper.shift_len,  # Normalize to [0,1]
-            self.previous_cum_reward / 100.0,  # Scale reward
-            sum(self.scorekeeper.ambulance.values()) / self.scorekeeper.capacity,  # Capacity ratio
-            zombie_count_normalized,  # Zombie ratio (important for police effect)
+            self.scorekeeper.remaining_time / self.scorekeeper.shift_len,  # Time ratio [0,1]
+            np.clip(self.previous_cum_reward / 100.0, -5.0, 5.0),  # Scaled reward (clipped for stability)
+            sum(self.scorekeeper.ambulance.values()) / self.scorekeeper.capacity,  # Capacity ratio [0,1]
+            zombie_count_normalized,  # Zombie ratio [0,1] (important for police effect)
         ])
         
     def step(self, action_idx):
@@ -187,68 +182,33 @@ class TrainInterface(Env):
         finished = False  # is game over
         truncated = False
         
-        # Execute action based on new action space
-        action_executed = False
+        # Execute action with proper validation and error handling
+        action_executed, failure_reason = self._execute_action_with_validation(action_idx)
         
-        try:
-            if action_idx == 0:  # SKIP_BOTH
-                if not (self.scorekeeper.remaining_time <= 0):
-                    self.scorekeeper.skip_both(self.current_image_left, self.current_image_right)
-                    action_executed = True
-                    
-            elif action_idx == 1:  # SQUISH_LEFT
-                if not (self.scorekeeper.remaining_time <= 0):
-                    self.scorekeeper.squish(self.current_image_left)
-                    action_executed = True
-                    
-            elif action_idx == 2:  # SQUISH_RIGHT
-                if not (self.scorekeeper.remaining_time <= 0):
-                    self.scorekeeper.squish(self.current_image_right)
-                    action_executed = True
-                    
-            elif action_idx == 3:  # SAVE_LEFT
-                if not (self.scorekeeper.remaining_time <= 0 or self.scorekeeper.at_capacity()):
-                    self.scorekeeper.save(self.current_image_left)
-                    action_executed = True
-                    # Update vehicle storage when saving
-                    current_capacity = self.scorekeeper.get_current_capacity()
-                    if current_capacity > 0 and current_capacity <= len(self.observation_space["vehicle_storage_class_probs"]):
-                        self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = self.current_humanoid_probs_left
-                        
-            elif action_idx == 4:  # SAVE_RIGHT
-                if not (self.scorekeeper.remaining_time <= 0 or self.scorekeeper.at_capacity()):
-                    self.scorekeeper.save(self.current_image_right)
-                    action_executed = True
-                    # Update vehicle storage when saving
-                    current_capacity = self.scorekeeper.get_current_capacity()
-                    if current_capacity > 0 and current_capacity <= len(self.observation_space["vehicle_storage_class_probs"]):
-                        self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = self.current_humanoid_probs_right
-                        
-            elif action_idx == 5:  # SCRAM
-                self.scorekeeper.scram(self.current_image_left, self.current_image_right)
-                action_executed = True
-                # Clear vehicle storage when scramming
-                self.observation_space["vehicle_storage_class_probs"] = np.zeros((self.environment_params['car_capacity'], self.environment_params['num_classes']))
-                
+        # Provide specific feedback for failed actions
+        if not action_executed:
+            if failure_reason == "time_out":
+                reward = -0.1  # Small penalty for time constraint
+            elif failure_reason == "capacity_full":
+                reward = -0.5  # Medium penalty for capacity constraint  
+            elif failure_reason == "invalid_action":
+                reward = -1.0  # Large penalty for invalid action
             else:
-                print(f"Invalid action index: {action_idx}")
-                action_executed = False
-                
-        except Exception as e:
-            print(f"Error executing action {action_idx}: {e}")
-            action_executed = False
+                reward = -0.3  # Generic penalty for other failures
         
         if action_executed:
-            # Calculate reward based on score improvement
+            # Calculate shaped reward with immediate feedback
+            reward = self._calculate_shaped_reward(action_idx)
+            
+            # Update cumulative tracking
             current_reward = self.scorekeeper.get_cumulative_reward()
-            reward = current_reward - self.previous_cum_reward
             self.previous_cum_reward = current_reward
             
             # Get next images for next step
             self.get_current_image()
         else:
             # Penalty for invalid action
-            reward = -0.5
+            reward = -1.0
         
         # Check if game should end
         if self.scorekeeper.remaining_time <= 0:
@@ -260,4 +220,164 @@ class TrainInterface(Env):
         # Update observation space
         self.get_observation_space()
         
-        return self.observation_space, reward, finished, truncated, {} 
+        return self.observation_space, reward, finished, truncated, {}
+    
+    def _calculate_shaped_reward(self, action_idx):
+        """
+        Calculate immediate shaped reward based on action and game state
+        Provides much better learning signal than sparse score differences
+        """
+        reward = 0.0
+        
+        # Get CNN predictions for both sides
+        left_pred_idx = np.argmax(self.current_humanoid_probs_left)
+        right_pred_idx = np.argmax(self.current_humanoid_probs_right)
+        left_confidence = self.current_humanoid_probs_left[left_pred_idx]
+        right_confidence = self.current_humanoid_probs_right[right_pred_idx]
+        
+        # Map predictions to states for easier logic
+        states = ['zombie', 'healthy', 'injured', 'corpse']
+        left_predicted = states[left_pred_idx]
+        right_predicted = states[right_pred_idx]
+        
+        # Base rewards for different actions on different entity types
+        action_rewards = {
+            'save_zombie': -2.0,    # Very bad - saving zombies
+            'save_human': +1.5,     # Good - saving humans/injured
+            'squish_zombie': +1.0,  # Good - eliminating threats
+            'squish_human': -1.5,   # Bad - killing humans
+            'skip_zombie': -0.5,    # Missed opportunity to eliminate threat
+            'skip_human': -0.3,     # Missed opportunity to save
+            'scram': 0.0           # Neutral base (context-dependent)
+        }
+        
+        # Calculate action-specific rewards
+        capacity_ratio = sum(self.scorekeeper.ambulance.values()) / self.scorekeeper.capacity
+        zombie_ratio = self.scorekeeper.ambulance.get("zombie", 0) / max(1, sum(self.scorekeeper.ambulance.values()))
+        time_ratio = self.scorekeeper.remaining_time / self.scorekeeper.shift_len
+        
+        if action_idx == 0:  # SKIP_BOTH
+            # Penalty based on what we're skipping
+            left_penalty = action_rewards.get(f'skip_{left_predicted}', -0.2) * left_confidence
+            right_penalty = action_rewards.get(f'skip_{right_predicted}', -0.2) * right_confidence
+            reward = (left_penalty + right_penalty) * 0.5
+            
+        elif action_idx == 1:  # SQUISH_LEFT
+            if left_predicted in ['zombie', 'corpse']:
+                reward = action_rewards['squish_zombie'] * left_confidence
+            else:
+                reward = action_rewards['squish_human'] * left_confidence
+                
+        elif action_idx == 2:  # SQUISH_RIGHT
+            if right_predicted in ['zombie', 'corpse']:
+                reward = action_rewards['squish_zombie'] * right_confidence
+            else:
+                reward = action_rewards['squish_human'] * right_confidence
+                
+        elif action_idx == 3:  # SAVE_LEFT
+            if left_predicted == 'zombie':
+                reward = action_rewards['save_zombie'] * left_confidence
+            else:
+                reward = action_rewards['save_human'] * left_confidence
+                # Bonus for saving injured over healthy
+                if left_predicted == 'injured':
+                    reward += 0.3
+                    
+        elif action_idx == 4:  # SAVE_RIGHT
+            if right_predicted == 'zombie':
+                reward = action_rewards['save_zombie'] * right_confidence
+            else:
+                reward = action_rewards['save_human'] * right_confidence
+                # Bonus for saving injured over healthy
+                if right_predicted == 'injured':
+                    reward += 0.3
+                    
+        elif action_idx == 5:  # SCRAM
+            # SCRAM is good when capacity is full or zombie ratio is high
+            if capacity_ratio > 0.8:
+                reward = +1.0  # Good decision when near capacity
+            elif zombie_ratio > 0.3:
+                reward = +0.8  # Good decision when zombies are spreading
+            else:
+                reward = -0.5  # Wasteful if not necessary
+                
+        # Time pressure bonus/penalty
+        if time_ratio < 0.2:  # Less than 20% time remaining
+            if action_idx == 5:  # SCRAM
+                reward += 0.5  # Bonus for scramming when time is low
+            elif action_idx in [3, 4]:  # SAVE actions
+                reward -= 0.3  # Small penalty for risky saves when time is critical
+                
+        # Capacity management bonus
+        if capacity_ratio > 0.9 and action_idx != 5:
+            reward -= 0.5  # Penalty for not scramming when at capacity
+            
+                # Zombie management bonus
+        if zombie_ratio > 0.4:
+            if action_idx == 5:  # SCRAM
+                reward += 0.7  # Big bonus for scramming when zombie infection is high
+            elif action_idx in [1, 2] and (left_predicted == 'zombie' or right_predicted == 'zombie'):
+                reward += 0.3  # Bonus for squishing zombies when infection is spreading
+                 
+        return reward
+    
+    def _execute_action_with_validation(self, action_idx):
+        """
+        Execute action with proper validation and clear error reporting
+        Returns (success: bool, failure_reason: str)
+        """
+        # Pre-action validation
+        if self.scorekeeper.remaining_time <= 0:
+            return False, "time_out"
+            
+        if action_idx < 0 or action_idx > 5:
+            return False, "invalid_action"
+        
+        try:
+            if action_idx == 0:  # SKIP_BOTH
+                self.scorekeeper.skip_both(self.current_image_left, self.current_image_right)
+                return True, "success"
+                
+            elif action_idx == 1:  # SQUISH_LEFT
+                self.scorekeeper.squish(self.current_image_left)
+                return True, "success"
+                
+            elif action_idx == 2:  # SQUISH_RIGHT
+                self.scorekeeper.squish(self.current_image_right)
+                return True, "success"
+                
+            elif action_idx == 3:  # SAVE_LEFT
+                if self.scorekeeper.at_capacity():
+                    return False, "capacity_full"
+                self.scorekeeper.save(self.current_image_left)
+                # Update vehicle storage tracking
+                self._update_vehicle_storage(self.current_humanoid_probs_left)
+                return True, "success"
+                
+            elif action_idx == 4:  # SAVE_RIGHT
+                if self.scorekeeper.at_capacity():
+                    return False, "capacity_full"
+                self.scorekeeper.save(self.current_image_right)
+                # Update vehicle storage tracking
+                self._update_vehicle_storage(self.current_humanoid_probs_right)
+                return True, "success"
+                
+            elif action_idx == 5:  # SCRAM
+                self.scorekeeper.scram(self.current_image_left, self.current_image_right)
+                # Clear vehicle storage when scramming
+                self.observation_space["vehicle_storage_class_probs"] = np.zeros(
+                    (self.environment_params['car_capacity'], self.environment_params['num_classes'])
+                )
+                return True, "success"
+                
+        except Exception as e:
+            print(f"Action execution error: {e}")
+            return False, "execution_error"
+            
+        return False, "unknown_error"
+    
+    def _update_vehicle_storage(self, humanoid_probs):
+        """Update vehicle storage tracking when saving someone"""
+        current_capacity = self.scorekeeper.get_current_capacity()
+        if current_capacity > 0 and current_capacity <= len(self.observation_space["vehicle_storage_class_probs"]):
+            self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = humanoid_probs 

@@ -75,7 +75,7 @@ class CNNAccuracyTester:
             return None
     
     def test_from_metadata(self, max_samples=100, verbose_per_image=False):
-        """Test CNN accuracy using metadata CSV"""
+        """Test CNN accuracy using metadata CSV with improved compound image handling"""
         print(f"🧪 Testing CNN Accuracy on {max_samples} samples...")
         print(f"📁 Model: {self.model_file}")
         print(f"📊 Data: {self.data_root}")
@@ -95,75 +95,86 @@ class CNNAccuracyTester:
         
         correct_count = 0
         total_count = 0
+        compound_images = 0
+        single_images = 0
         
         for idx in sample_indices:
             row = self.data_parser.df.iloc[idx]
             
-            # Handle compound images (HumanoidCount=2)
+            # Handle compound images (HumanoidCount=2) properly
             humanoid_count = int(row.get('HumanoidCount', 1))
             
             if humanoid_count == 1:
-                # Single humanoid
+                single_images += 1
+                # Single humanoid - use direct approach
                 image_path = os.path.join(self.data_root, row['Filename'])
-                actual_class = row['Class']
-                actual_injured = row.get('Injured', 'False')
-                
-                # Convert to state
-                if actual_class.lower() == 'zombie':
-                    actual_state = 'corpse' if actual_injured == 'True' else 'zombie'
-                else:  # Default
-                    actual_state = 'injured' if actual_injured == 'True' else 'healthy'
+                actual_state = self._parse_state_from_row(row)
                 
                 result = self.test_single_image(image_path, actual_state, 
                                               row.get('Role', 'Unknown'), 
                                               verbose_per_image)
                 
                 if result:
-                    self.predictions.append(result['predicted'])
-                    self.actuals.append(result['actual'])
-                    self.confidences.append(result['confidence'])
-                    self.image_files.append(row['Filename'])
-                    self.occupations.append(row.get('Role', 'Unknown'))
-                    
+                    self._record_result(result, row['Filename'], row.get('Role', 'Unknown'))
                     if result['correct']:
                         correct_count += 1
                     total_count += 1
                     
             elif humanoid_count == 2:
-                # Compound image - test against both people
+                compound_images += 1
+                # Compound image - CNN can only predict one dominant state
+                # We test against the "primary" person (first one listed)
                 image_path = os.path.join(self.data_root, row['Filename'])
                 
-                classes = row['Class'].split('|')
-                injuries = row['Injured'].split('|')
-                roles = row.get('Role', 'Unknown|Unknown').split('|')
+                # Parse compound data
+                classes = str(row['Class']).split('|')
+                injuries = str(row.get('Injured', 'False|False')).split('|')
+                roles = str(row.get('Role', 'Unknown|Unknown')).split('|')
                 
-                for i, (cls, inj, role) in enumerate(zip(classes, injuries, roles)):
-                    if cls.lower() == 'zombie':
-                        actual_state = 'corpse' if inj == 'True' else 'zombie' 
-                    else:
-                        actual_state = 'injured' if inj == 'True' else 'healthy'
+                # Test against first person (primary subject)
+                if len(classes) > 0 and len(injuries) > 0:
+                    primary_state = self._convert_to_state(classes[0], injuries[0])
+                    primary_role = roles[0] if len(roles) > 0 else 'Unknown'
                     
-                    result = self.test_single_image(image_path, actual_state, role, verbose_per_image)
+                    result = self.test_single_image(image_path, primary_state, 
+                                                  primary_role, verbose_per_image)
                     
                     if result:
-                        self.predictions.append(result['predicted'])
-                        self.actuals.append(result['actual'])
-                        self.confidences.append(result['confidence'])
-                        self.image_files.append(f"{row['Filename']}_person{i+1}")
-                        self.occupations.append(role)
-                        
+                        self._record_result(result, f"{row['Filename']}_primary", primary_role)
                         if result['correct']:
                             correct_count += 1
                         total_count += 1
         
-        # Calculate overall accuracy
+        # Calculate overall accuracy with improved reporting
         if total_count > 0:
             overall_accuracy = correct_count / total_count
             print(f"🎯 Overall Accuracy: {overall_accuracy:.3f} ({correct_count}/{total_count})")
+            print(f"📊 Image breakdown: {single_images} single, {compound_images} compound")
         else:
             print("❌ No valid predictions made")
             
         return self.calculate_detailed_metrics()
+    
+    def _parse_state_from_row(self, row):
+        """Parse state from dataframe row with improved error handling"""
+        actual_class = str(row.get('Class', 'Default'))
+        actual_injured = str(row.get('Injured', 'False'))
+        return self._convert_to_state(actual_class, actual_injured)
+    
+    def _convert_to_state(self, class_val, injured_val):
+        """Convert class and injury values to state with consistent logic"""
+        if class_val.lower() == 'zombie':
+            return 'corpse' if injured_val.lower() == 'true' else 'zombie'
+        else:  # Default or other
+            return 'injured' if injured_val.lower() == 'true' else 'healthy'
+    
+    def _record_result(self, result, filename, role):
+        """Record test result with consistent structure"""
+        self.predictions.append(result['predicted'])
+        self.actuals.append(result['actual'])
+        self.confidences.append(result['confidence'])
+        self.image_files.append(filename)
+        self.occupations.append(role)
     
     def calculate_detailed_metrics(self):
         """Calculate comprehensive accuracy metrics"""

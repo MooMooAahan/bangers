@@ -15,7 +15,7 @@ import warnings
 
 
 class Predictor(object):
-    def __init__(self, classes=4, model_file=os.path.join('models', 'baseline.pth')):
+    def __init__(self, classes=21, model_file=os.path.join('models', 'baseline.pth')):
         self.classes = classes
         self.net = None
         self.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
@@ -27,59 +27,49 @@ class Predictor(object):
         if not self.is_model_loaded:
             warnings.warn("Model not loaded, resorting to random prediction")
 
-    def _load_model(self, weights_path, num_classes=4):
+    def _load_model(self, weights_path, num_classes=21):
         try:
-            # First, try loading as new multi-task model
-            self.net = DefaultCNN(num_classes, legacy_mode=False)
+            # Load state dict first to determine FC layer size
             state_dict = torch.load(weights_path, map_location=self.device)
+            
+            # Extract FC layer dimensions from saved model  
+            fc_input_size = state_dict['fc.weight'].shape[1]
+            
+            # Create model and initialize FC layer with correct size
+            self.net = DefaultCNN(num_classes, input_size=512)
+            self.net.fc = torch.nn.Linear(fc_input_size, num_classes)
+            self.net.feature_size = fc_input_size
+            
+            # Load the state dict
             self.net.load_state_dict(state_dict)
-            print("✅ Loaded new multi-task CNN model")
+            self.net.to(self.device)
+            self.net.eval()
+            print("✅ Loaded enhanced 21-class CNN model successfully")
+            print(f"   FC layer expects {fc_input_size} features")
             return True
-        except Exception as e1:
-            try:
-                # If that fails, try loading as legacy model
-                print("⚠️  New model failed, trying legacy model...")
-                self.net = DefaultCNN(num_classes, legacy_mode=True)
-                state_dict = torch.load(weights_path, map_location=self.device)
-                self.net.load_state_dict(state_dict)
-                print("✅ Loaded legacy CNN model")
-                return True
-            except Exception as e2:
-                print(f"❌ Failed to load both new and legacy models:")
-                print(f"   New model error: {e1}")
-                print(f"   Legacy model error: {e2}")
-                return False
+        except Exception as e:
+            print(f"❌ Failed to load CNN model: {e}")
+            print(f"   Model path: {weights_path}")
+            print(f"   Device: {self.device}")
+            return False
 
     def get_probs(self, img_):
-        """Get probabilities from both legacy and multi-task CNN"""
+        """Get classification probabilities from CNN"""
         if self.is_model_loaded:
             try:
                 # Ensure RGB format
                 if img_.mode != 'RGB':
                     img_ = img_.convert('RGB')
                 
+                # Resize to expected input size (512x512) if necessary
+                if img_.size != (512, 512):
+                    img_ = img_.resize((512, 512), Image.Resampling.LANCZOS)
+                
                 img_tensor = self.transforms(img_).float().unsqueeze(0).to(self.device)
                 
                 with torch.no_grad():
                     outputs = self.net(img_tensor)
-                    
-                    # Handle both legacy and new CNN outputs
-                    if isinstance(outputs, dict):
-                        # New multi-task CNN
-                        person1_probs, person2_probs, count_probs = self.net.get_probs(outputs)
-                        
-                        # For backward compatibility, return average of valid person predictions
-                        # Weight by count predictions
-                        if count_probs[0] > 0.5:  # Likely 0 people
-                            # Default to neutral/healthy distribution if no people detected
-                            probs = np.array([0.1, 0.6, 0.2, 0.1])  # [zombie, healthy, injured, corpse]
-                        elif count_probs[1] > 0.5:  # Likely 1 person
-                            probs = person1_probs
-                        else:  # Likely 2 people, take average
-                            probs = (person1_probs + person2_probs) / 2
-                    else:
-                        # Legacy single-task CNN - simple tensor output
-                        probs = torch.nn.functional.softmax(outputs, 1)[0].cpu().numpy()
+                    probs = torch.nn.functional.softmax(outputs, 1)[0].cpu().numpy()
                         
             except Exception as e:
                 print(f"CNN prediction error: {e}")
@@ -87,6 +77,52 @@ class Predictor(object):
         else:
             probs = np.ones(self.classes) / self.classes
         return probs
+    
+    def get_enhanced_prediction(self, img_):
+        """
+        Get enhanced prediction with human-readable status and occupation
+        Returns: dict with 'status', 'occupation', 'confidence', 'enhanced_class'
+        """
+        probs = self.get_probs(img_)
+        predicted_idx = np.argmax(probs)
+        confidence = probs[predicted_idx]
+        
+        # Get enhanced class name
+        enhanced_class = Humanoid.int_to_enhanced_class(predicted_idx)
+        
+        # Parse to status and occupation
+        status, occupation = Humanoid.parse_enhanced_class(enhanced_class)
+        
+        return {
+            'status': status,
+            'occupation': occupation, 
+            'confidence': confidence,
+            'enhanced_class': enhanced_class,
+            'all_probs': probs
+        }
+    
+    def format_prediction_text(self, prediction_dict):
+        """
+        Format prediction for user display
+        Args:
+            prediction_dict: Output from get_enhanced_prediction
+        Returns:
+            Human-readable string like "I think this is a zombie police"
+        """
+        status = prediction_dict['status']
+        occupation = prediction_dict['occupation']
+        confidence = prediction_dict['confidence']
+        
+        if status == 'no_person':
+            return "I think there's no person in this image"
+        
+        # Handle corpse vs zombie distinction
+        if status == 'corpse':
+            status_text = "dead"
+        else:
+            status_text = status
+            
+        return f"I think this is a {status_text} {occupation} (confidence: {confidence:.1%})"
 
 
 class HeuristicInterface(object):
@@ -149,7 +185,7 @@ class HeuristicInterface(object):
             # It's a Humanoid object
             image_path = image_or_humanoid.fp
             actual_state = State(image_or_humanoid.state)
-            occupation = getattr(image_or_humanoid, 'role', 'Unknown')
+            actual_occupation = getattr(image_or_humanoid, 'role', 'Unknown')
         else:
             # It's an Image object
             image_path = image_or_humanoid.Filename
@@ -157,32 +193,44 @@ class HeuristicInterface(object):
             first_humanoid = next((h for h in image_or_humanoid.humanoids if h is not None), None)
             if first_humanoid:
                 actual_state = State(first_humanoid.state)
-                occupation = getattr(first_humanoid, 'role', 'Unknown')
+                actual_occupation = getattr(first_humanoid, 'role', 'Unknown')
             else:
                 actual_state = State.HEALTHY  # Default fallback
-                occupation = 'Unknown'
+                actual_occupation = 'Unknown'
         
         img_ = Image.open(os.path.join(self.img_data_root, image_path))
-        probs: np.ndarray = self.predictor.get_probs(img_)
-
-        predicted_ind: int = np.argmax(probs, 0)
-        class_string = Humanoid.get_all_states()[predicted_ind]
-        predicted_state = State(class_string)
-
-        # 🔍 DEBUG: CNN Accuracy Testing
-        confidence = probs[predicted_ind]
         
-        print(f"🧠 CNN DEBUG - Image: {image_path}")
-        print(f"   📊 Predictions: {dict(zip(Humanoid.get_all_states(), probs))}")
-        print(f"   🎯 Predicted: {predicted_state.value} (confidence: {confidence:.3f})")
-        print(f"   ✅ Actual: {actual_state.value}")
-        print(f"   {'✅ CORRECT' if predicted_state == actual_state else '❌ WRONG'}")
-        print(f"   🏥 Occupation: {occupation}")
-        print(f"   ⚡ Recommended Action: {self._map_class_to_action_default(predicted_state, is_capacity_full).name}")
+        # Get enhanced prediction with status and occupation
+        prediction = self.predictor.get_enhanced_prediction(img_)
+        predicted_status = prediction['status']
+        predicted_occupation = prediction['occupation']
+        confidence = prediction['confidence']
+        
+        # Convert predicted status to State enum for action mapping
+        status_map = {
+            'zombie': State.ZOMBIE,
+            'healthy': State.HEALTHY,
+            'injured': State.INJURED,
+            'corpse': State.CORPSE,
+            'no_person': State.HEALTHY  # Default fallback
+        }
+        predicted_state = status_map.get(predicted_status, State.HEALTHY)
+
+        # 🔍 DEBUG: Enhanced CNN Accuracy Testing
+        print(f"🧠 ENHANCED CNN DEBUG - Image: {image_path}")
+        print(f"   🎯 Predicted: {predicted_status} {predicted_occupation} (confidence: {confidence:.1%})")
+        print(f"   ✅ Actual: {actual_state.value} {actual_occupation}")
+        
+        # Check if status prediction is correct (occupation comparison is informational)
+        status_correct = predicted_status == actual_state.value
+        print(f"   {'✅ STATUS CORRECT' if status_correct else '❌ STATUS WRONG'}")
+        print(f"   🏥 Occupation Match: {predicted_occupation.lower() == actual_occupation.lower()}")
+        print(f"   💬 Display Text: \"{self.predictor.format_prediction_text(prediction)}\"")
+        print(f"   ⚡ Recommended Action: {self._map_class_to_action_enhanced(predicted_status, predicted_occupation, is_capacity_full).name}")
         print("-" * 60)
 
-        # given the model's class prediction, recommend an action
-        recommended_action = self._map_class_to_action_default(predicted_state, is_capacity_full)
+        # Given the enhanced prediction, recommend an action
+        recommended_action = self._map_class_to_action_enhanced(predicted_status, predicted_occupation, is_capacity_full)
         return recommended_action
 
     @staticmethod
@@ -198,3 +246,33 @@ class HeuristicInterface(object):
             return ActionCost.SAVE
         if predicted_state is State.CORPSE:
             return ActionCost.SQUISH
+    
+    @staticmethod
+    def _map_class_to_action_enhanced(predicted_status: str, predicted_occupation: str, is_capacity_full: bool = False) -> ActionCost:
+        """
+        Enhanced action mapping that considers both status and occupation
+        Priority decisions for special occupations (doctors, children)
+        """
+        if is_capacity_full:
+            return ActionCost.SCRAM
+            
+        # Zombies and corpses should be squished regardless of occupation
+        if predicted_status in ['zombie', 'corpse']:
+            return ActionCost.SQUISH
+            
+        # For living people (healthy/injured), consider occupation priority
+        if predicted_status in ['healthy', 'injured']:
+            # High priority saves: doctors (medical expertise) and children (vulnerable)
+            if predicted_occupation in ['doctor', 'child']:
+                return ActionCost.SAVE
+            # Medium priority: police (law enforcement value), civilians
+            elif predicted_occupation in ['police', 'civilian']:
+                return ActionCost.SAVE
+            # Lower priority: militants (potential threat, but still human)
+            elif predicted_occupation == 'militant':
+                return ActionCost.SAVE  # Still save them, but noted
+            else:
+                return ActionCost.SAVE  # Default: save living people
+        
+        # Default fallback
+        return ActionCost.SKIP

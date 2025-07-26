@@ -423,15 +423,54 @@ class ScoreKeeper(object):
     def available_action_space(self):
         """
         returns available action space as a list of bools
+        For RL training, this returns the 6-action space: [SKIP_BOTH, SQUISH_LEFT, SQUISH_RIGHT, SAVE_LEFT, SAVE_RIGHT, SCRAM]
         """
-        action_dict = {s.value:True for s in ActionState}
-        if self.remaining_time <= 0:
-            action_dict['save'] = False
-            action_dict['squish'] = False
-            action_dict['skip'] = False
-        if self.at_capacity():
-            action_dict['save'] = False
-        return [action_dict[s.value] for s in ActionState]
+        # Check if we're in RL training mode (called from training interface)
+        import inspect
+        frame = inspect.currentframe()
+        is_rl_training = False
+        try:
+            # Check if we're being called from training_interface
+            while frame:
+                filename = frame.f_code.co_filename
+                if 'training_interface.py' in filename:
+                    is_rl_training = True
+                    break
+                frame = frame.f_back
+        except:
+            pass
+        finally:
+            del frame
+        
+        if is_rl_training:
+            # RL 6-action space: [SKIP_BOTH, SQUISH_LEFT, SQUISH_RIGHT, SAVE_LEFT, SAVE_RIGHT, SCRAM]
+            actions = [True] * 6  # All actions initially available
+            
+            # Time constraints
+            if self.remaining_time <= 0:
+                actions[0] = False  # SKIP_BOTH
+                actions[1] = False  # SQUISH_LEFT
+                actions[2] = False  # SQUISH_RIGHT
+                actions[3] = False  # SAVE_LEFT
+                actions[4] = False  # SAVE_RIGHT
+                # SCRAM (actions[5]) always available
+            
+            # Capacity constraints
+            if self.at_capacity():
+                actions[3] = False  # SAVE_LEFT
+                actions[4] = False  # SAVE_RIGHT
+                
+            return actions
+        else:
+            # Original 5-action space for UI gameplay
+            action_dict = {s.value:True for s in ActionState}
+            if self.remaining_time <= 0:
+                action_dict['save'] = False
+                action_dict['squish'] = False
+                action_dict['skip'] = False
+            if self.at_capacity():
+                action_dict['save'] = False
+            return [action_dict[s.value] for s in ActionState]
         
     # do_action or return false if not possible
     def map_do_action(self, idx, humanoid):
