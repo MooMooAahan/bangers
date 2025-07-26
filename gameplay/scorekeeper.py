@@ -383,7 +383,7 @@ class ScoreKeeper(object):
             else:
                 _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')
         elif humanoid_count == 2:
-            if roles[0] == "Police" or roles[1] == "Police":
+            if roles[0] == "Police" and classes[0] == "Default":
                                 # Police effect: if you pick up a police, kill 1 zombie in the ambulance
                 zombie_removed = False
                 for humanoid_id, person in list(self.ambulance_people.items()):
@@ -407,6 +407,31 @@ class ScoreKeeper(object):
                     _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
                 else:
                     _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')    
+            elif roles[1] == "Police" and classes[1] == "Default":
+                zombie_removed = False
+                for humanoid_id, person in list(self.ambulance_people.items()):
+                    if person.get('class') == 'Zombie':
+                        del self.ambulance_people[humanoid_id]
+                        zombie_removed = True
+                        # print(f'[DEBUG] Police picked up: Removed zombie entry {humanoid_id} from ambulance_people.')
+                        break
+                if zombie_removed:
+                    if self.ambulance['zombie'] > 0:
+                        self.ambulance['zombie'] -= 1
+                        self.scorekeeper['zombie_killed'] += 1
+                        # print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
+                    # Show popup message
+#                     try:
+#                         import tkinter.messagebox
+#                         tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
+#                     except Exception as e:
+#                         # print(f'[DEBUG] Could not show popup: {e}')
+#                         pass
+                    _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
+                else:
+                    _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')  
+            else:
+                pass
 
         else: 
             pass
