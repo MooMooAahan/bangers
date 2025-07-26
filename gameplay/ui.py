@@ -49,7 +49,7 @@ class UI(object):
         capacity = self.scorekeeper.capacity
         self.false_saves = 0
         w, h = 1280, 800
-        self.root = tk.Tk()
+        self.root = root  # Use the passed root instead of creating a new one
         self.root.configure(bg="black")
         self.create_menu_bar()
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
@@ -106,7 +106,7 @@ class UI(object):
             ("Squish (5 mins)", lambda: self.show_action_popup("Squish"),COLOR_SQUISH),
             ("Save (30 mins)", lambda: self.show_action_popup("Save"),COLOR_SAVE),
             (get_scram_text(), lambda: [
-                                    print(f"[DEBUG] Scram penalty applied: {get_scram_time()} minutes"),
+                                    # print(f"[DEBUG] Scram penalty applied: {get_scram_time()} minutes"),
                                     scorekeeper.scram(self.image_left, self.image_right, time_cost=get_scram_time(), route_position=self.movement_count),
                                     self.move_ambulance_by_cell(),
                                     self.update_ui(scorekeeper),
@@ -267,7 +267,7 @@ class UI(object):
         # Right canvas under right image
         self.inspect_canvas_right = tk.Canvas(self.root, width=image_width, height=inspect_height, bg="lightgreen", highlightthickness=0)
         self.inspect_canvas_right.place(x=center_x - offset + image_width + horizontal_gap, y=image_y + image_height + canvas_gap_y)
-        self.root.mainloop()
+        # self.root.mainloop()  # Commented out - this was causing premature event loop start
         self.inspect_canvas_right.create_rectangle(
         1, 1, image_width - 2, inspect_height - 2, outline="black", width=2
         )
@@ -279,7 +279,9 @@ class UI(object):
     def rebuild_main_ui(self):
     # Simply destroy the root window and restart the game
         self.root.destroy()
-        IntroScreen(lambda: UI(self.data_parser, self.scorekeeper, self.data_fp, suggest=False, log=self.log))   
+        # Create a new root window for the intro screen
+        new_root = tk.Tk()
+        IntroScreen(lambda: UI(self.data_parser, self.scorekeeper, self.data_fp, suggest=False, log=self.log, root=new_root), new_root)   
     
     def show_leftright_instructions(self):
         leftright_text = (
@@ -624,8 +626,11 @@ class UI(object):
         self.right_button_menu.enable_all_buttons()
         if hasattr(self, 'machine_menu'):
             self.machine_menu.enable_all_buttons()
-        self.rules_btn.config(state='normal')
-        self.upgrade_btn.config(state='normal')
+        # Safely enable menu buttons if they exist
+        if hasattr(self, 'rules_btn'):
+            self.rules_btn.config(state='normal')
+        if hasattr(self, 'upgrade_btn'):
+            self.upgrade_btn.config(state='normal')
         # 4. Get a new scenario (ensure new images are generated)
         self.image_left, self.image_right = data_parser.get_random(side='left'), data_parser.get_random(side='right')
         #TODO: fix to be getting images, not humanoids
@@ -718,14 +723,14 @@ class UI(object):
             self.path_history.append(tuple(self.ambulance_pos))
             # Increment movement counter
             self.movement_count += 1
-            print(f"[DEBUG] Ambulance movement {self.movement_count}/20")
+            # print(f"[DEBUG] Ambulance movement {self.movement_count}/20")
             
             # Update movement progress label
             self.movement_label.config(text=f"Route Progress: {self.movement_count}/20")
             
             # Check if we've reached 20 movements
             if self.movement_count >= 20:
-                print("[DEBUG] Reached 20 movements - triggering end screen")
+                # print("[DEBUG] Reached 20 movements - triggering end screen")
                 self.trigger_end_screen()
         self.draw_grid_map()
 
@@ -748,16 +753,6 @@ class UI(object):
         # Create a new frame for the final score block
         self.final_score_frame = tk.Frame(self.root, width=300, height=300,bg="black",highlightthickness=0)
         self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
-        # Replay button (moved to top)
-        self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(self.data_parser, self.data_fp))
-        self.replay_btn.pack(pady=(10, 0))
-        self.replay_btn.lift()  # Ensure the replay button is visible on top
-        self.replay_btn.config(state='normal')
-        # Disable all left, right, and main button menus and hide the map on game end
-        self.left_button_menu.disable_buttons(0, 0, True)
-        self.right_button_menu.disable_buttons(0, 0, True)
-        self.button_menu.disable_buttons(0, 0, True)
-        self.map_canvas.place_forget()  # Hide the map
         # 'Route Complete' label
         game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40),fg="white",bg="black",highlightthickness=0)
         game_complete_label.pack(pady=(10, 5))
@@ -788,10 +783,16 @@ class UI(object):
             highlightthickness=0
         )
         accuracy_label.pack()
-        accuracy_label.pack()
-        # Replay button
+        # Replay button (only one)
         self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(self.data_parser, self.data_fp))
         self.replay_btn.pack(pady=(10, 0))
+        self.replay_btn.lift()  # Ensure the replay button is visible on top
+        self.replay_btn.config(state='normal')
+        # Disable all left, right, and main button menus and hide the map on game end
+        self.left_button_menu.disable_buttons(0, 0, True)
+        self.right_button_menu.disable_buttons(0, 0, True)
+        self.button_menu.disable_buttons(0, 0, True)
+        self.map_canvas.place_forget()  # Hide the map
         # Remove any content from the canvasses
         self.game_viewer_left.delete_photo(None)
         self.game_viewer_right.delete_photo(None)
@@ -802,8 +803,11 @@ class UI(object):
         self.right_button_menu.force_disable_all_buttons()
         if hasattr(self, 'machine_menu'):
             self.machine_menu.disable_buttons(0, 0, True)
-        self.rules_btn.config(state='disabled')
-        self.upgrade_btn.config(state='disabled')
+        # Safely disable menu buttons if they exist
+        if hasattr(self, 'rules_btn'):
+            self.rules_btn.config(state='disabled')
+        if hasattr(self, 'upgrade_btn'):
+            self.upgrade_btn.config(state='disabled')
 
     def move_map_left(self):
         self.move_ambulance_by_cell()
@@ -940,11 +944,13 @@ class UI(object):
     # Styled buttons
         btn_font = ("Helvetica", 14, "bold")
 
-        tk.Button(self.menu_bar, text="Upgrades", font=btn_font, bg="#ffffff", fg="#2E86AB",
-              relief="raised", padx=10, pady=5, command=self.show_upgrade_shop).pack(side="left", padx=1)
+        self.upgrade_btn = tk.Button(self.menu_bar, text="Upgrades", font=btn_font, bg="#ffffff", fg="#2E86AB",
+              relief="raised", padx=10, pady=5, command=self.show_upgrade_shop)
+        self.upgrade_btn.pack(side="left", padx=1)
 
-        tk.Button(self.menu_bar, text="Rules", font=btn_font, bg="#ffffff", fg="#2E86AB",
-              relief="raised", padx=10, pady=5, command=self.show_rules).pack(side="left", padx=1)
+        self.rules_btn = tk.Button(self.menu_bar, text="Rules", font=btn_font, bg="#ffffff", fg="#2E86AB",
+              relief="raised", padx=10, pady=5, command=self.show_rules)
+        self.rules_btn.pack(side="left", padx=1)
 
         tk.Button(self.menu_bar, text="Exit", font=btn_font, bg="#ffffff", fg="#AA0000",
               relief="raised", padx=10, pady=5, command=self.root.quit).pack(side="left", padx=1)

@@ -24,7 +24,8 @@ def _safe_show_popup(title, message, popup_type='info'):
             else:
                 tkinter.messagebox.showinfo(title, message)
         except Exception as e:
-            print(f'[DEBUG] Could not show popup: {e}')
+            # print(f'[DEBUG] Could not show popup: {e}')
+            pass
 
 """
 scoring system's global variables
@@ -93,7 +94,7 @@ class ScoreKeeper(object):
     
     def log(self, image, action, route_position=None, side=None, chosen_side=None):
         # DEBUG: Logging action
-        print(f"[DEBUG] About to log action: {action}, side: {side}, route_position: {route_position}")
+        # print(f"[DEBUG] About to log action: {action}, side: {side}, route_position: {route_position}")
         timestamp = datetime.now().isoformat()
         for humanoid in image.humanoids:
             if humanoid is None:
@@ -124,7 +125,7 @@ class ScoreKeeper(object):
                 "inspected": is_inspected,
                 "action": log_action
             })
-        print(f"[DEBUG] Finished logging action: {action}, side: {side}, route_position: {route_position}")
+        # print(f"[DEBUG] Finished logging action: {action}, side: {side}, route_position: {route_position}")
 
     def log_both_sides(self, image_left, image_right, action, route_position=None, chosen_side=None):
         """
@@ -161,7 +162,7 @@ class ScoreKeeper(object):
                 })
 
     def end_scram(self, route_position=None):
-        print(f"[DEBUG] About to log end_scram for all remaining humanoids, route_position: {route_position}")
+        # print(f"[DEBUG] About to log end_scram for all remaining humanoids, route_position: {route_position}")
         timestamp = datetime.now().isoformat()
         for side in ['left', 'right']:
             for humanoid_id, person in list(self.ambulance_people.items()):
@@ -178,17 +179,17 @@ class ScoreKeeper(object):
                     "inspected": False,  # End-of-game, so inspection state not tracked here
                     "action": 'end scram'
                 })
-        print(f"[DEBUG] Finished logging end_scram for all remaining humanoids, route_position: {route_position}")
+        # print(f"[DEBUG] Finished logging end_scram for all remaining humanoids, route_position: {route_position}")
         # Clear ambulance
         self.ambulance = {"zombie": 0, "injured": 0, "healthy": 0}
         self.ambulance_people.clear()
 
     def save_log(self, final=False):
         if not final:
-            print("[DEBUG] save_log called with final=False, clearing logger only.")
+            # print("[DEBUG] save_log called with final=False, clearing logger only.")
             self.logger = []
             return
-        print("[DEBUG] About to write log to log.csv (final=True)")
+        # print("[DEBUG] About to write log to log.csv (final=True)")
         # Prepare new log DataFrame
         new_log = pd.DataFrame(self.logger)
         if new_log.empty:
@@ -236,7 +237,7 @@ class ScoreKeeper(object):
         else:
             combined = new_log
         combined.to_csv(log_path, index=False)
-        print("[DEBUG] Finished writing log to log.csv (final=True)")
+        # print("[DEBUG] Finished writing log to log.csv (final=True)")
         # Reset logger for next round
         self.logger = []
 
@@ -376,7 +377,7 @@ class ScoreKeeper(object):
 #                 except Exception as e:
 #                     # print(f'[DEBUG] Could not show popup: {e}')
 #                     pass
-                    print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
+                    # print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
                 # Show popup message  
                 _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
             else:
@@ -441,7 +442,8 @@ class ScoreKeeper(object):
                     import tkinter.messagebox
                     tkinter.messagebox.showinfo('Beaver Magic', 'The Transformational Beaver made everyone in your ambulance healthy!')
                 except Exception as e:
-                    print(f'[DEBUG] Could not show popup: {e}')
+                    # print(f'[DEBUG] Could not show popup: {e}')
+                    pass
             else:
                 import tkinter.messagebox
                 tkinter.messagebox.showinfo('Beaver Magic', 'You encountered the Magical Beaver... but there was no one to save!')
@@ -637,7 +639,7 @@ class ScoreKeeper(object):
         Calculate the final score based on saved/killed and also on time remaining
         """
         score = 0
-        print(f"[Debug] Ambulance: {self.ambulance}, Scorekeeper: {self.scorekeeper}, Remaining Time: {self.remaining_time}")
+        # print(f"[Debug] Ambulance: {self.ambulance}, Scorekeeper: {self.scorekeeper}, Remaining Time: {self.remaining_time}")
         score += self.ambulance["healthy"] * SCORE_HEALTHY
         score += self.ambulance["injured"] * SCORE_INJURED
         score += self.ambulance["zombie"] * SCORE_ZOMBIE
