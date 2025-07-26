@@ -283,6 +283,129 @@ class UI(object):
         new_root = tk.Tk()
         IntroScreen(lambda: UI(self.data_parser, self.scorekeeper, self.data_fp, suggest=False, log=self.log, root=new_root), new_root)   
     
+    def restore_main_ui(self):
+        """Restore the main game UI without restarting the game"""
+        # Store current state before clearing UI
+        current_ambulance_pos = getattr(self, 'ambulance_pos', None)
+        current_path_history = getattr(self, 'path_history', None)
+        
+
+        
+        self.clear_main_ui()
+        
+        # Recreate the menu bar
+        self.create_menu_bar()
+        
+        # Recreate the main game components
+        w, h = 1280, 800
+        self.root.configure(bg="black")
+        self.root.title("Beaverworks SGAI 2025 - Team Splice")
+        
+        # Recreate button menu
+        self.button_menu = ButtonMenu(self.root, self.user_buttons)
+        
+        # Recreate left/right button menus
+        self.left_button_menu = LeftButtonMenu(self.root, [
+            ("Inspect Left", self.left_action_callbacks[0]),
+            ("Squish Left", self.left_action_callbacks[1]),
+            ("Save Left", self.left_action_callbacks[2])
+        ])
+        
+        self.right_button_menu = RightButtonMenu(self.root, [
+            ("Inspect Right", self.right_action_callbacks[0]),
+            ("Squish Right", self.right_action_callbacks[1]),
+            ("Save Right", self.right_action_callbacks[2])
+        ])
+        
+        # Recreate machine menu if it exists
+        if hasattr(self, 'machine_interface'):
+            machine_buttons = [
+                ("Suggest", lambda: [self.machine_interface.suggest(self.image_left)]),
+                ("Act", lambda: [self.machine_interface.act(self.scorekeeper, self.image_left),
+                                 self.update_ui(self.scorekeeper),
+                                 self.get_next(self.data_fp, self.data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None])
+            ]
+            self.machine_menu = MachineMenu(self.root, machine_buttons)
+        
+        # Recreate game viewers
+        image_width = 375
+        horizontal_gap = 30
+        total_width = image_width * 2
+        center_x = (w - total_width) // 2
+        y_top = 70 + 50
+        offset = 65
+        
+        self.game_viewer_left = GameViewer(self.root, image_width, h, self.data_fp, self.image_left)
+        self.game_viewer_right = GameViewer(self.root, image_width, h, self.data_fp, self.image_right)
+        self.game_viewer_left.canvas.place(x=center_x - offset, y=y_top)
+        self.game_viewer_right.canvas.place(x=center_x - offset + image_width + horizontal_gap, y=y_top)
+        
+        # Recreate clock
+        init_h = 12
+        init_m = 0
+        self.clock = Clock(self.root, w, h, init_h, init_m)
+        
+        # Recreate capacity meter
+        def get_ambulance_people():
+            return list(self.scorekeeper.ambulance_people.values())
+        self.capacity_meter = CapacityMeter(self.root, w, h, self.scorekeeper.capacity, get_ambulance_contents=get_ambulance_people)
+        
+        # Recreate grid map
+        self.create_grid_map_canvas()
+        if current_ambulance_pos is not None and current_path_history is not None:
+            # Restore ambulance position and path history
+            self.ambulance_pos = current_ambulance_pos
+            self.path_history = current_path_history
+        else:
+            # Fallback to reset if no stored state
+            self.reset_map()
+        self.draw_grid_map()
+        
+        # Recreate movement label
+        self.movement_label = tk.Label(self.root, text=f"Route Progress: {self.movement_count}/20", 
+                                      font=("Arial", 12), bg="#000000", fg="#2E86AB",
+                                      relief="solid", bd=1, padx=10, pady=5)
+        self.movement_label.place(x=1050, y=460)
+        
+        # Recreate inspect canvases
+        inspect_height = 150
+        canvas_gap_y = 10
+        image_y = y_top
+        image_height = self.game_viewer_left.canvas.winfo_reqheight()
+        
+        self.inspect_canvas_left = tk.Canvas(self.root, width=image_width, height=inspect_height, bg="lightgreen", highlightthickness=0)
+        self.inspect_canvas_left.place(x=center_x - offset, y=image_y + image_height + canvas_gap_y)
+        self.inspect_canvas_left.create_rectangle(
+            1, 1, image_width - 2, inspect_height - 2, outline="black", width=2
+        )
+        
+        self.inspect_canvas_right = tk.Canvas(self.root, width=image_width, height=inspect_height, bg="lightgreen", highlightthickness=0)
+        self.inspect_canvas_right.place(x=center_x - offset + image_width + horizontal_gap, y=image_y + image_height + canvas_gap_y)
+        self.inspect_canvas_right.create_rectangle(
+            1, 1, image_width - 2, inspect_height - 2, outline="black", width=2
+        )
+        
+        # Restore inspect canvas content based on scorekeeper's inspected state
+        for side in ['left', 'right']:
+            image = self.image_left if side == 'left' else self.image_right
+            has_inspected_content = False
+            for humanoid in image.humanoids:
+                if humanoid is not None:
+                    key = (side, humanoid.fp)
+                    if self.scorekeeper.inspected_state.get(key, False):
+                        has_inspected_content = True
+                        break
+            if has_inspected_content:
+                self.print_scenario_side_attributes(side)
+                # Disable the inspect button for this side since it's already been inspected
+                if side == 'left':
+                    self.left_button_menu.buttons[0].config(state='disabled')
+                else:
+                    self.right_button_menu.buttons[0].config(state='disabled')
+        
+        # Update the UI with current state
+        self.update_ui(self.scorekeeper)
+
     def show_leftright_instructions(self):
         leftright_text = (
             "Make sure to press L or R! You can only do this action for 1 side. \n"
@@ -360,7 +483,7 @@ class UI(object):
         tk.Label(self.root, text=rules_text, font=("Arial", 12), justify="left", padx=20).pack()
 
         tk.Button(self.root, text="Back to Game", font=("Arial", 14),
-              command=self.rebuild_main_ui).pack(pady=30)
+              command=self.restore_main_ui).pack(pady=30)
 
     def update_ui(self, scorekeeper):     
         # Use elapsed time to drive the clock forward
@@ -885,7 +1008,7 @@ class UI(object):
 
     # Back button
         tk.Button(self.root, text="Back to Game", font=("Arial", 14),
-                command=self.rebuild_main_ui).pack(pady=30)
+                command=self.restore_main_ui).pack(pady=30)
 
     def print_scenario_side_attributes(self, side):
 
