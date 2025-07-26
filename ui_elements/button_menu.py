@@ -42,7 +42,12 @@ class ButtonMenu(object):
         """Enables button for when you need to retry"""
         for button in self.buttons:
             button.config(state="normal")
-                    
+            
+    def force_disable_all_buttons(self):
+        """Force disable all buttons regardless of conditions (for game end)"""
+        for button in self.buttons:
+            button.config(state="disabled")
+
 def create_buttons(canvas, items):
     buttons = []
     for item in items:
@@ -118,14 +123,19 @@ class LeftButtonMenu(object):
             self.buttons[1].config(state="disabled")  # Squish
         if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SAVE.value:
             self.buttons[2].config(state="disabled")  # Save
-                if at_capacity:
-                    self.buttons[0].config(state="disabled")
-                    self.buttons[1].config(state="disabled")
-                    self.buttons[2].config(state="disabled")
+            if at_capacity:
+                self.buttons[0].config(state="disabled")
+                self.buttons[1].config(state="disabled")
+                self.buttons[2].config(state="disabled")
 
     def enable_all_buttons(self):
         for button in self.buttons:
             button.config(state="normal")
+            
+    def force_disable_all_buttons(self):
+        """Force disable all buttons regardless of conditions (for game end)"""
+        for button in self.buttons:
+            button.config(state="disabled")
             
 
 class RightButtonMenu(object):
@@ -182,6 +192,11 @@ class RightButtonMenu(object):
         """Enables button for when you need to retry"""
         for button in self.buttons:
             button.config(state="normal")
+            
+    def force_disable_all_buttons(self):
+        """Force disable all buttons regardless of conditions (for game end)"""
+        for button in self.buttons:
+            button.config(state="disabled")
             
             
             
