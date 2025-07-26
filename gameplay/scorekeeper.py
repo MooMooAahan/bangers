@@ -4,10 +4,27 @@ import pandas as pd
 import random
 import os
 from datetime import datetime
+import sys
 
 
 MAP_ACTION_STR_TO_INT = {s.value:i for i,s in enumerate(ActionState)}
 MAP_ACTION_INT_TO_STR = [s.value for s in ActionState]
+
+def _is_automated_mode():
+    """Check if we're in training or heuristic mode to suppress UI popups"""
+    return any(mode in sys.argv for mode in ['-m', 'train', 'heuristic'])
+
+def _safe_show_popup(title, message, popup_type='info'):
+    """Show popup only if not in automated mode"""
+    if not _is_automated_mode():
+        try:
+            import tkinter.messagebox
+            if popup_type == 'warning':
+                tkinter.messagebox.showwarning(title, message)
+            else:
+                tkinter.messagebox.showinfo(title, message)
+        except Exception as e:
+            print(f'[DEBUG] Could not show popup: {e}')
 
 """
 scoring system's global variables
@@ -351,17 +368,19 @@ class ScoreKeeper(object):
                 if self.ambulance['zombie'] > 0:
                     self.ambulance['zombie'] -= 1
                     self.scorekeeper['zombie_killed'] += 1
-                    # print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
-                # Show popup message
-                try:
-                    import tkinter.messagebox
-                    tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
-                except Exception as e:
-                    # print(f'[DEBUG] Could not show popup: {e}')
-                    pass
+#                     # print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
+#                 # Show popup message
+#                 try:
+#                     import tkinter.messagebox
+#                     tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
+#                 except Exception as e:
+#                     # print(f'[DEBUG] Could not show popup: {e}')
+#                     pass
+                    print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
+                # Show popup message  
+                _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
             else:
-                import tkinter.messagebox
-                tkinter.messagebox.showinfo('Police Action', 'There were no zombies for your police to kill!')
+                _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')
         elif humanoid_count == 2:
             if roles[0] == "Police" or roles[1] == "Police":
                                 # Police effect: if you pick up a police, kill 1 zombie in the ambulance
@@ -378,24 +397,54 @@ class ScoreKeeper(object):
                         self.scorekeeper['zombie_killed'] += 1
                         # print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
                     # Show popup message
-                    try:
-                        import tkinter.messagebox
-                        tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
-                    except Exception as e:
-                        # print(f'[DEBUG] Could not show popup: {e}')
-                        pass
+#                     try:
+#                         import tkinter.messagebox
+#                         tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
+#                     except Exception as e:
+#                         # print(f'[DEBUG] Could not show popup: {e}')
+#                         pass
+                    _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
                 else:
-                    import tkinter.messagebox
-                    tkinter.messagebox.showinfo('Police Action', 'There were no zombies for your police to kill!')    
+                    _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')    
 
         else: 
             pass
             
         
-    """
-    end of those annoying shenanigans
-    """
-        
+        """
+        end of those annoying shenanigans, start of beaver functionality
+        """
+
+        if class_val == "Beaver":
+            # Transform all injured and zombie people in the ambulance to healthy
+            beaver_transformed = False
+            # Update ambulance_people
+            for humanoid_id, person in self.ambulance_people.items():
+                if person["class"] == "Zombie":
+                    person["class"] = "Default"
+                    person["injured"] = "False"
+                    person["role"] = "Civilian"
+                    beaver_transformed = True
+                elif person["class"] == "Default" and person["injured"] == "True":
+                    person["injured"] = "False"
+                    beaver_transformed = True
+            # Count how many were previously injured and zombies
+            num_injured = self.ambulance["injured"]
+            num_zombie = self.ambulance["zombie"]
+            # All become healthy
+            self.ambulance["healthy"] += num_injured + num_zombie
+            self.ambulance["injured"] = 0
+            self.ambulance["zombie"] = 0
+            # Show popup message
+            if beaver_transformed:
+                try:
+                    import tkinter.messagebox
+                    tkinter.messagebox.showinfo('Beaver Magic', 'The Transformational Beaver made everyone in your ambulance healthy!')
+                except Exception as e:
+                    print(f'[DEBUG] Could not show popup: {e}')
+            else:
+                import tkinter.messagebox
+                tkinter.messagebox.showinfo('Beaver Magic', 'You encountered the Magical Beaver... but there was no one to save!')
 
     def squish(self, image, route_position=None, side=None):
         """
@@ -588,6 +637,7 @@ class ScoreKeeper(object):
         Calculate the final score based on saved/killed and also on time remaining
         """
         score = 0
+        print(f"[Debug] Ambulance: {self.ambulance}, Scorekeeper: {self.scorekeeper}, Remaining Time: {self.remaining_time}")
         score += self.ambulance["healthy"] * SCORE_HEALTHY
         score += self.ambulance["injured"] * SCORE_INJURED
         score += self.ambulance["zombie"] * SCORE_ZOMBIE
@@ -597,7 +647,7 @@ class ScoreKeeper(object):
         score += self.scorekeeper["human_infected"] * -15
         score += self.scorekeeper["zombie_killed"] * 10
         score += self.scorekeeper["human_killed"] * -10
-        score += self.remaining_time
+        score += self.remaining_time * 0.2
         if not route_complete:
             score -= 500
         return score
