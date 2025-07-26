@@ -30,10 +30,6 @@ class ButtonMenu(object):
         #     self.buttons[3].config(state="disabled")  # Save
         if at_capacity:
             self.buttons[0].config(state="disabled")  # Skip
-            self.buttons[1].config(state="disabled")  # Inspect
-            self.buttons[2].config(state="disabled")  # Squish
-            self.buttons[3].config(state="disabled")  # Save
-
 
 
 
@@ -117,16 +113,8 @@ class LeftButtonMenu(object):
               button.config(state="normal")
 
         # Disable based on time
-        if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SKIP.value:
-            self.buttons[0].config(state="disabled")  # Inspect
-        if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SQUISH.value:
-            self.buttons[1].config(state="disabled")  # Squish
-        if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SAVE.value:
-            self.buttons[2].config(state="disabled")  # Save
-            if at_capacity:
-                self.buttons[0].config(state="disabled")
-                self.buttons[1].config(state="disabled")
-                self.buttons[2].config(state="disabled")
+        if at_capacity:
+            self.buttons[2].config(state="disabled")
 
     def enable_all_buttons(self):
         for button in self.buttons:
@@ -184,8 +172,6 @@ class RightButtonMenu(object):
         # if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SAVE.value:
         #     self.buttons[2].config(state="disabled")  # Save
         if at_capacity:
-            self.buttons[0].config(state="disabled")  # Inspect
-            self.buttons[1].config(state="disabled")  # Squish
             self.buttons[2].config(state="disabled")  # Save
 
     def enable_all_buttons(self):
