@@ -7,10 +7,10 @@ import tkinter.messagebox  # <-- Add this import
 
 class CapacityMeter(object):
     def __init__(self, root, w, h, max_cap, get_ambulance_contents=None):
-        self.canvas = tk.Canvas(root, width=math.floor(0.2 * w), height=math.floor(0.5 * h))
+        self.canvas = tk.Canvas(root, width=math.floor(0.2 * w), height=math.floor(0.5 * h),bg="black",highlightthickness=0)
         # Align with the clock (placed at x=math.floor(0.75 * w))
-        x_pos = math.floor(0.75 * w)
-        y_pos = math.floor(0.4 * h) - 20  # move up by 20px
+        x_pos = math.floor(0.775 * w)
+        y_pos = math.floor(0.15 * h) - 20  # move up by 20px
         self.canvas.place(x=x_pos, y=y_pos)
         self.__units = []
         self.unit_size = 14  # Half the previous size (was 40)
@@ -40,18 +40,34 @@ class CapacityMeter(object):
         # Bind click event to ambulance image
         self.canvas.tag_bind(self.bg_image_id, '<Button-1>', self.on_ambulance_click)
 
-    def on_ambulance_click(self, event):
+    def on_ambulance_click(self, event=None):
         # Get ambulance contents from callback or attribute
         if self.get_ambulance_contents is not None:
             people = self.get_ambulance_contents()
         else:
             people = getattr(self, 'ambulance_contents', [])
-        # Add capacity info
+        # Count each type
+        zombie_count = 0
+        healthy_count = 0
+        injured_count = 0
+        for person in people:
+            if person.get('class', '').lower() == 'zombie':
+                zombie_count += 1
+            elif person.get('class', '').lower() == 'default':
+                if str(person.get('injured', '')).lower() == 'true':
+                    injured_count += 1
+                else:
+                    healthy_count += 1
+            elif person.get('original_status', '') == 'cured_zombie':
+                # Treat cured humans as healthy humans
+                healthy_count += 1
         capacity_info = f'Ambulance Capacity = {len(self.__units)}'
-        if not people:
-            info = f'{capacity_info}\nThe ambulance is empty.'
-        else:
-            info = f'{capacity_info}\n' + '\n'.join(str(person) for person in people)
+        info = f'{capacity_info}\n'
+        info += f'Zombies: {zombie_count}\n'
+        info += f'Healthy Humans: {healthy_count}\n'
+        info += f'Injured Humans: {injured_count}\n'
+        if (zombie_count + healthy_count + injured_count) == 0:
+            info += 'The ambulance is empty.'
         tk.messagebox.showinfo('Ambulance Contents', info)
 
     def set_ambulance_contents(self, people):
@@ -63,7 +79,7 @@ class CapacityMeter(object):
         for unit in self.__units:
             self.canvas.delete(unit)
         self.__units = []
-        tk.Label(self.canvas, text="Capacity", font=("Arial", 15)).place(x=100, y=0)
+        tk.Label(self.canvas, text="Capacity", font=("Arial", 15),bg="black",fg="white").place(x=107, y=0)
 
         # Always use 2 columns, stack extra dots below
         cols = 2
