@@ -81,16 +81,22 @@ class UI(object):
             self.machine_interface = HeuristicInterface(self.root, w, h)
         #  Add buttons and logo
         def get_scram_time():
-            return max(5, self.movement_count * 5)
+            base_time = max(5, self.movement_count * 5)
+            reduction = getattr(self.scorekeeper, "scram_time_reduction", 0)
+            return max(5, base_time - reduction)
         def get_scram_text():
             return f"Scram ({get_scram_time()} mins)"
         # Remove get_inspect_time and get_inspect_text functions entirely.
         # In the main button menu:
         def get_inspect_cost():
-            return 15 - getattr(self.scorekeeper, "inspect_cost_reduction", 0)
+            base_cost = 15
+            reduction = getattr(self.scorekeeper, "inspect_cost_reduction", 0)
+            return max(5, base_cost - reduction)
         # In left/right button menus:
         def get_inspect_cost_left_right():
-            return 15 - getattr(self.scorekeeper, "inspect_cost_reduction", 0)
+            base_cost = 15
+            reduction = getattr(self.scorekeeper, "inspect_cost_reduction", 0)
+            return max(5, base_cost - reduction)
 
         # We'll need to update the button text dynamically, so store the button objects
         self.user_buttons = [
@@ -143,7 +149,7 @@ class UI(object):
         # Add extra button menu with three buttons
         # Save references to left/right button actions for map movement
         self.left_action_callbacks = [
-            lambda: [self.print_scenario_side_attributes('left'), self.scorekeeper.inspect(self.image_left, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0), route_position=self.movement_count, side='left'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Left
+            lambda: [self.print_scenario_side_attributes('left'), self.scorekeeper.inspect(self.image_left, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='left'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Left
             lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Left
             lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Left
         ]
@@ -153,7 +159,7 @@ class UI(object):
             ("Save Left", self.left_action_callbacks[2])
         ])
         self.right_action_callbacks = [
-            lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=15 - getattr(self.scorekeeper, 'inspect_cost_reduction', 0), route_position=self.movement_count, side='right'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
+            lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='right'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
             lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Right
             lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Right
         ]
