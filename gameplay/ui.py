@@ -12,6 +12,8 @@ from PIL import Image, ImageTk
 import random
 from ui_elements.theme import COLOR_SAVE, COLOR_SKIP, COLOR_SCRAM, COLOR_SQUISH, COLOR_INSPECT
 import os
+from data_uploader import DataUploader
+
 
 class IntroScreen:
     def __init__(self, on_start_callback, root):
@@ -42,6 +44,9 @@ class IntroScreen:
 
 class UI(object):
     def __init__(self, data_parser, scorekeeper, data_fp, suggest, log, root):
+        # Initialize data uploader
+        self.data_uploader = DataUploader()
+        
         # Base window setup
         self.data_parser = data_parser  # Store data_parser reference
         self.data_fp = data_fp  # Store data_fp reference
@@ -656,53 +661,34 @@ class UI(object):
         remaining_time = scorekeeper.remaining_time
         if remaining_time <= 0:
             self.trigger_end_screen()
-            # self.update_ui(scorekeeper)  # Ensure clock and UI are updated before end screen
-            # if self.log:
-            #     scorekeeper.save_log()
-            # self.capacity_meter.update_fill(0)
-            # self.game_viewer_left.delete_photo(None)
-            # self.game_viewer_right.delete_photo(None)
-            # route_complete = getattr(self, 'movement_count', 0) >= 20 if hasattr(self, 'movement_count') else False
-            # accuracy = round(scorekeeper.get_accuracy() * 100, 2)
-            # # Remove any previous final score frame
-            # if hasattr(self, 'final_score_frame') and self.final_score_frame:
-            #     self.final_score_frame.destroy()
-            # # Create a new frame for the final score block
-            # self.final_score_frame = tk.Frame(self.root, width=300, height=300)
-            # self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
-            # # End screen label
-            # if route_complete:
-            #     final_score = self.scorekeeper.get_final_score(route_complete=True)
-            #     end_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40))
-            #     end_label.pack(pady=(10, 5))
-            #     final_score_label = tk.Label(self.final_score_frame, text="FIssssNAL SCORE: " + f" {final_score}", font=("Arial", 16))
-            #     final_score_label.pack(pady=(5, 2))
-            # else:
-            #     final_score = self.scorekeeper.get_final_score(route_complete=False)
-            #     end_label = tk.Label(self.final_score_frame, text="Gamerr Complete", font=("Arial", 40))
-            #     end_label.pack(pady=(10, 5))
-            #     final_score_label = tk.Label(self.final_score_frame, text="FINssssAL SCORE: " + f" {final_score}", font=("Arial", 16))
-            #     final_score_label.pack(pady=(5, 2))
-            # # Scoring details
-            # killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=("Arial", 12))
-            # killed_label.pack()
-            # saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=("Arial", 12))
-            # saved_label.pack()
-            # score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
-            # score_label.pack()
-            # zombies_saved_score_label = tk.Label(self.final_score_frame,
-            #     text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
-            #     font=("Arial", 12))
-            # zombies_saved_score_label.pack()
-            # accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
-            # accuracy_label.pack()
-            # # Replay button
-            # self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
-            # self.replay_btn.pack(pady=(10, 0))
-            # # Remove any content from the right canvas
-            # self.game_viewer_right.canvas.delete('all')
-            # # Disable all buttons when game ends
-            # self.disable_buttons_if_insufficient_time(0, 0, False)
+            # Upload data and clear log
+            self.upload_data_and_clear_log()
+
+    def upload_data_and_clear_log(self):
+        """Upload data to Notion and clear the log file"""
+        try:
+            print("Uploading data to Notion...")
+            # Use the DataUploader class to upload data
+            success = self.data_uploader.upload_data()
+            
+            if success:
+                print("Data uploaded successfully!")
+            else:
+                print("Upload failed")
+        except Exception as e:
+            print(f"Error uploading data: {e}")
+        
+        # Clear the log file after upload (preserve headers)
+        try:
+            if os.path.exists("log.csv"):
+                # Read the first line (headers) and write it back
+                with open("log.csv", "r") as f:
+                    first_line = f.readline().strip()
+                with open("log.csv", "w") as f:
+                    f.write(first_line + "\n")  # Write back only the headers
+                print("log.csv cleared after data upload (headers preserved)")
+        except Exception as e:
+            print(f"Error clearing log.csv: {e}")
 
     def disable_buttons_if_insufficient_time(self, remaining_time, remaining_humanoids, at_capacity):
         """Disable buttons based on remaining time and other constraints"""
@@ -937,6 +923,9 @@ class UI(object):
             self.rules_btn.config(state='disabled')
         if hasattr(self, 'upgrade_btn'):
             self.upgrade_btn.config(state='disabled')
+        
+        # Upload data and clear log
+        self.upload_data_and_clear_log()
 
     def move_map_left(self):
         self.move_ambulance_by_cell()
