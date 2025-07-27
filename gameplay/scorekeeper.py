@@ -2,6 +2,8 @@ from gameplay.upgrades_manager import UpgradeManager
 from gameplay.enums import ActionCost, ActionState
 import pandas as pd
 import random
+import os
+from datetime import datetime
 import sys
 
 
@@ -22,7 +24,8 @@ def _safe_show_popup(title, message, popup_type='info'):
             else:
                 tkinter.messagebox.showinfo(title, message)
         except Exception as e:
-            print(f'[DEBUG] Could not show popup: {e}')
+            # print(f'[DEBUG] Could not show popup: {e}')
+            pass
 
 """
 scoring system's global variables
@@ -60,6 +63,7 @@ class ScoreKeeper(object):
         
         self.ambulance_time_adjustment = 0
         self.upgrade_manager = UpgradeManager(self)
+        self.inspected_state = {('left', None): False, ('right', None): False}  # (side, humanoid_fp) -> bool
         
     def reset(self):
         """
@@ -88,74 +92,167 @@ class ScoreKeeper(object):
         self.logger = []
         
     
-    def log(self, image, action):
-        """
-        logs current action taken against a humanoid
-        
-        humanoid : the humanoid presented
-        action : the action taken
-        """
-
+    def log(self, image, action, route_position=None, side=None, chosen_side=None):
+        # DEBUG: Logging action
+        # print(f"[DEBUG] About to log action: {action}, side: {side}, route_position: {route_position}")
+        timestamp = datetime.now().isoformat()
         for humanoid in image.humanoids:
             if humanoid is None:
                 continue
-            self.logger.append({"humanoid_class":humanoid.state,
-                    "humanoid_fp":humanoid.fp,
-                    "action":action,
-                    "remaining_time":self.remaining_time,
-                    "capacity":self.get_current_capacity(),
-                    })
-    
-    def logScram(self, image_left, image_right, action = 'scram'):
-        """
-        version for two images aka scram
+            key = (side, humanoid.fp)
+            if action == 'inspect':
+                self.inspected_state[key] = True
+                continue  # Do not log a row for inspect
+            is_inspected = self.inspected_state.get(key, False)
+            # Determine the action to log
+            if chosen_side is None:
+                # Both sides get the action (for skip_both, scram, etc.)
+                log_action = action
+            elif side == chosen_side:
+                log_action = action
+            else:
+                log_action = "other"
+            self.logger.append({
+                "timestamp": timestamp,
+                "local_run_id": None,  # Will be filled in save_log
+                "route_position": route_position,
+                "side": side,
+                "humanoid_fp": humanoid.fp,
+                "humanoid_class": humanoid.state,
+                "capacity": self.get_current_capacity(),
+                "remaining_time": self.remaining_time,
+                "role": humanoid.role,
+                "inspected": is_inspected,
+                "action": log_action
+            })
+        # print(f"[DEBUG] Finished logging action: {action}, side: {side}, route_position: {route_position}")
 
-        logs current action taken against a humanoid
-        
-        humanoid : the humanoid presented
-        action : the action taken
+    def log_both_sides(self, image_left, image_right, action, route_position=None, chosen_side=None):
         """
+        Logs both left and right sides for an action. 
+        If chosen_side is specified, that side gets the action, other side gets "other".
+        If chosen_side is None, both sides get the action (for actions like skip_both, scram).
+        """
+        self.log(image_left, action, route_position=route_position, side='left', chosen_side=chosen_side)
+        self.log(image_right, action, route_position=route_position, side='right', chosen_side=chosen_side)
 
-        for humanoid in image_left.humanoids:
-            if humanoid is None:
-                continue
-            self.logger.append({"humanoid_class":humanoid.state,
-                    "humanoid_fp":humanoid.fp,
-                    "action":action,
-                    "remaining_time":self.remaining_time,
-                    "capacity":self.get_current_capacity(),
-                    })
-        for humanoid in image_right.humanoids:
-            if humanoid is None:
-                continue
-            self.logger.append({"humanoid_class":humanoid.state,
-                    "humanoid_fp":humanoid.fp,
-                    "action":action,
-                    "remaining_time":self.remaining_time,
-                    "capacity":self.get_current_capacity(),
-                    })
-        
-    def save_log(self):
+    def logScram(self, image_left, image_right, action='scram', route_position=None):
         """
-        Saves a single log.csv file containing the actions that were taken,and the humanoids presented at the time. 
-        Note: will overwrite previous logs
+        Logs both sides for scram action (both sides are chosen).
         """
-        if len(self.logger) > 0:
-            self.all_logs.append(self.logger)
-        logs = []
-        for i, log in enumerate(self.all_logs):
-            log = pd.DataFrame(log)
-            log['local_run_id'] = i
-            logs.append(log)
-        logs = pd.DataFrame(logs)
-        logs.to_csv('log.csv')
+        timestamp = datetime.now().isoformat()
+        for side, image in zip(['left', 'right'], [image_left, image_right]):
+            for humanoid in image.humanoids:
+                if humanoid is None:
+                    continue
+                key = (side, humanoid.fp)
+                is_inspected = self.inspected_state.get(key, False)
+                self.logger.append({
+                    "timestamp": timestamp,
+                    "local_run_id": None,  # Will be filled in save_log
+                    "route_position": route_position,
+                    "side": side,
+                    "humanoid_fp": humanoid.fp,
+                    "humanoid_class": humanoid.state,
+                    "capacity": self.get_current_capacity(),
+                    "remaining_time": self.remaining_time,
+                    "role": humanoid.role,
+                    "inspected": is_inspected,
+                    "action": action
+                })
 
-    def save(self, image):
+    def end_scram(self, route_position=None):
+        # print(f"[DEBUG] About to log end_scram for all remaining humanoids, route_position: {route_position}")
+        timestamp = datetime.now().isoformat()
+        for side in ['left', 'right']:
+            for humanoid_id, person in list(self.ambulance_people.items()):
+                self.logger.append({
+                    "timestamp": timestamp,
+                    "local_run_id": None,  # Will be filled in save_log if/when called
+                    "route_position": route_position if route_position is not None else -1,
+                    "side": side,
+                    "humanoid_fp": humanoid_id,
+                    "humanoid_class": person.get('class'),
+                    "capacity": self.get_current_capacity(),
+                    "remaining_time": self.remaining_time,
+                    "role": person.get('role'),
+                    "inspected": False,  # End-of-game, so inspection state not tracked here
+                    "action": 'end scram'
+                })
+        # print(f"[DEBUG] Finished logging end_scram for all remaining humanoids, route_position: {route_position}")
+        # Clear ambulance
+        self.ambulance = {"zombie": 0, "injured": 0, "healthy": 0}
+        self.ambulance_people.clear()
+
+    def save_log(self, final=False):
+        if not final:
+            # print("[DEBUG] save_log called with final=False, clearing logger only.")
+            self.logger = []
+            return
+        # print("[DEBUG] About to write log to log.csv (final=True)")
+        # Prepare new log DataFrame
+        new_log = pd.DataFrame(self.logger)
+        if new_log.empty:
+            new_log = pd.DataFrame([{"humanoid_class": None, "humanoid_fp": None, "action": None, "remaining_time": None, "capacity": None, "scenario_pos": None, "role": None}])
+
+        # Fill missing route_position with last valid or -1
+        if 'route_position' in new_log.columns:
+            if new_log['route_position'].notnull().any():
+                last_pos = new_log['route_position'].dropna().iloc[-1]
+            else:
+                last_pos = -1
+            new_log['route_position'] = new_log['route_position'].fillna(last_pos)
+
+        # Determine the next local_run_id
+        log_path = 'log.csv'
+        if os.path.exists(log_path):
+            try:
+                existing = pd.read_csv(log_path)
+                if 'local_run_id' in existing.columns and not existing.empty:
+                    last_id = existing['local_run_id'].max()
+                    next_id = last_id + 1
+                else:
+                    next_id = 0
+            except Exception:
+                next_id = 0
+        else:
+            next_id = 0
+        new_log['local_run_id'] = next_id
+
+        # Reorder columns
+        col_order = [
+            'timestamp', 'local_run_id', 'route_position', 'side',
+            'humanoid_fp', 'humanoid_class', 'capacity', 'remaining_time',
+            'role', 'inspected', 'action'
+        ]
+        new_log = new_log[col_order]
+
+        # Append to file
+        if os.path.exists(log_path):
+            try:
+                existing = pd.read_csv(log_path)
+                combined = pd.concat([existing, new_log], ignore_index=True)
+            except Exception:
+                combined = new_log
+        else:
+            combined = new_log
+        combined.to_csv(log_path, index=False)
+        # print("[DEBUG] Finished writing log to log.csv (final=True)")
+        # Reset logger for next round
+        self.logger = []
+
+    def save(self, image, route_position=None, side=None):
         """
         saves the humanoid
         updates scorekeeper
         """
-        self.log(image, 'save')
+        self.log_both_sides(
+            image_left=self.image_left if hasattr(self, 'image_left') else image,
+            image_right=self.image_right if hasattr(self, 'image_right') else image,
+            action='save',
+            route_position=route_position,
+            chosen_side=side
+        )
         self.remaining_time -= ActionCost.SAVE.value
         time_bonus = 0
         # No longer add to ambulance_people here; handled by save_side_from_scenario
@@ -164,41 +261,38 @@ class ScoreKeeper(object):
         humanoid_count = image.datarow['HumanoidCount']
         status_val = image.datarow['Injured']
         roles_val = image.datarow['Role']
-        print(f"[DEBUG] Fileaaname: {filename}, Class: {class_val}, Status: {status_val}, HumanoidCount: {humanoid_count}, Role: {roles_val}")
+        # print(f"[DEBUG] Fileaaname: {filename}, Class: {class_val}, Status: {status_val}, HumanoidCount: {humanoid_count}, Role: {roles_val}")
 
         if humanoid_count == 1:
             self.ambulance_people[filename] = {
                 "class": class_val,
                 "injured": status_val,
-                "role": roles_val if class_val == "Default" else "Blank",
+                "role": roles_val,  # Always preserve the original role
                 "original_status": class_val
             }
-            print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
+            # print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
         elif humanoid_count == 2:
             classes = class_val.split('|')
             classes[1] = classes[1].capitalize()
             injuries = status_val.split('|')
             roles = roles_val.split('|')
-            if classes[0] == "Zombie":
-                roles[0] = "Blank"
-            if classes[1] == "Zombie":
-                roles[1] = "Blank"
+            # Always preserve the original roles, regardless of state
             self.ambulance_people[filename + "_1"] = {
                 "class": classes[0],
                 "injured": injuries[0],
-                "role": roles[0] if class_val == "Default" else "Blank",
+                "role": roles[0],  # Always preserve the original role
                 "original_status": classes[0]
             }
             self.ambulance_people[filename + "_2"] = {
                 "class": classes[1],
                 "injured": injuries[1],
-                "role": roles[1] if class_val == "Default" else "Blank",
+                "role": roles[1],  # Always preserve the original role
                 "original_status": classes[1]
             }
         else:
             pass
         
-        print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
+        # print(f"[DEBUG] Ambulance contents updated: {self.ambulance_people}")
 
         if humanoid_count == 1:
             if class_val == "Zombie":
@@ -269,52 +363,128 @@ class ScoreKeeper(object):
                 if person.get('class') == 'Zombie':
                     del self.ambulance_people[humanoid_id]
                     zombie_removed = True
-                    print(f'[DEBUG] Police picked up: Removed zombie entry {humanoid_id} from ambulance_people.')
+                    # print(f'[DEBUG] Police picked up: Removed zombie entry {humanoid_id} from ambulance_people.')
                     break
             if zombie_removed:
                 if self.ambulance['zombie'] > 0:
                     self.ambulance['zombie'] -= 1
                     self.scorekeeper['zombie_killed'] += 1
-                    print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
+#                     # print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
+#                 # Show popup message
+#                 try:
+#                     import tkinter.messagebox
+#                     tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
+#                 except Exception as e:
+#                     # print(f'[DEBUG] Could not show popup: {e}')
+#                     pass
+                    # print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
                 # Show popup message  
                 _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
             else:
                 _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')
         elif humanoid_count == 2:
-            if roles[0] == "Police" or roles[1] == "Police":
+            if roles[0] == "Police" and classes[0] == "Default":
                                 # Police effect: if you pick up a police, kill 1 zombie in the ambulance
                 zombie_removed = False
                 for humanoid_id, person in list(self.ambulance_people.items()):
                     if person.get('class') == 'Zombie':
                         del self.ambulance_people[humanoid_id]
                         zombie_removed = True
-                        print(f'[DEBUG] Police picked up: Removed zombie entry {humanoid_id} from ambulance_people.')
+                        # print(f'[DEBUG] Police picked up: Removed zombie entry {humanoid_id} from ambulance_people.')
                         break
                 if zombie_removed:
                     if self.ambulance['zombie'] > 0:
                         self.ambulance['zombie'] -= 1
                         self.scorekeeper['zombie_killed'] += 1
-                        print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
+                        # print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
                     # Show popup message
+#                     try:
+#                         import tkinter.messagebox
+#                         tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
+#                     except Exception as e:
+#                         # print(f'[DEBUG] Could not show popup: {e}')
+#                         pass
                     _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
                 else:
                     _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')    
+            elif roles[1] == "Police" and classes[1] == "Default":
+                zombie_removed = False
+                for humanoid_id, person in list(self.ambulance_people.items()):
+                    if person.get('class') == 'Zombie':
+                        del self.ambulance_people[humanoid_id]
+                        zombie_removed = True
+                        # print(f'[DEBUG] Police picked up: Removed zombie entry {humanoid_id} from ambulance_people.')
+                        break
+                if zombie_removed:
+                    if self.ambulance['zombie'] > 0:
+                        self.ambulance['zombie'] -= 1
+                        self.scorekeeper['zombie_killed'] += 1
+                        # print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
+                    # Show popup message
+#                     try:
+#                         import tkinter.messagebox
+#                         tkinter.messagebox.showinfo('Police Action', 'The Police you picked up killed a zombie!')
+#                     except Exception as e:
+#                         # print(f'[DEBUG] Could not show popup: {e}')
+#                         pass
+                    _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
+                else:
+                    _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')  
+            else:
+                pass
 
         else: 
             pass
             
         
-    """
-    end of those annoying shenanigans
-    """
-        
+        """
+        end of those annoying shenanigans, start of beaver functionality
+        """
 
-    def squish(self, image):
+        if class_val == "Beaver":
+            # Transform all injured and zombie people in the ambulance to healthy
+            beaver_transformed = False
+            # Update ambulance_people
+            for humanoid_id, person in self.ambulance_people.items():
+                if person["class"] == "Zombie":
+                    person["class"] = "Default"
+                    person["injured"] = "False"
+                    person["role"] = "Civilian"
+                    beaver_transformed = True
+                elif person["class"] == "Default" and person["injured"] == "True":
+                    person["injured"] = "False"
+                    beaver_transformed = True
+            # Count how many were previously injured and zombies
+            num_injured = self.ambulance["injured"]
+            num_zombie = self.ambulance["zombie"]
+            # All become healthy
+            self.ambulance["healthy"] += num_injured + num_zombie
+            self.ambulance["injured"] = 0
+            self.ambulance["zombie"] = 0
+            # Show popup message
+            if beaver_transformed:
+                try:
+                    import tkinter.messagebox
+                    tkinter.messagebox.showinfo('Beaver Magic', 'The Transformational Beaver made everyone in your ambulance healthy!')
+                except Exception as e:
+                    # print(f'[DEBUG] Could not show popup: {e}')
+                    pass
+            else:
+                import tkinter.messagebox
+                tkinter.messagebox.showinfo('Beaver Magic', 'You encountered the Magical Beaver... but there was no one to save!')
+
+    def squish(self, image, route_position=None, side=None):
         """
         squishes the humanoid
         updates scorekeeper
         """
-        self.log(image, 'squish')
+        self.log_both_sides(
+            image_left=self.image_left if hasattr(self, 'image_left') else image,
+            image_right=self.image_right if hasattr(self, 'image_right') else image,
+            action='squish',
+            route_position=route_position,
+            chosen_side=side
+        )
 
         filename = image.datarow['Filename']
         class_val = image.datarow['Class']
@@ -350,12 +520,18 @@ class ScoreKeeper(object):
         else:
             pass
 
-    def skip(self, image):
+    def skip(self, image, route_position=None, side=None):
         """
         skips the humanoid
         updates scorekeeper
         """
-        self.log(image, 'skip')
+        self.log_both_sides(
+            image_left=self.image_left if hasattr(self, 'image_left') else image,
+            image_right=self.image_right if hasattr(self, 'image_right') else image,
+            action='skip',
+            route_position=route_position,
+            chosen_side=side
+        )
         
         self.remaining_time -= ActionCost.SKIP.value
         for humanoid in image.humanoids:
@@ -364,11 +540,10 @@ class ScoreKeeper(object):
             if humanoid.is_injured():
                 self.scorekeeper["killed"] += 1
 
-    def skip_both(self, image_left, image_right):
+    def skip_both(self, image_left, image_right, route_position=None):
         """Skips both humanoids but only deducts 15 minutes total."""
-        # access image humanoids and log them 
-        self.log(image_left, 'skip')
-        self.log(image_right, 'skip')
+        # For skip both, neither side is chosen, so both get action 'skip'
+        self.log_both_sides(image_left, image_right, action='skip', route_position=route_position, chosen_side=None)
         self.remaining_time -= ActionCost.SKIP.value
         for humanoid in image_left.humanoids:
             if humanoid is None:
@@ -381,24 +556,27 @@ class ScoreKeeper(object):
             if humanoid.is_injured():
                 self.scorekeeper["killed"] += 1
 
-    def inspect(self, image, cost=None):
+    def inspect(self, image, cost=None, route_position=None, side=None):
         """Logs an inspect action and deducts inspect cost."""
-        for humanoid in image.humanoids:
-            if humanoid is None:
-                continue
-            self.log(image, 'inspect')
+        self.log_both_sides(
+            image_left=self.image_left if hasattr(self, 'image_left') else image,
+            image_right=self.image_right if hasattr(self, 'image_right') else image,
+            action='inspect',
+            route_position=route_position,
+            chosen_side=side
+        )
 
         if cost is None:
             cost = ActionCost.INSPECT.value
         self.remaining_time -= cost
 
     #TODO: fix this to be able to scram images and not humanoids + other number tweaks
-    def scram(self, image_left, image_right, time_cost=None):
+    def scram(self, image_left, image_right, time_cost=None, route_position=None):
         """
         scrams
         updates scorekeeper
         """
-        self.logScram(image_left, image_right, 'scram')
+        self.logScram(image_left, image_right, action='scram', route_position=route_position)
         if time_cost is not None:
             self.remaining_time -= time_cost
         else:
@@ -412,13 +590,13 @@ class ScoreKeeper(object):
             num_humans = self.ambulance["healthy"] + self.ambulance["injured"]
             earnings = num_humans * 10
             self.upgrade_manager.earn_money(earnings)
-            print(f"[SCRAM] Earned ${earnings} for {num_humans} humans.")
+            # print(f"[SCRAM] Earned ${earnings} for {num_humans} humans.")
         
         self.ambulance["zombie"] = 0
         self.ambulance["injured"] = 0
         self.ambulance["healthy"] = 0
         self.ambulance_people.clear()
-        print(f"[DEBUG] Ambulance cleared: {self.ambulance_people}")
+        # print(f"[DEBUG] Ambulance cleared: {self.ambulance_people}")
     
     def available_action_space(self):
         """
@@ -516,8 +694,8 @@ class ScoreKeeper(object):
     def at_capacity(self):
         return sum(self.ambulance.values()) >= self.capacity
 
-    def get_score(self):
-        self.scram()
+    def get_score(self, image_left, image_right):
+        self.scram(image_left, image_right)
         return self.scorekeeper
     
     def get_final_score(self, route_complete=True):
@@ -525,7 +703,7 @@ class ScoreKeeper(object):
         Calculate the final score based on saved/killed and also on time remaining
         """
         score = 0
-        print(f"[Debug] Ambulance: {self.ambulance}, Scorekeeper: {self.scorekeeper}, Remaining Time: {self.remaining_time}")
+        # print(f"[Debug] Ambulance: {self.ambulance}, Scorekeeper: {self.scorekeeper}, Remaining Time: {self.remaining_time}")
         score += self.ambulance["healthy"] * SCORE_HEALTHY
         score += self.ambulance["injured"] * SCORE_INJURED
         score += self.ambulance["zombie"] * SCORE_ZOMBIE
@@ -600,7 +778,7 @@ class ScoreKeeper(object):
                 if random.random() < infection_chance:
                     # Turn this human into a zombie
                     humanoid_data["class"] = "Zombie"
-                    humanoid_data["role"] = "blank"
+                    # Keep the original role, don't change it to "blank"
 
                     # Update ambulance counts
                     if humanoid_data.get("status") == "True":
@@ -636,7 +814,7 @@ class ScoreKeeper(object):
                 if random.random() < cure_chance:
                     # Cure this zombie
                     humanoid_data["class"] = "Default"
-                    humanoid_data["role"] = "Civilian"
+                    # Keep the original role, don't change it to "Civilian"
                     # Keep status (injured/healthy) the same
                     humanoid_data["original_status"] = "cured_zombie"
                     self.scorekeeper["zombie_cured"] += 1

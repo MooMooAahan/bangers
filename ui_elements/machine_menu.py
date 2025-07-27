@@ -7,6 +7,15 @@ class MachineMenu(object):
         self.canvas.place(x=450, y=720)
         self.buttons = create_buttons(self.canvas, items)
         create_menu(self.buttons)
+        
+    def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity):
+        for button in self.buttons:
+            button.config(state="disabled")
+            
+    def enable_all_buttons(self):
+        """Enables buttons for when you need to retry"""
+        for button in self.buttons:
+            button.config(state="normal")
 
 
 def create_buttons(canvas, items):
