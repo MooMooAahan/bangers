@@ -28,8 +28,7 @@ class ButtonMenu(object):
         #     self.buttons[2].config(state="disabled")  # Squish
         # if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SAVE.value:
         #     self.buttons[3].config(state="disabled")  # Save
-        if at_capacity:
-            self.buttons[0].config(state="disabled")  # Skip
+
 
 
 
