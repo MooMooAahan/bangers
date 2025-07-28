@@ -19,7 +19,7 @@ from data_uploader import DataUploader
 class IntroScreen:
     def __init__(self, on_start_callback, root):
         self.root = tk.Toplevel(root)
-        self.root.title("Welcome to SGAI 2025 - Team Splice")
+        self.root.title("Welcome - Team Splice (SGAI 2025)")
         window_width = 600
         window_height = 350
         screen_width = self.root.winfo_screenwidth()
@@ -30,15 +30,48 @@ class IntroScreen:
         self.root.resizable(False, False)
         self.on_start_callback = on_start_callback
         self.setup_ui()
+    
     def setup_ui(self):
-        label = tk.Label(self.root, text="Welcome to Beaverworks SGAI 2025 - Team Splice",
-                         font=("Helvetica", 18), pady=40)
-        label.pack()
-        start_button = tk.Button(self.root, text="Start Game", font=("Helvetica", 16), width=15,
-                                 command=self.start_game)
-        start_button.pack(pady=30)
+        # Create a canvas to hold the background image and UI elements
+        self.canvas = tk.Canvas(self.root, width=600, height=350, highlightthickness=0)
+        self.canvas.pack(fill="both", expand=True)
+        
+        # Load and resize the background image
+        try:
+            # Try to load the logo image as background
+            image_path = "images/intro_image.png"
+            original_image = Image.open(image_path)
+            
+            # Resize image to fit the window (600x350)
+            resized_image = original_image.resize((600, 350), Image.Resampling.LANCZOS)
+            self.bg_image = ImageTk.PhotoImage(resized_image)
+            
+            # Place the background image on the canvas
+            self.canvas.create_image(0, 0, image=self.bg_image, anchor="nw")
+            
+            # Add a semi-transparent overlay to make text more readable
+            # self.canvas.create_rectangle(0, 0, 600, 350, fill="black", stipple="gray50")
+            
+        except Exception as e:
+            print(f"Could not load background image: {e}")
+            # Fallback to a solid color background
+            self.canvas.configure(bg="darkblue")
+        
+        # Add the title text directly on the canvas (truly transparent)
+        self.canvas.create_text(300, 100, text="Team Splice (SGAI 2025)",
+                               font=("Helvetica", 18, "bold"), 
+                               fill="white", anchor="center")
+        
+        # Add the start button directly on the canvas
+        start_button = tk.Button(self.canvas, text="Start Game", 
+                                    font=("Helvetica", 16, "bold"), 
+                                    width=15,
+                                    bg="#5B7B7A", fg="white",  # Green background, white text
+                                    relief="raised", bd=3,
+                                    command=self.start_game)
+        self.canvas.create_window(300, 200, window=start_button, anchor="center")
     def start_game(self):
-        self.root.destroy()
+        # Don't destroy the intro screen here - let the callback handle it
         self.on_start_callback()
     def run(self):
         self.root.mainloop()
