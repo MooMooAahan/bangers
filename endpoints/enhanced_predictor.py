@@ -254,18 +254,21 @@ class ImperfectCNNDisplay:
             prediction = self.predictor.get_imperfect_prediction(image_path, self.accuracy_rate)
             
             if prediction is None:
-                return f"{side} Side: Unknown"
+                side_text = "I think left is:" if side.upper() == "LEFT" else "I think right is:"
+                return f"{side_text} Unknown"
             
             status = prediction['status'].title()
             occupation = prediction['occupation']
             
-            # Format display text
-            display_text = f"{side} Side: {status} {occupation}"
+            # Format display text with conversational phrasing
+            side_text = "I think left is:" if side.upper() == "LEFT" else "I think right is:"
+            display_text = f"{side_text} {status} {occupation}"
             
             return display_text
         except Exception as e:
             print(f"Error getting display text for {image_path}: {e}")
-            return f"{side} Side: Error"
+            side_text = "I think left is:" if side.upper() == "LEFT" else "I think right is:"
+            return f"{side_text} Error"
     
     def get_both_sides_display(self, left_image_path, right_image_path):
         """Get display text for both sides"""
