@@ -17,12 +17,85 @@ import warnings
 
 
 class HeuristicInterface(object):
-    def __init__(self, model_file='models/transfer_status_baseline.pth'):
-        """
+  
+    def __init__(self, root, w, h, display=False, model_file=os.path.join('models', 'baseline.pth'),
+                 img_data_root='data'):
+    
+                """
         Heuristic interface that properly simulates the real game
         Uses both status and occupation CNNs via EnhancedPredictor
         """
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.text = ""
+        self.display = display
+        self.img_data_root = img_data_root
+
+        # load 
+        self.predictor = Predictor(model_file=model_file)
+
+        if self.display:
+            self.canvas = tk.Canvas(root, width=math.floor(0.2 * w), height=math.floor(0.1 * h))
+            self.canvas.place(x=math.floor(0.75 * w), y=math.floor(0.75 * h))
+            from ui_elements.theme import UPGRADE_FONT
+            self.label = tk.Label(self.canvas, text="Simon says...", font=UPGRADE_FONT)
+            self.label.pack(side=tk.TOP)
+
+            self.suggestion = tk.Label(self.canvas, text=self.text, font=UPGRADE_FONT)
+            self.suggestion.pack(side=tk.TOP)
+
+    def _load_model(self, weights_path, num_classes=4):
+        try:
+            self.net = DefaultCNN(num_classes)
+            self.net.load_state_dict(torch.load(weights_path))
+            return True
+        except:  # file not found, maybe others?
+            return False
+
+    def suggest(self, humanoid, capacity_full=False):
+        if self.predictor.is_model_loaded:
+            action = self.get_model_suggestion(humanoid, capacity_full)
+        else:
+            action = self.get_random_suggestion()
+        self.text = action.name
+        if self.display:
+            self.suggestion.config(text=self.text)
+
+    def act(self, scorekeeper, humanoid):
+        self.suggest(humanoid, scorekeeper.at_capacity())
+        action = self.text
+        if action == ActionCost.SKIP.name:
+            scorekeeper.skip(humanoid)
+        elif action == ActionCost.SQUISH.name:
+            scorekeeper.squish(humanoid)
+        elif action == ActionCost.SAVE.name:
+            scorekeeper.save(humanoid)
+        elif action == ActionCost.SCRAM.name:
+            scorekeeper.scram(humanoid)
+        else:
+            raise ValueError("Invalid action suggested")
+
+    @staticmethod
+    def get_random_suggestion():
+        return random.choice(list(ActionCost))
+
+    def get_model_suggestion(self, image_or_humanoid, is_capacity_full) -> ActionCost:
+        # Handle both Image objects (from main.py) and Humanoid objects
+        if hasattr(image_or_humanoid, 'fp'):
+            # It's a Humanoid object
+            image_path = image_or_humanoid.fp
+            actual_state = State(image_or_humanoid.state)
+            occupation = getattr(image_or_humanoid, 'role', 'Unknown')
+        else:
+            # It's an Image object
+            image_path = image_or_humanoid.Filename
+            # For Image objects, get the actual state from the first humanoid
+            first_humanoid = next((h for h in image_or_humanoid.humanoids if h is not None), None)
+            if first_humanoid:
+                actual_state = State(first_humanoid.state)
+                occupation = getattr(first_humanoid, 'role', 'Unknown')
+            else:
+                actual_state = State.HEALTHY  # Default fallback
+                occupation = 'Unknown'
         
         # Load the enhanced predictor (status + occupation CNNs)
         try:

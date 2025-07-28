@@ -77,10 +77,11 @@ class TrainInterface(Env):
         if self.display and root:
             self.canvas = tk.Canvas(root, width=math.floor(0.2 * w), height=math.floor(0.1 * h))
             self.canvas.place(x=math.floor(0.75 * w), y=math.floor(0.75 * h))
-            self.label = tk.Label(self.canvas, text="RL Agent Training...", font=("Arial", 20))
+            from ui_elements.theme import UPGRADE_FONT
+            self.label = tk.Label(self.canvas, text="RL Agent Training...", font=UPGRADE_FONT)
             self.label.pack(side=tk.TOP)
 
-            self.suggestion = tk.Label(self.canvas, text="", font=("Arial", 20))
+            self.suggestion = tk.Label(self.canvas, text="", font=UPGRADE_FONT)
             self.suggestion.pack(side=tk.TOP)
             
     def reset(self):

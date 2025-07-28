@@ -1,8 +1,10 @@
 import math
 import tkinter as tk
+from tkinter import font
 from ui_elements.button_menu import ButtonMenu, LeftButtonMenu, RightButtonMenu
 from ui_elements.capacity_meter import CapacityMeter
 from ui_elements.clock import Clock
+from ui_elements.ambulance_overlay import AmbulanceOverlay
 from endpoints.heuristic_interface import HeuristicInterface
 from endpoints.enhanced_predictor import EnhancedPredictor, ImperfectCNNDisplay
 from ui_elements.game_viewer import GameViewer
@@ -20,7 +22,7 @@ from data_uploader import DataUploader
 class IntroScreen:
     def __init__(self, on_start_callback, root):
         self.root = tk.Toplevel(root)
-        self.root.title("Welcome to SGAI 2025 - Team Splice")
+        self.root.title("Welcome - Team Splice (SGAI 2025)")
         window_width = 600
         window_height = 350
         screen_width = self.root.winfo_screenwidth()
@@ -31,16 +33,189 @@ class IntroScreen:
         self.root.resizable(False, False)
         self.on_start_callback = on_start_callback
         self.setup_ui()
+    
     def setup_ui(self):
-        label = tk.Label(self.root, text="Welcome to Beaverworks SGAI 2025 - Team Splice",
-                         font=("Helvetica", 18), pady=40)
-        label.pack()
-        start_button = tk.Button(self.root, text="Start Game", font=("Helvetica", 16), width=15,
-                                 command=self.start_game)
-        start_button.pack(pady=30)
+        # Create a canvas to hold the background image and UI elements
+        self.canvas = tk.Canvas(self.root, width=600, height=350, highlightthickness=0)
+        self.canvas.pack(fill="both", expand=True)
+        
+        # Load and resize the background image
+        try:
+            # Try to load the logo image as background
+            image_path = "images/intro_image.png"
+            original_image = Image.open(image_path)
+            
+            # Resize image to fit the window (600x350)
+            resized_image = original_image.resize((600, 350), Image.Resampling.LANCZOS)
+            self.bg_image = ImageTk.PhotoImage(resized_image)
+            
+            # Place the background image on the canvas
+            self.canvas.create_image(0, 0, image=self.bg_image, anchor="nw")
+            
+            # Add a semi-transparent overlay to make text more readable
+            # self.canvas.create_rectangle(0, 0, 600, 350, fill="black", stipple="gray50")
+            
+        except Exception as e:
+            print(f"Could not load background image: {e}")
+            # Fallback to a solid color background
+            self.canvas.configure(bg="darkblue")
+        
+        # Import theme fonts
+        from ui_elements.theme import UPGRADE_FONT, TITLE_FONT_FOR_CURRENT_TIME
+        
+        # Add the title text directly on the canvas (truly transparent)
+        self.canvas.create_text(300, 60, text="Team Splice (SGAI 2025)",
+                               font=TITLE_FONT_FOR_CURRENT_TIME, 
+                               fill="white", anchor="center")
+        
+        # Add the start button directly on the canvas (positioned to the left)
+        self.start_button = tk.Button(self.canvas, text="Start Game", 
+                                    font=UPGRADE_FONT, 
+                                    width=12, height=1,
+                                    bg="#5B7B7A", fg="white",  # Green background, white text
+                                    relief="raised", bd=3,
+                                    command=self.start_game)
+        self.canvas.create_window(200, 105, window=self.start_button, anchor="center")
+        
+        # Add the instructions button directly on the canvas (positioned to the right)
+        self.instructions_button = tk.Button(self.canvas, text="Instructions", 
+                                           font=UPGRADE_FONT, 
+                                           width=12, height=1,
+                                           bg="#5B7B7A", fg="white",  # Green background, white text
+                                           relief="raised", bd=3,
+                                           command=self.show_instructions)
+        self.canvas.create_window(400, 105, window=self.instructions_button, anchor="center")
     def start_game(self):
-        self.root.destroy()
+        # Change button appearance to pressed state
+        self.start_button.config(
+            bg="#4A6B6A",  # Darker green for pressed state
+            relief="sunken",  # Sunken relief to show pressed
+            state="disabled"  # Disable the button
+        )
+        
+        # Show loading text
+        self.show_loading()
+        
+        # Don't destroy the intro screen here - let the callback handle it
         self.on_start_callback()
+    
+    def show_loading(self):
+        # Add loading text at the bottom of the screen
+        from ui_elements.theme import UPGRADE_FONT
+        self.loading_text = self.canvas.create_text(300, 325, text="Loading...",
+                                                   font=UPGRADE_FONT, 
+                                                   fill="white", anchor="center")
+        
+        # Force update to show the loading text immediately
+        self.root.update_idletasks()
+    
+    def show_instructions(self):
+        """Show game instructions in a popup dialog"""
+        # Create popup window
+        popup = tk.Toplevel(self.root)
+        popup.title("Game Instructions - Team Splice")
+        popup.geometry("800x600")
+        popup.resizable(False, False)
+        
+        # Center the popup on the screen
+        popup.transient(self.root)
+        popup.grab_set()
+        
+        # Create a canvas to hold the background image and UI elements
+        canvas = tk.Canvas(popup, width=800, height=600, highlightthickness=0)
+        canvas.pack(fill="both", expand=True)
+        
+        # Load and resize the city background image
+        try:
+            image_path = "images/city_background.png"
+            original_image = Image.open(image_path)
+            
+            # Resize image to fit the window (800x600)
+            resized_image = original_image.resize((800, 600), Image.Resampling.LANCZOS)
+            self.bg_image_instructions = ImageTk.PhotoImage(resized_image)  # Store reference
+            
+            # Place the background image on the canvas
+            canvas.create_image(0, 0, image=self.bg_image_instructions, anchor="nw")
+            
+            # Add a semi-transparent overlay to make text more readable
+            canvas.create_rectangle(0, 0, 800, 600, fill="black", stipple="gray50")
+            
+        except Exception as e:
+            print(f"Could not load city background image: {e}")
+            # Fallback to a solid color background
+            canvas.configure(bg="darkblue")
+        
+        # Title label with start screen styling
+        from ui_elements.theme import TITLE_FONT_FOR_CURRENT_TIME
+        canvas.create_text(400, 40, text="Game Instructions", 
+                          font=TITLE_FONT_FOR_CURRENT_TIME, 
+                          fill="white", anchor="center")
+        
+        # Instructions text - using the same comprehensive text as show_rules
+        instructions_text = (
+            "Welcome to Team Splice (SGAI 2025)!\n\n"
+            
+            "🎯 OBJECTIVE:\n"
+            "Complete the ambulance route (20 movements) while saving humans and eliminating zombies.\n\n"
+            
+            "🎮 GAMEPLAY:\n"
+            "• You'll encounter pairs of humanoids (humans and zombies)\n"
+            "• Choose your actions carefully - you can only save one set per scenario\n"
+            "• Complete your route before time runs out\n\n"
+            
+            "🔧 ACTIONS:\n"
+            "• SKIP: Pass on the current humanoids\n"
+            "• INSPECT: Get more information (costs time)\n"
+            "• SQUISH: Eliminate zombies (costs time)\n"
+            "• SAVE: Rescue humans (costs time and capacity)\n"
+            "• SCRAM: Return to base when capacity is full\n\n"
+            
+            "📊 SCORING:\n"
+            "• +Points: Saving humans, eliminating zombies\n"
+            "• -Points: Saving zombies, eliminating humans\n"
+            "• Money earned from saving humans can be used for upgrades\n\n"
+            
+            "⏰ TIME MANAGEMENT:\n"
+            "• You have 12 hours (720 minutes) to complete your route\n"
+            "• Route progress is shown in the center of your screen\n"
+            "• If you don't complete the route on time, you lose points\n\n"
+            
+            "💡 TIPS:\n"
+            "• Use INSPECT to gather information before making decisions\n"
+            "• Manage your capacity wisely - you can't save everyone\n"
+            "• Watch the clock and plan your route completion\n"
+            "• Remember: You can only save one set per scenario!"
+        )
+        
+        # Create a scrollable text widget for instructions
+        text_frame = tk.Frame(canvas, bg="#1a1a1a")
+        text_frame.place(relx=0.5, rely=0.5, anchor="center", width=700, height=400)
+        
+        # Create text widget with scrollbar
+        from ui_elements.theme import LABEL_FONT
+        text_widget = tk.Text(text_frame, wrap="word", font=LABEL_FONT, 
+                             bg="#1a1a1a", fg="white", relief="flat",
+                             padx=20, pady=20, state="normal")
+        scrollbar = tk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
+        text_widget.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack the text widget and scrollbar
+        text_widget.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Insert the instructions text
+        text_widget.insert("1.0", instructions_text)
+        text_widget.config(state="disabled")  # Make read-only
+        
+        # Add a close button with start screen styling
+        close_button = tk.Button(canvas, text="Close", 
+                               font=UPGRADE_FONT, 
+                               width=12, height=1,
+                               bg="#5B7B7A", fg="white",  # Green background, white text
+                               relief="raised", bd=3,
+                               command=popup.destroy)
+        canvas.create_window(400, 550, window=close_button, anchor="center")
+    
     def run(self):
         self.root.mainloop()
 
@@ -59,7 +234,6 @@ class UI(object):
         w, h = 1280, 800
         self.root = root  # Use the passed root instead of creating a new one
         self.root.configure(bg="black")
-        self.create_menu_bar()
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
@@ -67,6 +241,18 @@ class UI(object):
         y = (screen_height // 2) - (h // 2)
         self.root.geometry(f"{w}x{h}+{x}+{y}")
         self.root.resizable(False, False)
+        
+        # Create ambulance view as underlay FIRST
+        # try:
+        #     print("Creating ambulance view")
+        #     self.ambulance_overlay = AmbulanceOverlay(self.root, w, h)
+        #     self.ambulance_overlay.place(0, 0)  # Place at the very bottom layer
+        #     print("Ambulance view created and placed")
+        # except Exception as e:
+        #     print("Exception creating ambulance view:", e)
+        
+        # Create menu bar AFTER overlay so it appears on top
+        self.create_menu_bar()
         self.false_saves = 0 
         # Time management variables
         self.total_time = 720  # 12 hours in minutes
@@ -113,26 +299,26 @@ class UI(object):
 
         # We'll need to update the button text dynamically, so store the button objects
         self.user_buttons = [
-            ("Skip (15 mins)", lambda: [
-                                  scorekeeper.skip_both(self.image_left, self.image_right, route_position=self.movement_count),
-                                  self.move_ambulance_by_cell(),
-                                  self.update_ui(scorekeeper),
-                                  self.get_next(
-                                      data_fp,
-                                      data_parser,
-                                      scorekeeper) if not getattr(self, 'route_complete', False) else None],COLOR_SKIP),
-            (f"Inspect ({get_inspect_cost()} mins)", lambda: [self.show_action_popup("Inspect")],COLOR_INSPECT),
-            ("Squish (5 mins)", lambda: self.show_action_popup("Squish"),COLOR_SQUISH),
-            ("Save (30 mins)", lambda: self.show_action_popup("Save"),COLOR_SAVE),
             (get_scram_text(), lambda: [
                                     # print(f"[DEBUG] Scram penalty applied: {get_scram_time()} minutes"),
                                     scorekeeper.scram(self.image_left, self.image_right, time_cost=get_scram_time(), route_position=self.movement_count),
-                                    self.move_ambulance_by_cell(),
+                                    self.move_ambulance_by_cell() if not self.route_complete else None,
                                     self.update_ui(scorekeeper),
                                     self.get_next(
                                         data_fp,
                                         data_parser,
-                                        scorekeeper) if not getattr(self, 'route_complete', False) else None],COLOR_SCRAM)
+                                        scorekeeper) if not getattr(self, 'route_complete', False) else None],COLOR_SCRAM),
+            (f"Inspect ({get_inspect_cost()} mins)", lambda: [self.show_action_popup("Inspect")],COLOR_INSPECT),
+            ("Squish (5 mins)", lambda: self.show_action_popup("Squish"),COLOR_SQUISH),
+            ("Save (30 mins)", lambda: self.show_action_popup("Save"),COLOR_SAVE),
+            ("Skip (15 mins)", lambda: [
+                                  scorekeeper.skip_both(self.image_left, self.image_right, route_position=self.movement_count),
+                                  self.move_ambulance_by_cell() if not self.route_complete else None,
+                                  self.update_ui(scorekeeper),
+                                  self.get_next(
+                                      data_fp,
+                                      data_parser,
+                                      scorekeeper) if not getattr(self, 'route_complete', False) else None],COLOR_SKIP)
         ]
 
         # Debug and try/except for each major widget
@@ -146,16 +332,18 @@ class UI(object):
         # Patch: update Scram and Inspect button text after every action
 
         def update_button_texts():
-            # Button order: Skip, Inspect, Squish, Save, Scram
-            self.button_menu.buttons[1].config(text=f"Inspect ({get_inspect_cost()} mins)")
-            self.button_menu.buttons[4].config(text=get_scram_text())
+            # Button order: Scram, Inspect, Squish, Save, Skip
+            if hasattr(self, 'button_menu') and self.button_menu:
+                self.button_menu.buttons[1].config(text=f"Inspect ({get_inspect_cost()} mins)")
+                self.button_menu.buttons[0].config(text=get_scram_text())
         self.update_button_texts = update_button_texts
 
         # Call update_button_texts after every UI update
         orig_update_ui = self.update_ui
         def patched_update_ui(scorekeeper):
             orig_update_ui(scorekeeper)
-            self.update_button_texts()
+            if hasattr(self, 'update_button_texts'):
+                self.update_button_texts()
         self.update_ui = patched_update_ui
 
         # Restore left/right button menus for Squish/Save
@@ -163,24 +351,29 @@ class UI(object):
         # Save references to left/right button actions for map movement
         self.left_action_callbacks = [
             lambda: [self.print_scenario_side_attributes('left'), self.scorekeeper.inspect(self.image_left, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='left'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Left
-            lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left', image_left=self.image_left, image_right=self.image_right), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Left
-            lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left', image_left=self.image_left, image_right=self.image_right), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Left
+            lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Left
+            lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Left
         ]
-        self.left_button_menu = LeftButtonMenu(self.root, [
-            ("Inspect Left", self.left_action_callbacks[0]),
-            ("Squish Left", self.left_action_callbacks[1]),
-            ("Save Left", self.left_action_callbacks[2])
-        ])
-        self.right_action_callbacks = [
-            lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='right'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
-            lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right', image_left=self.image_left, image_right=self.image_right), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Right
-            lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right', image_left=self.image_left, image_right=self.image_right), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Right
-        ]
-        self.right_button_menu = RightButtonMenu(self.root, [
-            ("Inspect Right", self.right_action_callbacks[0]),
-            ("Squish Right", self.right_action_callbacks[1]),
-            ("Save Right", self.right_action_callbacks[2])
-        ])
+        try:
+            print("Creating left/right button menus")
+            self.left_button_menu = LeftButtonMenu(self.root, [
+                ("Inspect Left", self.left_action_callbacks[0]),
+                ("Squish Left", self.left_action_callbacks[1]),
+                ("Save Left", self.left_action_callbacks[2])
+            ])
+            self.right_action_callbacks = [
+                lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='right'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
+                lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Right
+                lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Right
+            ]
+            self.right_button_menu = RightButtonMenu(self.root, [
+                ("Inspect Right", self.right_action_callbacks[0]),
+                ("Squish Right", self.right_action_callbacks[1]),
+                ("Save Right", self.right_action_callbacks[2])
+            ])
+            print("Left/right button menus created")
+        except Exception as e:
+            print("Exception creating left/right button menus:", e)
         if suggest:
             machine_buttons = [
                 ("Suggest", lambda: [self.machine_interface.suggest(self.image_left)]),
@@ -240,7 +433,7 @@ class UI(object):
         self.root.bind("<Delete>", self.game_viewer_left.delete_photo)
         self.root.bind("<Delete>", self.game_viewer_right.delete_photo)
         # Display the countdown
-        init_h = 12
+        init_h = 8
         init_m = 0
         try:
             print("Creating clock")
@@ -272,8 +465,8 @@ class UI(object):
         ]
         self.grid_rows = len(self.map_array)
         self.grid_cols = len(self.map_array[0])
-        self.cell_size = 44  # Small for better fit
-        self.grid_origin = (985, 495)  # location of map
+        self.cell_size = 35  # Small for better fit
+        self.grid_origin = (1040, 500)  # location of map (centered with clock and capacity meter)
         self.create_grid_map_canvas()  # Create the canvas first
         self.reset_map()               # Now it's safe to call reset_map()
         self.draw_grid_map()           # Draw the map with background image
@@ -283,10 +476,11 @@ class UI(object):
         # self.draw_grid_map() # This line is moved
 
         # Movement progress label
+        movement_font = font.Font(family="Fixedsys", size=10)
         self.movement_label = tk.Label(self.root, text="Route Progress: 0/20", 
-                                      font=("Arial", 12), bg="#000000", fg="#2E86AB",
-                                      relief="solid", bd=1, padx=10, pady=5)
-        self.movement_label.place(x=1050, y=460)
+                                      font=movement_font, bg="#5B7B7A", fg="#FFFFFF",
+                                      relief="groove", bd=2, padx=10, pady=5)
+        self.movement_label.place(x=1060, y=460)
 
         # Initialize the UI with the current state
         self.update_ui(scorekeeper)
@@ -318,11 +512,9 @@ class UI(object):
             widget.destroy()
      
     def rebuild_main_ui(self):
-    # Simply destroy the root window and restart the game
-        self.root.destroy()
-        # Create a new root window for the intro screen
-        new_root = tk.Tk()
-        IntroScreen(lambda: UI(self.data_parser, self.scorekeeper, self.data_fp, suggest=False, log=self.log, root=new_root), new_root)   
+    # Instead of destroying and recreating the root window, clear and reuse it
+        self.clear_main_ui()
+        IntroScreen(lambda: UI(self.data_parser, self.scorekeeper, self.data_fp, suggest=False, log=self.log, root=self.root), self.root)
     
     def restore_main_ui(self):
         """Restore the main game UI without restarting the game"""
@@ -334,29 +526,48 @@ class UI(object):
         
         self.clear_main_ui()
         
-        # Recreate the menu bar
-        self.create_menu_bar()
-        
         # Recreate the main game components
         w, h = 1280, 800
         self.root.configure(bg="black")
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
         
+        # Recreate ambulance view as underlay FIRST
+        # try:
+        #     print("Recreating ambulance view")
+        #     self.ambulance_overlay = AmbulanceOverlay(self.root, w, h)
+        #     self.ambulance_overlay.place(0, 0)  # Place at the very bottom layer
+        #     print("Ambulance view recreated and placed")
+        # except Exception as e:
+        #     print("Exception recreating ambulance view:", e)
+        
+        # Recreate the menu bar AFTER overlay so it appears on top
+        self.create_menu_bar()
+        
         # Recreate button menu
-        self.button_menu = ButtonMenu(self.root, self.user_buttons)
+        try:
+            print("Recreating button menu")
+            self.button_menu = ButtonMenu(self.root, self.user_buttons)
+            print("Button menu recreated")
+        except Exception as e:
+            print("Exception recreating button menu:", e)
         
         # Recreate left/right button menus
-        self.left_button_menu = LeftButtonMenu(self.root, [
-            ("Inspect Left", self.left_action_callbacks[0]),
-            ("Squish Left", self.left_action_callbacks[1]),
-            ("Save Left", self.left_action_callbacks[2])
-        ])
-        
-        self.right_button_menu = RightButtonMenu(self.root, [
-            ("Inspect Right", self.right_action_callbacks[0]),
-            ("Squish Right", self.right_action_callbacks[1]),
-            ("Save Right", self.right_action_callbacks[2])
-        ])
+        try:
+            print("Recreating left/right button menus")
+            self.left_button_menu = LeftButtonMenu(self.root, [
+                ("Inspect Left", self.left_action_callbacks[0]),
+                ("Squish Left", self.left_action_callbacks[1]),
+                ("Save Left", self.left_action_callbacks[2])
+            ])
+            
+            self.right_button_menu = RightButtonMenu(self.root, [
+                ("Inspect Right", self.right_action_callbacks[0]),
+                ("Squish Right", self.right_action_callbacks[1]),
+                ("Save Right", self.right_action_callbacks[2])
+            ])
+            print("Left/right button menus recreated")
+        except Exception as e:
+            print("Exception recreating left/right button menus:", e)
         
         # Recreate machine menu if it exists
         if hasattr(self, 'machine_interface'):
@@ -382,7 +593,7 @@ class UI(object):
         self.game_viewer_right.canvas.place(x=center_x - offset + image_width + horizontal_gap, y=y_top)
         
         # Recreate clock
-        init_h = 12
+        init_h = 8
         init_m = 0
         self.clock = Clock(self.root, w, h, init_h, init_m)
         
@@ -402,11 +613,12 @@ class UI(object):
             self.reset_map()
         self.draw_grid_map()
         
+        movement_font = font.Font(family="Fixedsys", size=10)
         # Recreate movement label
         self.movement_label = tk.Label(self.root, text=f"Route Progress: {self.movement_count}/20", 
-                                      font=("Arial", 12), bg="#000000", fg="#2E86AB",
-                                      relief="solid", bd=1, padx=10, pady=5)
-        self.movement_label.place(x=1050, y=460)
+                                      font=movement_font, bg="#5B7B7A", fg="#FFFFFF",
+                                      relief="groove", bd=2, padx=10, pady=5)
+        self.movement_label.place(x=1060, y=460)
         
         # Recreate inspect canvases
         inspect_height = 150
@@ -472,19 +684,22 @@ class UI(object):
         main_frame = tk.Frame(popup, padx=20, pady=20)
         main_frame.pack(expand=True, fill="both")
         
+        # Import theme fonts
+        from ui_elements.theme import UPGRADE_FONT, LABEL_FONT
+        
         # Title label
         if action_name == "Save":
             title_label = tk.Label(main_frame, text=f"Saving", 
-                              font=("Arial", 16, "bold"), fg="#2E86AB")
+                              font=UPGRADE_FONT, fg="#2E86AB")
             title_label.pack(pady=(0, 15))
         else:
             title_label = tk.Label(main_frame, text=f"{action_name}ing", 
-                              font=("Arial", 16, "bold"), fg="#2E86AB")
+                              font=UPGRADE_FONT, fg="#2E86AB")
             title_label.pack(pady=(0, 15))
         
         # Instructions text with highlighting
         instructions_label = tk.Label(main_frame, text=instructions_text, 
-                                    justify="center", anchor="center", font=("Arial", 12),
+                                    justify="center", anchor="center", font=LABEL_FONT,
                                     fg="#E74C3C", bg="#FDF2E9", 
                                     relief="solid", bd=1, padx=15, pady=15)
         instructions_label.pack(expand=True, fill="both", pady=(0, 15))
@@ -492,7 +707,7 @@ class UI(object):
         # Close button
         close_btn = tk.Button(main_frame, text="Close", 
                              command=popup.destroy,
-                             font=("Arial", 12), bg="#3498DB", fg="white",
+                             font=LABEL_FONT, bg="#3498DB", fg="white",
                              relief="raised", bd=2, padx=20, pady=5)
         close_btn.pack()
 
@@ -501,32 +716,97 @@ class UI(object):
         self.clear_main_ui()
         # Set the root background to black
         self.root.configure(bg="black")
-        tk.Label(self.root, text="Game Rules", font=("Arial", 24, "bold"), fg="white", bg="black").pack(pady=20)
+        
+        # Create a canvas to hold the background image and UI elements
+        canvas = tk.Canvas(self.root, width=1280, height=800, highlightthickness=0)
+        canvas.pack(fill="both", expand=True)
+        
+        # Load and resize the city background image
+        try:
+            image_path = "images/city_background.png"
+            original_image = Image.open(image_path)
+            
+            # Resize image to fit the window (1280x800)
+            resized_image = original_image.resize((1280, 800), Image.Resampling.LANCZOS)
+            self.bg_image_rules = ImageTk.PhotoImage(resized_image)  # Store reference
+            
+            # Place the background image on the canvas
+            canvas.create_image(0, 0, image=self.bg_image_rules, anchor="nw")
+            
+            # Add a semi-transparent overlay to make text more readable
+            canvas.create_rectangle(0, 0, 1280, 800, fill="black", stipple="gray50")
+            
+        except Exception as e:
+            print(f"Could not load city background image: {e}")
+            # Fallback to a solid color background
+            canvas.configure(bg="darkblue")
+        
+        # Title with start screen styling
+        canvas.create_text(640, 60, text="Game Rules", 
+                          font=("Arial", 18, "bold"), 
+                          fill="white", anchor="center")
         
         rules_text = (
-            "Game Rules:\n"
-            "- The goal is to complete the ambulance route (20 movements).\n"
-            "- Choose an action: Skip if you want to skip this set of humanoids.\n"
-            "- Inspect if you want to inspect the humanoids.\n"
-            "- Squish if you want to squash the zombies.\n"
-            "- Save if you want to save the humanoids.\n"
-            "- Scram if your capacity is full.\n"
-            "- The goal is to save as many humans and squash the zombies.\n"
-            "- Saving humans gives you money for more upgrades when you scram.\n"
-            "- Your choices affect your score.\n"
-            "- Saving zombies or killing humans hurt your score, while saving humans and killing zombies adds to it."
-            "- The game ends when you complete the route or the day ends. \n"
-            "- If you don't complete your route on time, you lose points."
-            "- Route progress is shown in the middle of your screen. \n"
-            "- Remember: You can only save one set of humanoids, so pick wisely! \n"
-            #More rules if needed (make sure to add \n)
-            "- This is where we can add more rules in case we need to. \n\n"
+            "Welcome to Team Splice (SGAI 2025)!\n\n"
+            
+            "🎯 OBJECTIVE:\n"
+            "Complete the ambulance route (20 movements) while saving humans and eliminating zombies.\n\n"
+            
+            "🎮 GAMEPLAY:\n"
+            "• You'll encounter pairs of humanoids (humans and zombies)\n"
+            "• Choose your actions carefully - you can only save one set per scenario\n"
+            "• Complete your route before time runs out\n\n"
+            
+            "🔧 ACTIONS:\n"
+            "• SKIP: Pass on the current humanoids\n"
+            "• INSPECT: Get more information (costs time)\n"
+            "• SQUISH: Eliminate zombies (costs time)\n"
+            "• SAVE: Rescue humans (costs time and capacity)\n"
+            "• SCRAM: Return to base when capacity is full\n\n"
+            
+            "📊 SCORING:\n"
+            "• +Points: Saving humans, eliminating zombies\n"
+            "• -Points: Saving zombies, eliminating humans\n"
+            "• Money earned from saving humans can be used for upgrades\n\n"
+            
+            "⏰ TIME MANAGEMENT:\n"
+            "• You have 12 hours (720 minutes) to complete your route\n"
+            "• Route progress is shown in the center of your screen\n"
+            "• If you don't complete the route on time, you lose points\n\n"
+            
+            "💡 TIPS:\n"
+            "• Use INSPECT to gather information before making decisions\n"
+            "• Manage your capacity wisely - you can't save everyone\n"
+            "• Watch the clock and plan your route completion\n"
+            "• Remember: You can only save one set per scenario!"
         )
 
-        tk.Label(self.root, text=rules_text, font=("Arial", 12), justify="left", padx=20, fg="white", bg="black").pack()
+        # Create a scrollable text widget for rules
+        text_frame = tk.Frame(canvas, bg="#1a1a1a")
+        canvas.create_window(640, 400, window=text_frame, anchor="center", width=1000, height=500)
+        
+        # Create text widget with scrollbar
+        text_widget = tk.Text(text_frame, wrap="word", font=("Arial", 13), 
+                             bg="#1a1a1a", fg="white", relief="flat",
+                             padx=30, pady=30, state="normal")
+        scrollbar = tk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
+        text_widget.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack the text widget and scrollbar
+        text_widget.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Insert the rules text
+        text_widget.insert("1.0", rules_text)
+        text_widget.config(state="disabled")  # Make read-only
 
-        tk.Button(self.root, text="Back to Game", font=("Arial", 14), fg="black", bg="white",
-              command=self.restore_main_ui).pack(pady=30)
+        # Back button with start screen styling
+        back_button = tk.Button(canvas, text="Back to Game", 
+                               font=("Arial", 14, "bold"), 
+                               fg="white", bg="#5B7B7A",  # Green background like start screen
+                               relief="raised", bd=3, width=15, height=1,
+                               command=self.restore_main_ui)
+        canvas.create_window(640, 700, window=back_button, anchor="center")
 
     def update_ui(self, scorekeeper):     
         # Use elapsed time to drive the clock forward
@@ -545,14 +825,7 @@ class UI(object):
         self.clock.update_time(h, m, force_pm=force_pm)
         self.capacity_meter.update_fill(scorekeeper.get_current_capacity())
 
-        # Show a warning popup if 3 hours or less remain, but only once per game session
-        if scorekeeper.remaining_time <= 180 and not getattr(self, 'time_warning_shown', False):
-            self.time_warning_shown = True
-            import tkinter.messagebox
-            tkinter.messagebox.showwarning(
-                "Limited Time Warning",
-                "Warning: You have 3 hours or less remaining! Make your decisions carefully."
-            )
+        # Removed time warning popup - no longer showing warning dialog
 
     def on_resize(self, event):
         w = 0.6 * self.root.winfo_width()
@@ -585,9 +858,10 @@ class UI(object):
             # 'Game Complete' label 
             if route_complete:
                 final_score = self.scorekeeper.get_final_score(route_complete=True)
-                game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40), fg="white", bg="black", highlightthickness=0)
+                from ui_elements.theme import FINAL_FONT_HEADER, FINAL_FONT_SUB
+                game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=FINAL_FONT_HEADER, fg="white", bg="black", highlightthickness=0)
                 game_complete_label.pack(pady=(10, 5))
-                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16), fg="white", bg="black", highlightthickness=0)
+                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=FINAL_FONT_SUB, fg="white", bg="black", highlightthickness=0)
                 final_score_label.pack(pady=(5, 2))
                 # Disable all left side buttons and hide the map on game end
                 self.left_button_menu.disable_buttons(0, 0, True)
@@ -601,9 +875,9 @@ class UI(object):
                 self.draw_grid_map() # Redraw the map to hide it
             else:
                 final_score = self.scorekeeper.get_final_score(route_complete=False)
-                game_complete_label = tk.Label(self.final_score_frame, text="Game Complete", font=("Arial", 40), fg="white", bg="black", highlightthickness=0)
+                game_complete_label = tk.Label(self.final_score_frame, text="Game Complete", font=FINAL_FONT_HEADER, fg="white", bg="black", highlightthickness=0)
                 game_complete_label.pack(pady=(10, 5))
-                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16), fg="white", bg="black", highlightthickness=0)
+                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=FINAL_FONT_SUB, fg="white", bg="black", highlightthickness=0)
                 final_score_label.pack(pady=(5, 2))
                 # Disable all left side buttons and hide the map on game end
                 self.left_button_menu.disable_buttons(0, 0, True)
@@ -616,12 +890,13 @@ class UI(object):
                 self.map_canvas.place_forget()
                 self.draw_grid_map() # Redraw the map to hide it
             # Scoring details
-            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
+            from ui_elements.theme import LABEL_FONT
+            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
             killed_label.pack()
-            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
+            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
             saved_label.pack()
             
-            zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
+            zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
             zombie_ambu.pack()
 
             # accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
@@ -864,7 +1139,7 @@ class UI(object):
         # Use calculated canvas dimensions since winfo_width/height return 0 during initial creation
         canvas_width = self.grid_cols * self.cell_size + 20
         canvas_height = self.grid_rows * self.cell_size + 20
-        bg_img = ImageTk.PhotoImage(Image.open('./ChatgptMap.png').resize((canvas_width, canvas_height)))
+        bg_img = ImageTk.PhotoImage(Image.open('images/ChatgptMap.png').resize((canvas_width, canvas_height)))
         self.map_canvas.create_image(0, 0, anchor=tk.NW, image=bg_img)
         self.bg_img = bg_img  # Keep a reference to avoid garbage collection
        
@@ -889,15 +1164,20 @@ class UI(object):
             pr, pc = self.ambulance_pos
             px = pc * self.cell_size + 10 + self.cell_size // 2
             py = pr * self.cell_size + 10 + self.cell_size // 2
-            self.map_canvas.create_oval(px-4, py-4, px+4, py+4, fill="#3498db", outline="")
+            self.map_canvas.create_oval(px-3, py-3, px+3, py+3, fill="#3498db", outline="")
         # Draw ambulance at current position
         r, c = self.ambulance_pos
         x = c * self.cell_size + 10 + self.cell_size // 2
         y = r * self.cell_size + 10 + self.cell_size // 2
-        self.map_canvas.create_oval(x-18, y-18, x+18, y+18, fill="#fff", outline="#3498db", width=3)
-        self.map_canvas.create_text(x, y, text="🚑", font=("Arial", 18))
+        self.map_canvas.create_oval(x-14, y-14, x+14, y+14, fill="#fff", outline="#3498db", width=3)
+        from ui_elements.theme import LABEL_FONT
+        self.map_canvas.create_text(x, y, text="🚑", font=LABEL_FONT)
 
     def move_ambulance_by_cell(self):
+        # Don't move if route is already complete
+        if self.route_complete:
+            return
+            
         r, c = self.ambulance_pos
         val = self.map_array[r][c]
         if val == 1:  # up
@@ -912,6 +1192,8 @@ class UI(object):
             new_r, new_c = r-1, c
         else:
             new_r, new_c = r, c
+            
+        # Only increment movement count if the move is valid
         if 0 <= new_r < self.grid_rows and 0 <= new_c < self.grid_cols and self.map_array[new_r][new_c] != 0:
             self.ambulance_pos = [new_r, new_c]
             self.path_history.append(tuple(self.ambulance_pos))
@@ -922,8 +1204,8 @@ class UI(object):
             # Update movement progress label
             self.movement_label.config(text=f"Route Progress: {self.movement_count}/20")
             
-            # Check if we've reached 20 movements
-            if self.movement_count >= 20:
+            # Check if we've reached exactly 20 movements
+            if self.movement_count == 20:
                 # print("[DEBUG] Reached 20 movements - triggering end screen")
                 self.trigger_end_screen()
         self.draw_grid_map()
@@ -946,23 +1228,26 @@ class UI(object):
         # Create a new frame for the final score block
         self.final_score_frame = tk.Frame(self.root, width=300, height=300,bg="black",highlightthickness=0)
         self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
+        # Import theme fonts
+        from ui_elements.theme import FINAL_FONT_HEADER, FINAL_FONT_SUB, LABEL_FONT
+        
         # 'Route Complete' label
-        game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40),fg="white",bg="black",highlightthickness=0)
+        game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=FINAL_FONT_HEADER,fg="white",bg="black",highlightthickness=0)
         game_complete_label.pack(pady=(10, 5))
         # 'Final Score' label
-        final_score_label = tk.Label(self.final_score_frame, text=f"FINAL SCORE: {final_score}", font=("Arial", 16),fg="white",bg="black",highlightthickness=0)
+        final_score_label = tk.Label(self.final_score_frame, text=f"FINAL SCORE: {final_score}", font=FINAL_FONT_SUB,fg="white",bg="black",highlightthickness=0)
         final_score_label.pack(pady=(5, 2))
         # Scoring details
-        killed_label = tk.Label(self.final_score_frame, text=f"Killed {self.scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=("Arial", 12),fg="white",bg="black",highlightthickness=0)
+        killed_label = tk.Label(self.final_score_frame, text=f"Killed {self.scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=LABEL_FONT,fg="white",bg="black",highlightthickness=0)
         killed_label.pack()
-        saved_label = tk.Label(self.final_score_frame, text=f"Saved {self.scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=("Arial", 12),fg="white",bg="black",highlightthickness=0)
+        saved_label = tk.Label(self.final_score_frame, text=f"Saved {self.scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=LABEL_FONT,fg="white",bg="black",highlightthickness=0)
         saved_label.pack()
-        zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
+        zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
         zombie_ambu.pack()
 
         zombies_saved_score_label = tk.Label(self.final_score_frame,
             text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
-            font=("Arial", 12),
+            font=LABEL_FONT,
             fg="white",
             bg="black",
             highlightthickness=0)
@@ -978,7 +1263,7 @@ class UI(object):
         # )
         # accuracy_label.pack()
         # Replay button (only one)
-        self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(self.data_parser, self.data_fp))
+        self.replay_btn = tk.Button(self.final_score_frame, text="Replay", font=UPGRADE_FONT, command=lambda: self.reset_game(self.data_parser, self.data_fp))
         self.replay_btn.pack(pady=(10, 0))
         self.replay_btn.lift()  # Ensure the replay button is visible on top
         self.replay_btn.config(state='normal')
@@ -1051,19 +1336,49 @@ class UI(object):
         self.clear_main_ui()
         # Set the root background to black
         self.root.configure(bg="black")
-
-    # Title
-        tk.Label(self.root, text="Upgrade Shop", font=("Arial", 24, "bold"), fg="white", bg="black").pack(pady=20)
-
-    # Money display
-        money = self.scorekeeper.upgrade_manager.get_money()
-        money_label = tk.Label(self.root, text=f"Money: ${money}", font=("Arial", 16), fg="white", bg="black")
-        money_label.pack(pady=10)
-
-    # Each upgrade
-        colors = ["#ff6666", "#66ff66", "#6666ff"]  # Red, Green, Blue
-        color_index = 0
         
+        # Create a canvas to hold the background image and UI elements
+        canvas = tk.Canvas(self.root, width=1280, height=800, highlightthickness=0)
+        canvas.pack(fill="both", expand=True)
+        
+        # Load and resize the city background image
+        try:
+            image_path = "images/city_background.png"
+            original_image = Image.open(image_path)
+            
+            # Resize image to fit the window (1280x800)
+            resized_image = original_image.resize((1280, 800), Image.Resampling.LANCZOS)
+            self.bg_image_upgrades = ImageTk.PhotoImage(resized_image)  # Store reference
+            
+            # Place the background image on the canvas
+            canvas.create_image(0, 0, image=self.bg_image_upgrades, anchor="nw")
+            
+            # Add a semi-transparent overlay to make text more readable
+            canvas.create_rectangle(0, 0, 1280, 800, fill="black", stipple="gray50")
+            
+        except Exception as e:
+            print(f"Could not load city background image: {e}")
+            # Fallback to a solid color background
+            canvas.configure(bg="darkblue")
+
+        # Title with start screen styling
+        from ui_elements.theme import TITLE_FONT_FOR_CURRENT_TIME, UPGRADE_FONT
+        canvas.create_text(640, 60, text="Upgrade Shop", 
+                          font=TITLE_FONT_FOR_CURRENT_TIME, 
+                          fill="white", anchor="center")
+
+        # Money display with start screen styling
+        money = self.scorekeeper.upgrade_manager.get_money()
+        money_label = tk.Label(canvas, text=f"Money: ${money}", 
+                              font=UPGRADE_FONT, 
+                              fg="white", bg="#1a1a1a")
+        canvas.create_window(640, 120, window=money_label, anchor="center")
+
+        # Create a frame for upgrades with dark background
+        upgrades_frame = tk.Frame(canvas, bg="#1a1a1a")
+        canvas.create_window(640, 400, window=upgrades_frame, anchor="center")
+
+        # Each upgrade
         for name, info in self.scorekeeper.upgrade_manager.upgrades.items():
             upgrade_label = name.replace("_", " ").title()
             level = info["level"]
@@ -1082,19 +1397,27 @@ class UI(object):
             btn_text = f"{upgrade_label} (Level {level})"
             if level >= self.scorekeeper.upgrade_manager.upgrades[name]["max"]:
                 btn_text += " (MAX)"
-                btn = tk.Button(self.root, text=btn_text, font=("Arial", 12),
-                            state='disabled', bg="#dddddd", disabledforeground="gray")
+                btn = tk.Button(upgrades_frame, text=btn_text, 
+                               font=UPGRADE_FONT,
+                               state='disabled', bg="#4A6B6A", fg="gray",
+                               relief="raised", bd=3, width=50, height=2)
             else:
                 btn_text += f" - ${cost}"
-                btn = tk.Button(self.root, text=btn_text, font=("Arial", 12), command=make_purchase, 
-                               fg="black", bg=colors[color_index % len(colors)])
+                btn = tk.Button(upgrades_frame, text=btn_text, 
+                               font=UPGRADE_FONT,
+                               command=make_purchase, 
+                               fg="white", bg="#5B7B7A",  # Green background like start screen
+                               relief="raised", bd=3, width=50, height=2)
 
             btn.pack(pady=5)
-            color_index += 1
 
-    # Back button
-        tk.Button(self.root, text="Back to Game", font=("Arial", 14), fg="black", bg="white",
-                command=self.restore_main_ui).pack(pady=30)
+        # Back button with start screen styling
+        back_button = tk.Button(canvas, text="Back to Game", 
+                               font=UPGRADE_FONT, 
+                               fg="white", bg="#5B7B7A",  # Green background like start screen
+                               relief="raised", bd=3, width=15, height=1,
+                               command=self.restore_main_ui)
+        canvas.create_window(640, 700, window=back_button, anchor="center")
 
     def print_scenario_side_attributes(self, side):
 
@@ -1141,7 +1464,8 @@ class UI(object):
 
         canvas.delete('all')
         canvas.create_rectangle(1, 1, canvas.winfo_reqwidth() - 2, canvas.winfo_reqheight() - 2, outline="black", width=2)
-        canvas.create_text(10, 10, anchor='nw', text=text, font=("Arial", 12))
+        from ui_elements.theme import LABEL_FONT
+        canvas.create_text(10, 10, anchor='nw', text=text, font=LABEL_FONT)
 
     def add_elapsed_time(self, minutes):
         self.scorekeeper.remaining_time -= minutes
@@ -1151,15 +1475,15 @@ class UI(object):
         self.menu_bar.place(x=0, y=0, width=1280, height=50)
 
     # Styled buttons
-        btn_font = ("Helvetica", 14, "bold")
+        from ui_elements.theme import UPGRADE_FONT, RULES_FONT
 
-        self.upgrade_btn = tk.Button(self.menu_bar, text="Upgrades", font=btn_font, bg="#ffffff", fg="#2E86AB",
+        self.upgrade_btn = tk.Button(self.menu_bar, text="Upgrades", font=UPGRADE_FONT, bg="#ffffff", fg="#2E86AB",
               relief="raised", padx=10, pady=5, command=self.show_upgrade_shop)
         self.upgrade_btn.pack(side="left", padx=1)
 
-        self.rules_btn = tk.Button(self.menu_bar, text="Rules", font=btn_font, bg="#ffffff", fg="#2E86AB",
+        self.rules_btn = tk.Button(self.menu_bar, text="Rules", font=RULES_FONT, bg="#ffffff", fg="#2E86AB",
               relief="raised", padx=10, pady=5, command=self.show_rules)
         self.rules_btn.pack(side="left", padx=1)
 
-        tk.Button(self.menu_bar, text="Exit", font=btn_font, bg="#ffffff", fg="#AA0000",
+        tk.Button(self.menu_bar, text="Exit", font=UPGRADE_FONT, bg="#ffffff", fg="#AA0000",
               relief="raised", padx=10, pady=5, command=self.root.quit).pack(side="left", padx=1)
