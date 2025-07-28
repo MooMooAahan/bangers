@@ -14,20 +14,29 @@ class ButtonMenu(object):
             btn.update_idletasks()
             print(f"[DEBUG] Main button {i} y={btn.winfo_y()}, height={btn.winfo_height()}")
 
-    def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity):
+    def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity, current_capacity=None, ambulance_capacity=None, left_humanoid_count=None, right_humanoid_count=None):
+        # Start by enabling all
         for button in self.buttons:
             button.config(state="normal")
+            
         if remaining_humanoids == 0 or remaining_time <= 0:
             for i in range(0, len(self.buttons)):
                 self.buttons[i].config(state="disabled")
-        #  Not enough time left? Disable action
-        # if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SKIP.value:
-        #     self.buttons[0].config(state="disabled")  # Skip
-        #     self.buttons[1].config(state="disabled")  # Inspect (same cost as Skip)
-        # if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SQUISH.value:
-        #     self.buttons[2].config(state="disabled")  # Squish
-        # if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SAVE.value:
-        #     self.buttons[3].config(state="disabled")  # Save
+                
+        # Disable save button if at capacity
+        if at_capacity:
+            self.buttons[3].config(state="disabled")  # Save button (index 3)
+            
+        # Disable save button if not enough space for either humanoid
+        if (current_capacity is not None and ambulance_capacity is not None):
+            # Check left humanoid
+            if (left_humanoid_count is not None and 
+                current_capacity + left_humanoid_count > ambulance_capacity):
+                self.buttons[3].config(state="disabled")  # Save button
+            # Check right humanoid  
+            elif (right_humanoid_count is not None and 
+                  current_capacity + right_humanoid_count > ambulance_capacity):
+                self.buttons[3].config(state="disabled")  # Save button
 
 
 
@@ -103,17 +112,24 @@ class LeftButtonMenu(object):
             button.place(x=x, y=y_start + y_gap * i)
             self.buttons.append(button)
 
-    def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity):
+    def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity, current_capacity=None, ambulance_capacity=None, left_humanoid_count=None, right_humanoid_count=None):
+        # Start by enabling all
         for button in self.buttons:
             button.config(state="normal")
+            
         if remaining_humanoids == 0 or remaining_time <= 0:
-        # Start by enabling all
-          for button in self.buttons:
-              button.config(state="normal")
-
-        # Disable based on time
+            for i in range(0, len(self.buttons)):
+                self.buttons[i].config(state="disabled")
+                
+        # Disable save button if at capacity
         if at_capacity:
             self.buttons[2].config(state="disabled")
+            
+        # Disable save button if not enough space for left humanoid
+        if (left_humanoid_count is not None and current_capacity is not None and 
+            ambulance_capacity is not None and 
+            current_capacity + left_humanoid_count > ambulance_capacity):
+            self.buttons[2].config(state="disabled")  # Save button
 
     def enable_all_buttons(self):
         for button in self.buttons:
@@ -157,21 +173,24 @@ class RightButtonMenu(object):
             button.place(x=x, y=y_start + i * y_gap)
             self.buttons.append(button)
 
-    def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity):
+    def disable_buttons(self, remaining_time, remaining_humanoids, at_capacity, current_capacity=None, ambulance_capacity=None, left_humanoid_count=None, right_humanoid_count=None):
+        # Start by enabling all
         for button in self.buttons:
             button.config(state="normal")
+            
         if remaining_humanoids == 0 or remaining_time <= 0:
             for i in range(0, len(self.buttons)):
                 self.buttons[i].config(state="disabled")
-        #  Not enough time left? Disable action
-        # if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SKIP.value:
-        #     self.buttons[0].config(state="disabled")  # Inspect
-        # if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SQUISH.value:
-        #     self.buttons[1].config(state="disabled")  # Squish
-        # if (remaining_time - ActionCost.SCRAM.value) < ActionCost.SAVE.value:
-        #     self.buttons[2].config(state="disabled")  # Save
+                
+        # Disable save button if at capacity
         if at_capacity:
             self.buttons[2].config(state="disabled")  # Save
+            
+        # Disable save button if not enough space for right humanoid
+        if (right_humanoid_count is not None and current_capacity is not None and 
+            ambulance_capacity is not None and 
+            current_capacity + right_humanoid_count > ambulance_capacity):
+            self.buttons[2].config(state="disabled")  # Save button
 
     def enable_all_buttons(self):
         """Enables button for when you need to retry"""

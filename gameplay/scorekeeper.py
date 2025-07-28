@@ -218,13 +218,19 @@ class ScoreKeeper(object):
         saves the humanoid
         updates scorekeeper
         """
+        # Check if there's enough space for this humanoid
+        humanoid_count = image.datarow['HumanoidCount']
+        current_people = len(self.ambulance_people)
+        if current_people + humanoid_count > self.capacity:
+            # Not enough space, don't save
+            return 0
+        
         self.log_consolidated('save', image_left=image_left, image_right=image_right, route_position=route_position, action_side=side)
         self.remaining_time -= ActionCost.SAVE.value
         time_bonus = 0
         # No longer add to ambulance_people here; handled by save_side_from_scenario
         filename = image.datarow['Filename']
         class_val = image.datarow['Class']
-        humanoid_count = image.datarow['HumanoidCount']
         status_val = image.datarow['Injured']
         roles_val = image.datarow['Role']
         # print(f"[DEBUG] Fileaaname: {filename}, Class: {class_val}, Status: {status_val}, HumanoidCount: {humanoid_count}, Role: {roles_val}")
