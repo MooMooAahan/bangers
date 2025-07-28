@@ -192,7 +192,7 @@ class IntroScreen:
         text_frame.place(relx=0.5, rely=0.5, anchor="center", width=700, height=400)
         
         # Create text widget with scrollbar
-        from ui_elements.theme import LABEL_FONT
+        from ui_elements.theme import LABEL_FONT, UPGRADE_FONT
         text_widget = tk.Text(text_frame, wrap="word", font=LABEL_FONT, 
                              bg="#1a1a1a", fg="white", relief="flat",
                              padx=20, pady=20, state="normal")
