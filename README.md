@@ -15,6 +15,8 @@ Dependencies:
   - `pip3 install gym==0.26.2`
 - Timm (for SOTA computer vision models)
   - `pip3 install timm`
+- Notion Client (for downloading data)
+  - `pip3 install notion-client`
 
 To run, type ```python3 main.py``` in the terminal.
 
