@@ -1,9 +1,8 @@
 # SGAI_2025
 
 # Run "python main.py" to run the game without data collection (use this to play if you haven't played before or just want to try and goof around)
-# Run "python main.py --log True" for data collection purposes
-
-# Ran primarily through windows computers so idk how it works for other things tbh
+Run "python main.py --log True" for data collection purposes (pls do this only once guys, like you can do a bad run just only do it once and then quit to go back to non data collection)
+Ran primarily through windows computers so idk how it works for other things tbh
 
 Dependencies:
 - Pandas
