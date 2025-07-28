@@ -50,6 +50,11 @@ class UpgradeManager:
             "ambulance_capacity": {"level": 0, "cost": 20, "max": 5},
             "scram_speed": {"level": 0, "cost": 30, "max": 3},
             "inspect_discount": {"level": 0, "cost": 20, "max": 2}
-    }
-    
-    print("[DEBUG] UpgradeManager reset.")
+        }
+        
+        # Reset the actual effects applied to scorekeeper
+        self.scorekeeper.capacity = 10  # Reset to base capacity
+        self.scorekeeper.scram_time_reduction = 0  # Reset scram time reduction
+        self.scorekeeper.inspect_cost_reduction = 0  # Reset inspect cost reduction
+        
+        print("[DEBUG] UpgradeManager reset - all effects cleared.")
