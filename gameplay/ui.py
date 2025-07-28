@@ -157,8 +157,8 @@ class UI(object):
         # Save references to left/right button actions for map movement
         self.left_action_callbacks = [
             lambda: [self.print_scenario_side_attributes('left'), self.scorekeeper.inspect(self.image_left, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='left'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Left
-            lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Left
-            lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Left
+            lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left', image_left=self.image_left, image_right=self.image_right), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Left
+            lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left', image_left=self.image_left, image_right=self.image_right), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Left
         ]
         self.left_button_menu = LeftButtonMenu(self.root, [
             ("Inspect Left", self.left_action_callbacks[0]),
@@ -167,8 +167,8 @@ class UI(object):
         ])
         self.right_action_callbacks = [
             lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='right'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
-            lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Right
-            lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Right
+            lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right', image_left=self.image_left, image_right=self.image_right), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Right
+            lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right', image_left=self.image_left, image_right=self.image_right), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Right
         ]
         self.right_button_menu = RightButtonMenu(self.root, [
             ("Inspect Right", self.right_action_callbacks[0]),
@@ -540,8 +540,7 @@ class UI(object):
         if remaining == 0 or remaining_time <= 0:
             self.update_ui(scorekeeper)  # Ensure clock and UI are updated before game end
             if self.log:
-                # End-of-game: log scram for all remaining, then write log and increment run id
-                scorekeeper.end_scram(route_position=self.movement_count)
+                # End-of-game: write log and increment run id
                 scorekeeper.save_log(final=True)
             self.capacity_meter.update_fill(0)
             self.game_viewer_left.delete_photo(None)
@@ -625,6 +624,9 @@ class UI(object):
             # Only load new images if route is not complete
             if not self.route_complete:
                 self.image_left, self.image_right = data_parser.get_random(side='left'), data_parser.get_random(side='right')
+                # Reset inspection state for new scenario
+                self.scorekeeper.inspected_left = False
+                self.scorekeeper.inspected_right = False
   
                 # self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc, self.scenario_humanoid_attributes = data_parser.get_scenario()
                 # print(f"[UI DEBUG] Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
@@ -876,8 +878,7 @@ class UI(object):
         self.route_complete = True  # Set flag to prevent new images from loading
         self.update_ui(self.scorekeeper)  # Ensure clock and UI are updated before end screen
         if self.log:
-            # End-of-game: log scram for all remaining, then write log and increment run id
-            self.scorekeeper.end_scram(route_position=self.movement_count)
+            # End-of-game: write log and increment run id
             self.scorekeeper.save_log(final=True)
         self.capacity_meter.update_fill(0)
         self.game_viewer_left.delete_photo(None)

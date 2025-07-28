@@ -1,1 +1,1 @@
-timestamp,local_run_id,route_position,side,humanoid_fp,humanoid_class,capacity,remaining_time,role,inspected,action
+timestamp,local_run_id,route_position,humanoid_class,capacity,remaining_time,role,inspected,action,action_side
