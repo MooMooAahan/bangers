@@ -24,7 +24,7 @@ COLOR_LEFT_AND_RIGHT_SAVE_BUTTONS = "#3498db"
 COLOR_LEFT_AND_RIGHT_SQUISH_BUTTONS = "#3498db"
 
 # Button Fonts
-BUTTON_FONT = ("Arial", 12, "bold")
+BUTTON_FONT = ("Arial", 11, "bold")
 
 # Sidebar & Labels
 FG_COLOR_FOR_LABELS = "#333333"

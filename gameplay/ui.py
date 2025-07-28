@@ -286,17 +286,6 @@ class UI(object):
 
         # We'll need to update the button text dynamically, so store the button objects
         self.user_buttons = [
-            ("Skip (15 mins)", lambda: [
-                                  scorekeeper.skip_both(self.image_left, self.image_right, route_position=self.movement_count),
-                                  self.move_ambulance_by_cell(),
-                                  self.update_ui(scorekeeper),
-                                  self.get_next(
-                                      data_fp,
-                                      data_parser,
-                                      scorekeeper) if not getattr(self, 'route_complete', False) else None],COLOR_SKIP),
-            (f"Inspect ({get_inspect_cost()} mins)", lambda: [self.show_action_popup("Inspect")],COLOR_INSPECT),
-            ("Squish (5 mins)", lambda: self.show_action_popup("Squish"),COLOR_SQUISH),
-            ("Save (30 mins)", lambda: self.show_action_popup("Save"),COLOR_SAVE),
             (get_scram_text(), lambda: [
                                     # print(f"[DEBUG] Scram penalty applied: {get_scram_time()} minutes"),
                                     scorekeeper.scram(self.image_left, self.image_right, time_cost=get_scram_time(), route_position=self.movement_count),
@@ -305,7 +294,18 @@ class UI(object):
                                     self.get_next(
                                         data_fp,
                                         data_parser,
-                                        scorekeeper) if not getattr(self, 'route_complete', False) else None],COLOR_SCRAM)
+                                        scorekeeper) if not getattr(self, 'route_complete', False) else None],COLOR_SCRAM),
+            (f"Inspect ({get_inspect_cost()} mins)", lambda: [self.show_action_popup("Inspect")],COLOR_INSPECT),
+            ("Squish (5 mins)", lambda: self.show_action_popup("Squish"),COLOR_SQUISH),
+            ("Save (30 mins)", lambda: self.show_action_popup("Save"),COLOR_SAVE),
+            ("Skip (15 mins)", lambda: [
+                                  scorekeeper.skip_both(self.image_left, self.image_right, route_position=self.movement_count),
+                                  self.move_ambulance_by_cell(),
+                                  self.update_ui(scorekeeper),
+                                  self.get_next(
+                                      data_fp,
+                                      data_parser,
+                                      scorekeeper) if not getattr(self, 'route_complete', False) else None],COLOR_SKIP)
         ]
 
         # Debug and try/except for each major widget
@@ -319,16 +319,18 @@ class UI(object):
         # Patch: update Scram and Inspect button text after every action
 
         def update_button_texts():
-            # Button order: Skip, Inspect, Squish, Save, Scram
-            self.button_menu.buttons[1].config(text=f"Inspect ({get_inspect_cost()} mins)")
-            self.button_menu.buttons[4].config(text=get_scram_text())
+            # Button order: Scram, Inspect, Squish, Save, Skip
+            if hasattr(self, 'button_menu') and self.button_menu:
+                self.button_menu.buttons[1].config(text=f"Inspect ({get_inspect_cost()} mins)")
+                self.button_menu.buttons[0].config(text=get_scram_text())
         self.update_button_texts = update_button_texts
 
         # Call update_button_texts after every UI update
         orig_update_ui = self.update_ui
         def patched_update_ui(scorekeeper):
             orig_update_ui(scorekeeper)
-            self.update_button_texts()
+            if hasattr(self, 'update_button_texts'):
+                self.update_button_texts()
         self.update_ui = patched_update_ui
 
         # Restore left/right button menus for Squish/Save
@@ -339,21 +341,26 @@ class UI(object):
             lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Left
             lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Left
         ]
-        self.left_button_menu = LeftButtonMenu(self.root, [
-            ("Inspect Left", self.left_action_callbacks[0]),
-            ("Squish Left", self.left_action_callbacks[1]),
-            ("Save Left", self.left_action_callbacks[2])
-        ])
-        self.right_action_callbacks = [
-            lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='right'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
-            lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Right
-            lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Right
-        ]
-        self.right_button_menu = RightButtonMenu(self.root, [
-            ("Inspect Right", self.right_action_callbacks[0]),
-            ("Squish Right", self.right_action_callbacks[1]),
-            ("Save Right", self.right_action_callbacks[2])
-        ])
+        try:
+            print("Creating left/right button menus")
+            self.left_button_menu = LeftButtonMenu(self.root, [
+                ("Inspect Left", self.left_action_callbacks[0]),
+                ("Squish Left", self.left_action_callbacks[1]),
+                ("Save Left", self.left_action_callbacks[2])
+            ])
+            self.right_action_callbacks = [
+                lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='right'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
+                lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Right
+                lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Right
+            ]
+            self.right_button_menu = RightButtonMenu(self.root, [
+                ("Inspect Right", self.right_action_callbacks[0]),
+                ("Squish Right", self.right_action_callbacks[1]),
+                ("Save Right", self.right_action_callbacks[2])
+            ])
+            print("Left/right button menus created")
+        except Exception as e:
+            print("Exception creating left/right button menus:", e)
         if suggest:
             machine_buttons = [
                 ("Suggest", lambda: [self.machine_interface.suggest(self.image_left)]),
@@ -423,7 +430,7 @@ class UI(object):
         ]
         self.grid_rows = len(self.map_array)
         self.grid_cols = len(self.map_array[0])
-        self.cell_size = 44  # Small for better fit
+        self.cell_size = 35  # Small for better fit
         self.grid_origin = (985, 495)  # location of map
         self.create_grid_map_canvas()  # Create the canvas first
         self.reset_map()               # Now it's safe to call reset_map()
@@ -435,7 +442,7 @@ class UI(object):
 
         # Movement progress label
         self.movement_label = tk.Label(self.root, text="Route Progress: 0/20", 
-                                      font=("Arial", 12), bg="#000000", fg="#2E86AB",
+                                      font=("Arial", 12, "bold"), bg="#000000", fg="#FFFFFF",
                                       relief="solid", bd=1, padx=10, pady=5)
         self.movement_label.place(x=1050, y=460)
 
@@ -503,20 +510,30 @@ class UI(object):
         self.create_menu_bar()
         
         # Recreate button menu
-        self.button_menu = ButtonMenu(self.root, self.user_buttons)
+        try:
+            print("Recreating button menu")
+            self.button_menu = ButtonMenu(self.root, self.user_buttons)
+            print("Button menu recreated")
+        except Exception as e:
+            print("Exception recreating button menu:", e)
         
         # Recreate left/right button menus
-        self.left_button_menu = LeftButtonMenu(self.root, [
-            ("Inspect Left", self.left_action_callbacks[0]),
-            ("Squish Left", self.left_action_callbacks[1]),
-            ("Save Left", self.left_action_callbacks[2])
-        ])
-        
-        self.right_button_menu = RightButtonMenu(self.root, [
-            ("Inspect Right", self.right_action_callbacks[0]),
-            ("Squish Right", self.right_action_callbacks[1]),
-            ("Save Right", self.right_action_callbacks[2])
-        ])
+        try:
+            print("Recreating left/right button menus")
+            self.left_button_menu = LeftButtonMenu(self.root, [
+                ("Inspect Left", self.left_action_callbacks[0]),
+                ("Squish Left", self.left_action_callbacks[1]),
+                ("Save Left", self.left_action_callbacks[2])
+            ])
+            
+            self.right_button_menu = RightButtonMenu(self.root, [
+                ("Inspect Right", self.right_action_callbacks[0]),
+                ("Squish Right", self.right_action_callbacks[1]),
+                ("Save Right", self.right_action_callbacks[2])
+            ])
+            print("Left/right button menus recreated")
+        except Exception as e:
+            print("Exception recreating left/right button menus:", e)
         
         # Recreate machine menu if it exists
         if hasattr(self, 'machine_interface'):
@@ -1053,7 +1070,7 @@ class UI(object):
         # Use calculated canvas dimensions since winfo_width/height return 0 during initial creation
         canvas_width = self.grid_cols * self.cell_size + 20
         canvas_height = self.grid_rows * self.cell_size + 20
-        bg_img = ImageTk.PhotoImage(Image.open('./ChatgptMap.png').resize((canvas_width, canvas_height)))
+        bg_img = ImageTk.PhotoImage(Image.open('images/ChatgptMap.png').resize((canvas_width, canvas_height)))
         self.map_canvas.create_image(0, 0, anchor=tk.NW, image=bg_img)
         self.bg_img = bg_img  # Keep a reference to avoid garbage collection
        
@@ -1078,13 +1095,13 @@ class UI(object):
             pr, pc = self.ambulance_pos
             px = pc * self.cell_size + 10 + self.cell_size // 2
             py = pr * self.cell_size + 10 + self.cell_size // 2
-            self.map_canvas.create_oval(px-4, py-4, px+4, py+4, fill="#3498db", outline="")
+            self.map_canvas.create_oval(px-3, py-3, px+3, py+3, fill="#3498db", outline="")
         # Draw ambulance at current position
         r, c = self.ambulance_pos
         x = c * self.cell_size + 10 + self.cell_size // 2
         y = r * self.cell_size + 10 + self.cell_size // 2
-        self.map_canvas.create_oval(x-18, y-18, x+18, y+18, fill="#fff", outline="#3498db", width=3)
-        self.map_canvas.create_text(x, y, text="🚑", font=("Arial", 18))
+        self.map_canvas.create_oval(x-14, y-14, x+14, y+14, fill="#fff", outline="#3498db", width=3)
+        self.map_canvas.create_text(x, y, text="🚑", font=("Arial", 14))
 
     def move_ambulance_by_cell(self):
         r, c = self.ambulance_pos

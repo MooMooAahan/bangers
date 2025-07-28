@@ -6,8 +6,8 @@ from gameplay.enums import ActionCost
 
 class ButtonMenu(object):
     def __init__(self, root, items):
-        self.canvas = tk.Canvas(root, width=500, height=80,bg="black",highlightthickness=0)
-        self.canvas.place(x=35, y=52)
+        self.canvas = tk.Canvas(root, width=500, height=80, bg="#404b44", highlightthickness=0)
+        self.canvas.place(x=15, y=152)
         self.buttons = create_buttons(self.canvas, items)
         create_menu(self.buttons)
         for i, btn in enumerate(self.buttons):
@@ -55,8 +55,8 @@ def create_buttons(canvas, items):
         buttons.append(tk.Button(
             canvas,
             text=text,
-            height=2,
-            width=15,
+            height=1,
+            width=13,
             command=action,
             font=BUTTON_FONT,
             bg=color,
@@ -74,9 +74,9 @@ def create_menu(buttons):
 class LeftButtonMenu(object):
     def __init__(self, root, items):
         self.buttons = []
-        x = 35           # Horizontal position of "L" buttons
-        y_start = 215       # Matches y-position of "Skip" button
-        y_gap = 92         # Restored to original spacing
+        x = 15           # Horizontal position of "L" buttons
+        y_start = 272       # Matches y-position of "Skip" button
+        y_gap = 72         # Restored to original spacing
         
         button_colors = [
             COLOR_LEFT_AND_RIGHT_INSPECT_BUTTONS,
@@ -91,7 +91,7 @@ class LeftButtonMenu(object):
                 root,
                 text="L",
                 height=1,
-                width=7,
+                width=6,
                 font=BUTTON_FONT,
                 bg=color,
                 fg=FG_COLOR_FOR_BUTTON_TEXT,
@@ -128,9 +128,9 @@ class LeftButtonMenu(object):
 class RightButtonMenu(object):
     def __init__(self, root, items):
         self.buttons = []
-        x = 115            # Adjust horizontally to right side of main buttons
-        y_start = 215      # Match LeftButtonMenu start (below Inspect)
-        y_gap = 92         # Restored to original spacing
+        x = 80            # Adjust horizontally to right side of main buttons
+        y_start = 272      # Match LeftButtonMenu start (below Inspect)
+        y_gap = 72         # Restored to original spacing
 
         button_colors = [
             COLOR_LEFT_AND_RIGHT_INSPECT_BUTTONS,
@@ -145,7 +145,7 @@ class RightButtonMenu(object):
                 root,
                 text="R",
                 height=1,
-                width=7,
+                width=6,
                 font=BUTTON_FONT,
                 bg=color,
                 fg=FG_COLOR_FOR_BUTTON_TEXT,
