@@ -1261,9 +1261,8 @@ class UI(object):
         upgrades_frame = tk.Frame(canvas, bg="#1a1a1a")
         canvas.create_window(640, 400, window=upgrades_frame, anchor="center")
 
-        # Each upgrade with start screen styling in a grid layout
-        upgrades_list = list(self.scorekeeper.upgrade_manager.upgrades.items())
-        for i, (name, info) in enumerate(upgrades_list):
+        # Each upgrade
+        for name, info in self.scorekeeper.upgrade_manager.upgrades.items():
             upgrade_label = name.replace("_", " ").title()
             level = info["level"]
             cost = info["cost"]
@@ -1284,19 +1283,16 @@ class UI(object):
                 btn = tk.Button(upgrades_frame, text=btn_text, 
                                font=("Helvetica", 14, "bold"),
                                state='disabled', bg="#4A6B6A", fg="gray",
-                               relief="raised", bd=3, width=20, height=2)
+                               relief="raised", bd=3, width=30, height=2)
             else:
                 btn_text += f" - ${cost}"
                 btn = tk.Button(upgrades_frame, text=btn_text, 
                                font=("Helvetica", 14, "bold"),
                                command=make_purchase, 
                                fg="white", bg="#5B7B7A",  # Green background like start screen
-                               relief="raised", bd=3, width=20, height=2)
+                               relief="raised", bd=3, width=30, height=2)
 
-            # Arrange in a 2-column grid
-            row = i // 2
-            col = i % 2
-            btn.grid(row=row, column=col, padx=20, pady=10, sticky="ew")
+            btn.pack(pady=5)
 
         # Back button with start screen styling
         back_button = tk.Button(canvas, text="Back to Game", 
