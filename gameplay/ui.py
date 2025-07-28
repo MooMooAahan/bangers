@@ -658,7 +658,8 @@ class UI(object):
                 self.game_viewer_right.create_photo(fp_right)
 
         # Disable buttons that would exceed time limit
-        self.disable_buttons_if_insufficient_time(remaining_time, remaining, scorekeeper.at_capacity())
+        if remaining > 0 and remaining_time > 0:
+            self.disable_buttons_if_insufficient_time(remaining_time, remaining, scorekeeper.at_capacity())
 
     def check_game_end(self, data_fp, data_parser, scorekeeper):
         """Check if game should end due to time running out"""
