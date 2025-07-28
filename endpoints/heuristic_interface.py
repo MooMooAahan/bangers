@@ -102,10 +102,11 @@ class HeuristicInterface(object):
         if self.display:
             self.canvas = tk.Canvas(root, width=math.floor(0.2 * w), height=math.floor(0.1 * h))
             self.canvas.place(x=math.floor(0.75 * w), y=math.floor(0.75 * h))
-            self.label = tk.Label(self.canvas, text="Simon says...", font=("Arial", 20))
+            from ui_elements.theme import UPGRADE_FONT
+            self.label = tk.Label(self.canvas, text="Simon says...", font=UPGRADE_FONT)
             self.label.pack(side=tk.TOP)
 
-            self.suggestion = tk.Label(self.canvas, text=self.text, font=("Arial", 20))
+            self.suggestion = tk.Label(self.canvas, text=self.text, font=UPGRADE_FONT)
             self.suggestion.pack(side=tk.TOP)
 
     def _load_model(self, weights_path, num_classes=4):

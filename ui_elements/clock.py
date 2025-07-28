@@ -1,18 +1,24 @@
 from ui_elements.theme import BG_COLOR_FOR_CLOCK_TITLE, FG_COLOR_FOR_TIME,FG_COLOR_FOR_CURRENT_TIME,TITLE_FONT_FOR_CURRENT_TIME,BG_COLOR_FOR_CLOCK
 import tkinter as tk
+from tkinter import font
 import math
 
 class Clock(object):
     def __init__(self, root, w, h, init_h, init_m):
-        self.canvas = tk.Canvas(root, width=180, height=120, bg="black", highlightthickness=0)
-        self.canvas.place(x=1050, y=0)
+        self.canvas = tk.Canvas(root, width=180, height=100, bg = "#5B7B7A", highlightthickness=2, relief="groove", bd=2)
+        # Place the clock at the top center
+        self.canvas.place(x=1060, y=70)
+
+        time_font = font.Font(family="Fixedsys", size=30, weight="bold")
+        title_font = font.Font(family="Fixedsys", size=14)
 
         # Title label
-        tk.Label(self.canvas, text="Current time", font=TITLE_FONT_FOR_CURRENT_TIME, bg=BG_COLOR_FOR_CLOCK_TITLE,fg=FG_COLOR_FOR_CURRENT_TIME).place(relx=0.5, y=10, anchor="n")
+        tk.Label(self.canvas, text="Current time", font=title_font, bg=BG_COLOR_FOR_CLOCK_TITLE,fg=FG_COLOR_FOR_CURRENT_TIME).place(relx=0.5, y=10, anchor="n")
 
         # Digital time label
-        self.label = tk.Label(self.canvas, text="", font=("Arial", 30, "bold"), bg=BG_COLOR_FOR_CLOCK, fg=FG_COLOR_FOR_TIME)
-        self.label.place(relx=0.5, rely=0.55, anchor=tk.CENTER)
+
+        self.label = tk.Label(self.canvas, text="", font=time_font, bg="#5B7B7A", fg= "#FFFFFF")
+        self.label.place(relx=0.5, rely=0.65, anchor=tk.CENTER)
 
         self.blink = True
         self.current_h = init_h
