@@ -1,11 +1,9 @@
-from tkinter import font
 
 # General layout
 BG_COLOR = "#f5f5f5"             # Light neutral background
 BORDER_COLOR = "#444444"
 
 # General Label Font
-LABEL_FONT = font.Font(family="Fixedsys", size=14)
 
 # Clock & Time
 BG_COLOR_FOR_CLOCK = "#000000"

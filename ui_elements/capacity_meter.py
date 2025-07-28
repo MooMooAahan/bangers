@@ -1,17 +1,21 @@
 import math
 import tkinter as tk
+from tkinter import font
 from PIL import Image, ImageTk
 import os
 import tkinter.messagebox  # <-- Add this import
+from ui_elements.theme import LABEL_FONT
 
 
 class CapacityMeter(object):
     def __init__(self, root, w, h, max_cap, get_ambulance_contents=None):
-        self.canvas = tk.Canvas(root, width=180, height=250, bg="#f5f5f5", highlightthickness=0)
+        self.canvas = tk.Canvas(root, width=180, height=250, bg="#5B7B7A", highlightthickness=2, relief="groove", bd=2)
         # self.canvas = tk.Canvas(root, width)
         # Align with the clock (placed at x=math.floor(0.75 * w))
-        x_pos = math.floor(0.775 * w)
-        y_pos = math.floor(0.15 * h)  # move up by 20px
+        # x_pos = math.floor(0.775 * w)
+        # y_pos = math.floor(0.15 * h)  # move up by 20px
+        x_pos = 1060
+        y_pos = 190
         self.canvas.place(x=x_pos, y=y_pos)
         self.__units = []
         self.unit_size = 12  # Smaller dots for better proportion
@@ -90,7 +94,9 @@ class CapacityMeter(object):
             self.canvas.delete(unit)
         self.__units = []
         # Draw the label directly on the canvas instead of using tk.Label
-        self.canvas.create_text(15, 0, text="Capacity", font=("Arial", 16, "bold"), fill="black", anchor="center")
+        capacity_font = font.Font(family="Fixedsys", size=14)
+        canvas_width = int(self.canvas.winfo_width())
+        self.canvas.create_text(canvas_width // 2, 15, text="Capacity", font= capacity_font, fill="white", anchor="center")
 
         # Always use 2 columns, stack extra dots below
         cols = 2

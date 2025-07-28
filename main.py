@@ -30,7 +30,7 @@ class Main(object):
         self.data_fp = os.getenv("SGAI_DATA", default='data')
         self.data_parser = DataParser(self.data_fp)
 
-        shift_length = 720
+        shift_length = 960
         capacity = 10
         self.scorekeeper = ScoreKeeper(shift_length, capacity)
 

@@ -1,5 +1,6 @@
 import math
 import tkinter as tk
+from tkinter import font
 from ui_elements.button_menu import ButtonMenu, LeftButtonMenu, RightButtonMenu
 from ui_elements.capacity_meter import CapacityMeter
 from ui_elements.clock import Clock
@@ -247,7 +248,7 @@ class UI(object):
         self.create_menu_bar()
         self.false_saves = 0 
         # Time management variables
-        self.total_time = 720  # 12 hours in minutes
+        self.total_time = 960  # 16 hours in minutes
         # self.elapsed_time removed; time is managed by ScoreKeeper
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         
@@ -289,7 +290,7 @@ class UI(object):
             (get_scram_text(), lambda: [
                                     # print(f"[DEBUG] Scram penalty applied: {get_scram_time()} minutes"),
                                     scorekeeper.scram(self.image_left, self.image_right, time_cost=get_scram_time(), route_position=self.movement_count),
-                                    self.move_ambulance_by_cell(),
+                                    self.move_ambulance_by_cell() if not self.route_complete else None,
                                     self.update_ui(scorekeeper),
                                     self.get_next(
                                         data_fp,
@@ -300,7 +301,7 @@ class UI(object):
             ("Save (30 mins)", lambda: self.show_action_popup("Save"),COLOR_SAVE),
             ("Skip (15 mins)", lambda: [
                                   scorekeeper.skip_both(self.image_left, self.image_right, route_position=self.movement_count),
-                                  self.move_ambulance_by_cell(),
+                                  self.move_ambulance_by_cell() if not self.route_complete else None,
                                   self.update_ui(scorekeeper),
                                   self.get_next(
                                       data_fp,
@@ -338,8 +339,8 @@ class UI(object):
         # Save references to left/right button actions for map movement
         self.left_action_callbacks = [
             lambda: [self.print_scenario_side_attributes('left'), self.scorekeeper.inspect(self.image_left, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='left'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Left
-            lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Left
-            lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Left
+            lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Left
+            lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Left
         ]
         try:
             print("Creating left/right button menus")
@@ -350,8 +351,8 @@ class UI(object):
             ])
             self.right_action_callbacks = [
                 lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='right'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
-                lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Right
-                lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right(), self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Right
+                lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Right
+                lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Right
             ]
             self.right_button_menu = RightButtonMenu(self.root, [
                 ("Inspect Right", self.right_action_callbacks[0]),
@@ -431,7 +432,7 @@ class UI(object):
         self.grid_rows = len(self.map_array)
         self.grid_cols = len(self.map_array[0])
         self.cell_size = 35  # Small for better fit
-        self.grid_origin = (1015, 525)  # location of map (moved 30px right and 30px down)
+        self.grid_origin = (1040, 500)  # location of map (centered with clock and capacity meter)
         self.create_grid_map_canvas()  # Create the canvas first
         self.reset_map()               # Now it's safe to call reset_map()
         self.draw_grid_map()           # Draw the map with background image
@@ -441,10 +442,11 @@ class UI(object):
         # self.draw_grid_map() # This line is moved
 
         # Movement progress label
+        movement_font = font.Font(family="Fixedsys", size=10)
         self.movement_label = tk.Label(self.root, text="Route Progress: 0/20", 
-                                      font=("Arial", 12, "bold"), bg="#000000", fg="#FFFFFF",
-                                      relief="solid", bd=1, padx=10, pady=5)
-        self.movement_label.place(x=1050, y=460)
+                                      font=movement_font, bg="#5B7B7A", fg="#FFFFFF",
+                                      relief="groove", bd=2, padx=10, pady=5)
+        self.movement_label.place(x=1060, y=460)
 
         # Initialize the UI with the current state
         self.update_ui(scorekeeper)
@@ -577,11 +579,12 @@ class UI(object):
             self.reset_map()
         self.draw_grid_map()
         
+        movement_font = font.Font(family="Fixedsys", size=10)
         # Recreate movement label
         self.movement_label = tk.Label(self.root, text=f"Route Progress: {self.movement_count}/20", 
-                                      font=("Arial", 12), bg="#404b44", fg="#2E86AB",
-                                      relief="solid", bd=1, padx=10, pady=5)
-        self.movement_label.place(x=1050, y=460)
+                                      font=movement_font, bg="#5B7B7A", fg="#FFFFFF",
+                                      relief="groove", bd=2, padx=10, pady=5)
+        self.movement_label.place(x=1060, y=460)
         
         # Recreate inspect canvases
         inspect_height = 150
@@ -1102,6 +1105,10 @@ class UI(object):
         self.map_canvas.create_text(x, y, text="🚑", font=("Arial", 14))
 
     def move_ambulance_by_cell(self):
+        # Don't move if route is already complete
+        if self.route_complete:
+            return
+            
         r, c = self.ambulance_pos
         val = self.map_array[r][c]
         if val == 1:  # up
@@ -1116,6 +1123,8 @@ class UI(object):
             new_r, new_c = r-1, c
         else:
             new_r, new_c = r, c
+            
+        # Only increment movement count if the move is valid
         if 0 <= new_r < self.grid_rows and 0 <= new_c < self.grid_cols and self.map_array[new_r][new_c] != 0:
             self.ambulance_pos = [new_r, new_c]
             self.path_history.append(tuple(self.ambulance_pos))
@@ -1126,8 +1135,8 @@ class UI(object):
             # Update movement progress label
             self.movement_label.config(text=f"Route Progress: {self.movement_count}/20")
             
-            # Check if we've reached 20 movements
-            if self.movement_count >= 20:
+            # Check if we've reached exactly 20 movements
+            if self.movement_count == 20:
                 # print("[DEBUG] Reached 20 movements - triggering end screen")
                 self.trigger_end_screen()
         self.draw_grid_map()

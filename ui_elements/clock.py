@@ -5,9 +5,9 @@ import math
 
 class Clock(object):
     def __init__(self, root, w, h, init_h, init_m):
-        self.canvas = tk.Canvas(root, width=180, height=100, bg = "#5B7B7A", highlightthickness=0)
+        self.canvas = tk.Canvas(root, width=180, height=100, bg = "#5B7B7A", highlightthickness=2, relief="groove", bd=2)
         # Place the clock at the top center
-        self.canvas.place(x=1060, y=40)
+        self.canvas.place(x=1060, y=70)
 
         time_font = font.Font(family="Fixedsys", size=30, weight="bold")
         title_font = font.Font(family="Fixedsys", size=14)
