@@ -354,8 +354,8 @@ class UI(object):
         # Save references to left/right button actions for map movement
         self.left_action_callbacks = [
             lambda: [self.print_scenario_side_attributes('left'), self.scorekeeper.inspect(self.image_left, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='left'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Left
-            lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Left
-            lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left'), self.move_map_left() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Left
+            lambda: [self.scorekeeper.squish(self.image_left, route_position=self.movement_count, side='left', image_left=self.image_left, image_right=self.image_right), self.move_map_left() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Left
+            lambda: [self.scorekeeper.save(self.image_left, route_position=self.movement_count, side='left', image_left=self.image_left, image_right=self.image_right), self.move_map_left() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Left
         ]
         try:
             print("Creating left/right button menus")
@@ -366,8 +366,8 @@ class UI(object):
             ])
             self.right_action_callbacks = [
                 lambda: [self.print_scenario_side_attributes('right'), self.scorekeeper.inspect(self.image_right, cost=get_inspect_cost_left_right(), route_position=self.movement_count, side='right'), self.update_ui(self.scorekeeper), self.check_game_end(data_fp, data_parser, self.scorekeeper)],  # Inspect Right
-                lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Right
-                lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right'), self.move_map_right() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Right
+                lambda: [self.scorekeeper.squish(self.image_right, route_position=self.movement_count, side='right', image_left=self.image_left, image_right=self.image_right), self.move_map_right() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None],  # Squish Right
+                lambda: [self.scorekeeper.save(self.image_right, route_position=self.movement_count, side='right', image_left=self.image_left, image_right=self.image_right), self.move_map_right() if not self.route_complete else None, self.update_ui(self.scorekeeper), self.get_next(data_fp, data_parser, self.scorekeeper) if not getattr(self, 'route_complete', False) else None]  # Save Right
             ]
             self.right_button_menu = RightButtonMenu(self.root, [
                 ("Inspect Right", self.right_action_callbacks[0]),
