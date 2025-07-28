@@ -1263,7 +1263,7 @@ class UI(object):
         # )
         # accuracy_label.pack()
         # Replay button (only one)
-        self.replay_btn = tk.Button(self.final_score_frame, text="Replay", font=UPGRADE_FONT, command=lambda: self.reset_game(self.data_parser, self.data_fp))
+        self.replay_btn = tk.Button(self.final_score_frame, text="Replay", font=LABEL_FONT, command=lambda: self.reset_game(self.data_parser, self.data_fp))
         self.replay_btn.pack(pady=(10, 0))
         self.replay_btn.lift()  # Ensure the replay button is visible on top
         self.replay_btn.config(state='normal')
