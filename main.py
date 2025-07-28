@@ -83,8 +83,8 @@ class Main(object):
             def start_ui():
                 print("start_ui called")
                 try:
-                    self.root.deiconify()
                     self.ui = UI(self.data_parser, self.scorekeeper, self.data_fp, False, log, root=self.root)
+                    self.root.deiconify()  # Move deiconify to after UI is fully created
                 except Exception as e:
                     print("Exception in UI creation:", e)
 

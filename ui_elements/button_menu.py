@@ -68,7 +68,7 @@ def create_buttons(canvas, items):
 
 def create_menu(buttons):
     for button in buttons:
-        button.pack(side=tk.TOP, pady=20)
+        button.pack(side=tk.TOP, pady=20)  # Restored to original spacing
 
 
 class LeftButtonMenu(object):
@@ -76,7 +76,7 @@ class LeftButtonMenu(object):
         self.buttons = []
         x = 35           # Horizontal position of "L" buttons
         y_start = 215       # Matches y-position of "Skip" button
-        y_gap = 92
+        y_gap = 92         # Restored to original spacing
         
         button_colors = [
             COLOR_LEFT_AND_RIGHT_INSPECT_BUTTONS,
@@ -130,7 +130,7 @@ class RightButtonMenu(object):
         self.buttons = []
         x = 115            # Adjust horizontally to right side of main buttons
         y_start = 215      # Match LeftButtonMenu start (below Inspect)
-        y_gap = 92         # Match spacing of main buttons
+        y_gap = 92         # Restored to original spacing
 
         button_colors = [
             COLOR_LEFT_AND_RIGHT_INSPECT_BUTTONS,

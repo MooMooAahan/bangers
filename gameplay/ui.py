@@ -517,14 +517,7 @@ class UI(object):
         self.clock.update_time(h, m, force_pm=force_pm)
         self.capacity_meter.update_fill(scorekeeper.get_current_capacity())
 
-        # Show a warning popup if 3 hours or less remain, but only once per game session
-        if scorekeeper.remaining_time <= 180 and not getattr(self, 'time_warning_shown', False):
-            self.time_warning_shown = True
-            import tkinter.messagebox
-            tkinter.messagebox.showwarning(
-                "Limited Time Warning",
-                "Warning: You have 3 hours or less remaining! Make your decisions carefully."
-            )
+        # Removed time warning popup - no longer showing warning dialog
 
     def on_resize(self, event):
         w = 0.6 * self.root.winfo_width()
