@@ -16,11 +16,89 @@ from endpoints.enhanced_predictor import EnhancedPredictor
 import warnings
 
 
+class Predictor(object):
+    def __init__(self, classes=3, model_file=os.path.join('models', 'transfer_status_baseline.pth')):
+        self.classes = classes
+        self.net = None
+        self.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
+        self.transforms = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+        self.is_model_loaded: bool = self._load_model(model_file, classes)
+        if not self.is_model_loaded:
+            warnings.warn("Model not loaded, resorting to random prediction")
+
+    def _load_model(self, weights_path, num_classes=3):
+        try:
+            # Load the TransferStatusCNN model (3-class system)
+            self.net = TransferStatusCNN(num_classes=3)
+            state_dict = torch.load(weights_path, map_location=self.device)
+            self.net.load_state_dict(state_dict)
+            self.net.to(self.device)
+            self.net.eval()
+            print("✅ Loaded TransferStatusCNN model successfully (3-class system)")
+            return True
+        except Exception as e:
+            print(f"❌ Failed to load CNN model: {e}")
+            print(f"   Model path: {weights_path}")
+            print(f"   Device: {self.device}")
+            return False
+
+    def get_probs(self, img_):
+        """Get classification probabilities from CNN"""
+        if self.is_model_loaded:
+            try:
+                # Ensure RGB format
+                if img_.mode != 'RGB':
+                    img_ = img_.convert('RGB')
+                
+                # Resize to expected input size (512x512) if necessary
+                if img_.size != (512, 512):
+                    img_ = img_.resize((512, 512), Image.Resampling.LANCZOS)
+                
+                img_tensor = self.transforms(img_).float().unsqueeze(0).to(self.device)
+                
+                with torch.no_grad():
+                    outputs = self.net(img_tensor)
+                    probs = torch.nn.functional.softmax(outputs, 1)[0].cpu().numpy()
+                        
+            except Exception as e:
+                print(f"CNN prediction error: {e}")
+                probs = np.ones(self.classes) / self.classes
+        else:
+            probs = np.ones(self.classes) / self.classes
+        return probs
+    
+    def get_enhanced_prediction(self, img_):
+        """
+        Get enhanced prediction with human-readable status and occupation
+        Returns: dict with 'status', 'occupation', 'confidence', 'enhanced_class'
+        """
+        probs = self.get_probs(img_)
+        predicted_idx = np.argmax(probs)
+        confidence = probs[predicted_idx]
+        
+        # Map 3-class indices to status
+        status_classes = ['healthy', 'injured', 'zombie']
+        status = status_classes[predicted_idx] if predicted_idx < len(status_classes) else 'healthy'
+        
+        # For now, assume civilian occupation (can be enhanced later with occupation CNN)
+        occupation = 'civilian'
+        
+        return {
+            'status': status,
+            'occupation': occupation, 
+            'confidence': confidence,
+            'enhanced_class': f"{status}_{occupation}",
+            'all_probs': probs
+        }
+
+
 class HeuristicInterface(object):
   
     def __init__(self, root, w, h, display=False, model_file=os.path.join('models', 'baseline.pth'),
                  img_data_root='data'):
-    
         """
         Heuristic interface that properly simulates the real game
         Uses both status and occupation CNNs via EnhancedPredictor
@@ -28,12 +106,21 @@ class HeuristicInterface(object):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.text = ""
         self.display = display
-        self.img_data_root = img_data_root
+        self.img_data_root = 'data/modified_dataset'
 
-        # load 
-        self.predictor = Predictor(model_file=model_file)
+        # Initialize both predictors for different use cases
+        self.predictor = Predictor(classes=3, model_file=model_file)
+        
+        # Load the enhanced predictor (status + occupation CNNs)
+        try:
+            self.enhanced_predictor = EnhancedPredictor()
+            print("✅ Enhanced predictor loaded successfully")
+        except Exception as e:
+            print(f"❌ Failed to load enhanced predictor: {e}")
+            self.enhanced_predictor = None
+            warnings.warn("Enhanced predictor not loaded, resorting to random decisions")
 
-        if self.display:
+        if self.display and root:
             self.canvas = tk.Canvas(root, width=math.floor(0.2 * w), height=math.floor(0.1 * h))
             self.canvas.place(x=math.floor(0.75 * w), y=math.floor(0.75 * h))
             from ui_elements.theme import UPGRADE_FONT
@@ -43,17 +130,10 @@ class HeuristicInterface(object):
             self.suggestion = tk.Label(self.canvas, text=self.text, font=UPGRADE_FONT)
             self.suggestion.pack(side=tk.TOP)
 
-    def _load_model(self, weights_path, num_classes=4):
-        try:
-            self.net = DefaultCNN(num_classes)
-            self.net.load_state_dict(torch.load(weights_path))
-            return True
-        except:  # file not found, maybe others?
-            return False
-
     def suggest(self, humanoid, capacity_full=False):
+        """Legacy method for single humanoid suggestions"""
         if self.predictor.is_model_loaded:
-            action = self.get_model_suggestion(humanoid, capacity_full)
+            action = self._get_single_suggestion(humanoid, capacity_full)
         else:
             action = self.get_random_suggestion()
         self.text = action.name
@@ -61,6 +141,7 @@ class HeuristicInterface(object):
             self.suggestion.config(text=self.text)
 
     def act(self, scorekeeper, humanoid):
+        """Legacy method for acting on single humanoid"""
         self.suggest(humanoid, scorekeeper.at_capacity())
         action = self.text
         if action == ActionCost.SKIP.name:
@@ -74,37 +155,34 @@ class HeuristicInterface(object):
         else:
             raise ValueError("Invalid action suggested")
 
-    @staticmethod
-    def get_random_suggestion():
-        return random.choice(list(ActionCost))
-
-    def get_model_suggestion(self, image_or_humanoid, is_capacity_full) -> ActionCost:
+    def _get_single_suggestion(self, image_or_humanoid, is_capacity_full) -> ActionCost:
+        """Handle single humanoid/image suggestions"""
         # Handle both Image objects (from main.py) and Humanoid objects
         if hasattr(image_or_humanoid, 'fp'):
             # It's a Humanoid object
             image_path = image_or_humanoid.fp
-            actual_state = State(image_or_humanoid.state)
-            occupation = getattr(image_or_humanoid, 'role', 'Unknown')
         else:
             # It's an Image object
             image_path = image_or_humanoid.Filename
-            # For Image objects, get the actual state from the first humanoid
-            first_humanoid = next((h for h in image_or_humanoid.humanoids if h is not None), None)
-            if first_humanoid:
-                actual_state = State(first_humanoid.state)
-                occupation = getattr(first_humanoid, 'role', 'Unknown')
-            else:
-                actual_state = State.HEALTHY  # Default fallback
-                occupation = 'Unknown'
         
-        # Load the enhanced predictor (status + occupation CNNs)
         try:
-            self.enhanced_predictor = EnhancedPredictor()
-            print("✅ Enhanced predictor loaded successfully")
+            img_ = Image.open(os.path.join(self.img_data_root, os.path.basename(image_path)))
+            prediction = self.predictor.get_enhanced_prediction(img_)
+            predicted_status = prediction['status']
+            
+            # Simple mapping for single humanoid
+            if is_capacity_full:
+                return ActionCost.SCRAM
+            elif predicted_status == 'zombie':
+                return ActionCost.SQUISH
+            elif predicted_status in ['healthy', 'injured']:
+                return ActionCost.SAVE
+            else:
+                return ActionCost.SKIP
+                
         except Exception as e:
-            print(f"❌ Failed to load enhanced predictor: {e}")
-            self.enhanced_predictor = None
-            warnings.warn("Enhanced predictor not loaded, resorting to random decisions")
+            print(f"❌ Error in single suggestion: {e}")
+            return self.get_random_suggestion()
 
     def get_model_suggestion(self, image_left, image_right, is_capacity_full) -> ActionCost:
         """
@@ -116,8 +194,13 @@ class HeuristicInterface(object):
         
         try:
             # Get predictions for both sides using enhanced predictor
-            left_prediction = self.enhanced_predictor.predict_combined(image_left.Filename)
-            right_prediction = self.enhanced_predictor.predict_combined(image_right.Filename)
+            left_filename = os.path.basename(image_left.Filename)
+            right_filename = os.path.basename(image_right.Filename)
+            left_path = os.path.join('data/modified_dataset', left_filename)
+            right_path = os.path.join('data/modified_dataset', right_filename)
+            
+            left_prediction = self.enhanced_predictor.predict_combined(left_path)
+            right_prediction = self.enhanced_predictor.predict_combined(right_path)
             
             # Extract status and occupation for both sides
             left_status = left_prediction['status']

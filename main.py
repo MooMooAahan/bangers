@@ -74,8 +74,7 @@ class Main(object):
             else:
                 print("Final score calculation skipped - no current images")
         elif mode == 'train':  # RL training script
-            env = TrainInterface(None, None, None, self.data_parser, self.scorekeeper, display=False,)
-            train(env)
+            train()
         elif mode == 'infer':  # RL training script
             simon = InferInterface(None, None, None, self.data_parser, self.scorekeeper, display=False,)
             while len(simon.data_parser.unvisited) > 0:
@@ -88,7 +87,8 @@ class Main(object):
             if log:
                 self.scorekeeper.save_log()
             print("RL equiv reward:",self.scorekeeper.get_cumulative_reward())
-            print(self.scorekeeper.get_score())
+            # Skip final score calculation for inference mode (no current images available)
+            print("Final score calculation skipped for inference mode")
         else: # Launch UI gameplay
             def start_ui():
                 print("start_ui called")

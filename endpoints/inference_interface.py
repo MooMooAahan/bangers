@@ -12,7 +12,7 @@ from gameplay.scorekeeper import ScoreKeeper
 from gameplay.humanoid import Humanoid
 
 from models.PPO import ActorCritic, PPO
-# Predictor class removed from heuristic_interface
+from endpoints.enhanced_predictor import EnhancedPredictor
 
 from gym import Env, spaces
 from endpoints.data_parser import DataParser

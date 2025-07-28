@@ -208,6 +208,7 @@ class IntroScreen:
         text_widget.config(state="disabled")  # Make read-only
         
         # Add a close button with start screen styling
+        from ui_elements.theme import UPGRADE_FONT
         close_button = tk.Button(canvas, text="Close", 
                                font=UPGRADE_FONT, 
                                width=12, height=1,
@@ -422,9 +423,10 @@ class UI(object):
             right_text = self.imperfect_cnn.get_display_text(right_image_path, "RIGHT")
             
             # Create text labels above images
-            self.left_cnn_label = tk.Label(self.root, text=left_text, font=("Arial", 12), 
+            from ui_elements.theme import LABEL_FONT
+            self.left_cnn_label = tk.Label(self.root, text=left_text, font=LABEL_FONT, 
                                          bg="black", fg="yellow", wraplength=image_width-10)
-            self.right_cnn_label = tk.Label(self.root, text=right_text, font=("Arial", 12), 
+            self.right_cnn_label = tk.Label(self.root, text=right_text, font=LABEL_FONT, 
                                           bg="black", fg="yellow", wraplength=image_width-10)
             
             # Place labels above images
@@ -640,6 +642,29 @@ class UI(object):
         self.inspect_canvas_right.create_rectangle(
             1, 1, image_width - 2, inspect_height - 2, outline="black", width=2
         )
+        
+        # Recreate CNN labels
+        try:
+            # Get imperfect predictions for display
+            left_image_path = os.path.join(self.data_fp, self.image_left.Filename)
+            right_image_path = os.path.join(self.data_fp, self.image_right.Filename)
+            
+            left_text = self.imperfect_cnn.get_display_text(left_image_path, "LEFT")
+            right_text = self.imperfect_cnn.get_display_text(right_image_path, "RIGHT")
+            
+            # Create text labels above images
+            from ui_elements.theme import LABEL_FONT
+            self.left_cnn_label = tk.Label(self.root, text=left_text, font=LABEL_FONT, 
+                                         bg="black", fg="yellow", wraplength=image_width-10)
+            self.right_cnn_label = tk.Label(self.root, text=right_text, font=LABEL_FONT, 
+                                          bg="black", fg="yellow", wraplength=image_width-10)
+            
+            # Place labels above images
+            self.left_cnn_label.place(x=center_x - offset, y=y_top - 40)
+            self.right_cnn_label.place(x=center_x - offset + image_width + horizontal_gap, y=y_top - 40)
+            print("CNN labels recreated in restore_main_ui")
+        except Exception as e:
+            print("Exception recreating CNN labels in restore_main_ui:", e)
         
         # Restore inspect canvas content based on scorekeeper's inspected state
         for side in ['left', 'right']:
@@ -1112,6 +1137,22 @@ class UI(object):
         fp_right = os.path.join(data_fp, self.image_right.Filename)
         self.game_viewer_left.create_photo(fp_left)
         self.game_viewer_right.create_photo(fp_right)
+        
+        # Recreate CNN labels for new images
+        try:
+            if hasattr(self, 'left_cnn_label') and hasattr(self, 'right_cnn_label'):
+                # Update existing CNN labels with new images
+                left_text = self.imperfect_cnn.get_display_text(fp_left, "LEFT")
+                right_text = self.imperfect_cnn.get_display_text(fp_right, "RIGHT")
+                
+                self.left_cnn_label.config(text=left_text)
+                self.right_cnn_label.config(text=right_text)
+                print("CNN labels updated in reset_game")
+            else:
+                print("CNN labels not found during reset_game, may need recreation")
+        except Exception as e:
+            print("Exception updating CNN labels in reset_game:", e)
+        
         # 5. Reset scram cost to starting value
         if hasattr(self.scorekeeper, 'scram_time_reduction'):
             self.scorekeeper.scram_time_reduction = 0
@@ -1232,7 +1273,7 @@ class UI(object):
         self.final_score_frame = tk.Frame(self.root, width=300, height=300,bg="black",highlightthickness=0)
         self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
         # Import theme fonts
-        from ui_elements.theme import FINAL_FONT_HEADER, FINAL_FONT_SUB, LABEL_FONT
+        from ui_elements.theme import FINAL_FONT_HEADER, FINAL_FONT_SUB, LABEL_FONT, UPGRADE_FONT
         
         # 'Route Complete' label
         game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=FINAL_FONT_HEADER,fg="white",bg="black",highlightthickness=0)
