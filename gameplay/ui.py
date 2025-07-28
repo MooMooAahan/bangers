@@ -783,6 +783,7 @@ class UI(object):
             "🎮 GAMEPLAY:\n"
             "• You'll encounter pairs of humanoids (humans and zombies)\n"
             "• Choose your actions carefully - you can only save one set per scenario\n"
+            "• Use the (risky) advice at the top of your screen to help you make decisions\n"
             "• Complete your route before time runs out\n\n"
             
             "🔧 ACTIONS:\n"
@@ -806,6 +807,7 @@ class UI(object):
             "• Use INSPECT to gather information before making decisions\n"
             "• Manage your capacity wisely - you can't save everyone\n"
             "• Watch the clock and plan your route completion\n"
+            "• Different classes have different abilities: use them wisely!\n"
             "• Remember: You can only save one set per scenario!"
         )
 
