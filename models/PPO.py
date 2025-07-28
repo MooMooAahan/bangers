@@ -37,14 +37,15 @@ class RolloutBuffer:
 class BaseModel(nn.Module):
     def __init__(self,):
         super(BaseModel, self).__init__()
-        self.external_variables = 4  # Updated: time, reward, capacity, zombie_count
+        self.external_variables = 4  # [time_ratio, reward_scaled, capacity_ratio, zombie_ratio]
         self.storage_cap = 10
         self.humanoid_classes = 4
-        self.action_dim = 6  # Updated: SKIP_BOTH, SQUISH_LEFT, SQUISH_RIGHT, SAVE_LEFT, SAVE_RIGHT, SCRAM
+        self.action_dim = 6  # [SKIP_BOTH, SQUISH_LEFT, SQUISH_RIGHT, SAVE_LEFT, SAVE_RIGHT, SCRAM]
         
-        # Updated calculation for both left and right humanoid probabilities
+        # Simplified: 4 + 4 + 4 + 6 = 18 (humanoid_classes now 4: status+occupation for left+right)
+        self.humanoid_enhanced_classes = 4  # 4 values: [left_status, left_occ, right_status, right_occ]
         self.output_shape = self.external_variables+\
-                            (self.humanoid_classes * 2)+\
+                            self.humanoid_enhanced_classes+\
                             self.humanoid_classes+\
                             self.action_dim
     def forward(self, inputs):
@@ -65,8 +66,10 @@ class ActorCritic(nn.Module):
         self.has_continuous_action_space = has_continuous_action_space
         self.action_dim = 6  # Updated for new action space
         
-        # Updated input size: 3 + 8 + 4 + 6 = 21
-        input_size = 21
+        # Simplified input size: 4 + 4 + 4 + 6 = 18
+        # Variables(4) + HumanoidProbs(4) + VehicleStorage(4) + DoableActions(6)
+        # HumanoidProbs now includes status+occupation for left+right sides
+        input_size = 18
         
         self.actor = nn.Sequential(
                         BaseModel(),

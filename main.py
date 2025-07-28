@@ -7,7 +7,6 @@ from endpoints.inference_interface import InferInterface
 from gameplay.ui import UI, IntroScreen
 
 from gameplay.scorekeeper import ScoreKeeper
-from gameplay.ui import UI
 from gameplay.enums import ActionCost
 from model_training.rl_training import train
 import tkinter as tk
@@ -39,30 +38,41 @@ class Main(object):
         self.root.withdraw()
 
         if mode == 'heuristic':   # Run in background until all humanoids are processed
-            simon = HeuristicInterface(None, None, None, display = False)
+            simon = HeuristicInterface()
             while len(self.data_parser.unvisited) > 0:
                 if self.scorekeeper.remaining_time <= 0:
                     print('Ran out of time')
                     break
                 else:
-                    image = self.data_parser.get_random(side = 'left') ## TODO: this is currently hardcoded to left side
-                    # Fix: Use image.Filename instead of image.fp for Image objects
-                    action = simon.get_model_suggestion(image, self.scorekeeper.at_capacity())
+                    # Get both left and right images for junction scenario (like real game)
+                    image_left = self.data_parser.get_random(side='left')
+                    image_right = self.data_parser.get_random(side='right')
+                    
+                    # Get AI suggestion for the junction scenario
+                    action = simon.get_model_suggestion(image_left, image_right, self.scorekeeper.at_capacity())
+                    
+                    # Execute the action based on the suggestion
                     if action == ActionCost.SKIP:
-                        self.scorekeeper.skip(image, image_left=image, image_right=image)
-                    elif action == ActionCost.SQUISH:
-                        self.scorekeeper.squish(image, image_left=image, image_right=image)
+                        # Skip both sides of the junction
+                        self.scorekeeper.skip_both(image_left, image_right)
                     elif action == ActionCost.SAVE:
-                        self.scorekeeper.save(image, image_left=image, image_right=image)
+                        # For now, always save the left image (can be enhanced later)
+                        self.scorekeeper.save(image_left, image_left=image_left, image_right=image_right)
                     elif action == ActionCost.SCRAM:
-                        # Pass image for both left and right (or duplicate if only one side in heuristic mode)
-                        self.scorekeeper.scram(image, image)
+                        self.scorekeeper.scram(image_left, image_right)
                     else:
                         raise ValueError("Invalid action suggested")
+
+                    # Keep a reference to the last images for final score calculation
+                    self.image_left, self.image_right = image_left, image_right
             if log:
-                self.scorekeeper.save_log()
+                self.scorekeeper.save_log(final=True)
             print("RL equiv reward:",self.scorekeeper.get_cumulative_reward())
-            print(self.scorekeeper.get_score())
+            # Create dummy images for score calculation if needed
+            if hasattr(self, 'image_left') and hasattr(self, 'image_right'):
+                print(self.scorekeeper.get_score(self.image_left, self.image_right))
+            else:
+                print("Final score calculation skipped - no current images")
         elif mode == 'train':  # RL training script
             env = TrainInterface(None, None, None, self.data_parser, self.scorekeeper, display=False,)
             train(env)

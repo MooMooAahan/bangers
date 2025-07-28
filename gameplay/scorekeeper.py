@@ -12,11 +12,13 @@ MAP_ACTION_INT_TO_STR = [s.value for s in ActionState]
 
 def _is_automated_mode():
     """Check if we're in training or heuristic mode to suppress UI popups"""
-    return any(mode in sys.argv for mode in ['-m', 'train', 'heuristic'])
+    import sys
+    # Only suppress popups if running RL training or heuristic mode
+    return any(mode in sys.argv for mode in ['-m', 'train', 'heuristic']) and not any(mode in sys.argv for mode in ['user', 'infer'])
 
-def _safe_show_popup(title, message, popup_type='info'):
+def _safe_show_popup(title, message, popup_type='info', display=True):
     """Show popup only if not in automated mode"""
-    if not _is_automated_mode():
+    if display and not _is_automated_mode():
         try:
             import tkinter.messagebox
             if popup_type == 'warning':
@@ -46,7 +48,7 @@ TIME_BONUS_FOR_SAVING_HUMAN = +15 #time bonus for saving a human
 
 
 class ScoreKeeper(object):
-    def __init__(self, shift_len, capacity):
+    def __init__(self, shift_len, capacity, display=True):
         
         self.shift_len = int(shift_len)  # minutes
         self.capacity = capacity
@@ -64,6 +66,7 @@ class ScoreKeeper(object):
         self.ambulance_time_adjustment = 0
         self.upgrade_manager = UpgradeManager(self)
         self.inspected_state = {('left', None): False, ('right', None): False}  # (side, humanoid_fp) -> bool
+        self.display = display
         # Track inspection state for current scenario
         self.inspected_left = False
         self.inspected_right = False
@@ -141,7 +144,7 @@ class ScoreKeeper(object):
             else:
                 action_side = 'unknown'  # Will be set by calling function
         
-        self.logger.append({
+        log_entry = {
             "timestamp": timestamp,
             "local_run_id": None,  # Will be filled in save_log
             "route_position": route_position,
@@ -152,7 +155,9 @@ class ScoreKeeper(object):
             "inspected": inspected,
             "action": action,
             "action_side": action_side
-        })
+        }
+        
+        self.logger.append(log_entry)
 
     def save_log(self, final=False):
         if not final:
@@ -351,9 +356,9 @@ class ScoreKeeper(object):
 #                     pass
                     # print('[DEBUG] Police picked up: 1 zombie removed from ambulance.')
                 # Show popup message  
-                _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
+                _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!', display=self.display)
             else:
-                _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')
+                _safe_show_popup('Police Action', 'There were no zombies for your police to kill!', display=self.display)
         elif humanoid_count == 2:
             if roles[0] == "Police" and classes[0] == "Default":
                                 # Police effect: if you pick up a police, kill 1 zombie in the ambulance
@@ -376,9 +381,9 @@ class ScoreKeeper(object):
 #                     except Exception as e:
 #                         # print(f'[DEBUG] Could not show popup: {e}')
 #                         pass
-                    _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
+                    _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!', display=self.display)
                 else:
-                    _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')    
+                    _safe_show_popup('Police Action', 'There were no zombies for your police to kill!', display=self.display)    
             elif roles[1] == "Police" and classes[1] == "Default":
                 zombie_removed = False
                 for humanoid_id, person in list(self.ambulance_people.items()):
@@ -399,9 +404,9 @@ class ScoreKeeper(object):
 #                     except Exception as e:
 #                         # print(f'[DEBUG] Could not show popup: {e}')
 #                         pass
-                    _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!')
+                    _safe_show_popup('Police Action', 'The Police you picked up killed a zombie!', display=self.display)
                 else:
-                    _safe_show_popup('Police Action', 'There were no zombies for your police to kill!')  
+                    _safe_show_popup('Police Action', 'There were no zombies for your police to kill!', display=self.display)  
             else:
                 pass
 
@@ -435,15 +440,9 @@ class ScoreKeeper(object):
             self.ambulance["zombie"] = 0
             # Show popup message
             if beaver_transformed:
-                try:
-                    import tkinter.messagebox
-                    tkinter.messagebox.showinfo('Beaver Magic', 'The Transformational Beaver made everyone in your ambulance healthy!')
-                except Exception as e:
-                    # print(f'[DEBUG] Could not show popup: {e}')
-                    pass
+                _safe_show_popup('Beaver Magic', 'The Transformational Beaver made everyone in your ambulance healthy!', display=self.display)
             else:
-                import tkinter.messagebox
-                tkinter.messagebox.showinfo('Beaver Magic', 'You encountered the Magical Beaver... but there was no one to save!')
+                _safe_show_popup('Beaver Magic', 'You encountered the Magical Beaver... but there was no one to save!', display=self.display)
 
     def squish(self, image, route_position=None, side=None, image_left=None, image_right=None):
         """
@@ -559,15 +558,54 @@ class ScoreKeeper(object):
     def available_action_space(self):
         """
         returns available action space as a list of bools
+        For RL training, this returns the 6-action space: [SKIP_BOTH, SQUISH_LEFT, SQUISH_RIGHT, SAVE_LEFT, SAVE_RIGHT, SCRAM]
         """
-        action_dict = {s.value:True for s in ActionState}
-        if self.remaining_time <= 0:
-            action_dict['save'] = False
-            action_dict['squish'] = False
-            action_dict['skip'] = False
-        if self.at_capacity():
-            action_dict['save'] = False
-        return [action_dict[s.value] for s in ActionState]
+        # Check if we're in RL training mode (called from training interface)
+        import inspect
+        frame = inspect.currentframe()
+        is_rl_training = False
+        try:
+            # Check if we're being called from training_interface
+            while frame:
+                filename = frame.f_code.co_filename
+                if 'training_interface.py' in filename:
+                    is_rl_training = True
+                    break
+                frame = frame.f_back
+        except:
+            pass
+        finally:
+            del frame
+        
+        if is_rl_training:
+            # RL 6-action space: [SKIP_BOTH, SQUISH_LEFT, SQUISH_RIGHT, SAVE_LEFT, SAVE_RIGHT, SCRAM]
+            actions = [True] * 6  # All actions initially available
+            
+            # Time constraints
+            if self.remaining_time <= 0:
+                actions[0] = False  # SKIP_BOTH
+                actions[1] = False  # SQUISH_LEFT
+                actions[2] = False  # SQUISH_RIGHT
+                actions[3] = False  # SAVE_LEFT
+                actions[4] = False  # SAVE_RIGHT
+                # SCRAM (actions[5]) always available
+            
+            # Capacity constraints
+            if self.at_capacity():
+                actions[3] = False  # SAVE_LEFT
+                actions[4] = False  # SAVE_RIGHT
+                
+            return actions
+        else:
+            # Original 5-action space for UI gameplay
+            action_dict = {s.value:True for s in ActionState}
+            if self.remaining_time <= 0:
+                action_dict['save'] = False
+                action_dict['squish'] = False
+                action_dict['skip'] = False
+            if self.at_capacity():
+                action_dict['save'] = False
+            return [action_dict[s.value] for s in ActionState]
         
     # do_action or return false if not possible
     def map_do_action(self, idx, humanoid):

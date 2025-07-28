@@ -6,6 +6,7 @@ from ui_elements.capacity_meter import CapacityMeter
 from ui_elements.clock import Clock
 from ui_elements.ambulance_overlay import AmbulanceOverlay
 from endpoints.heuristic_interface import HeuristicInterface
+from endpoints.enhanced_predictor import EnhancedPredictor, ImperfectCNNDisplay
 from ui_elements.game_viewer import GameViewer
 from ui_elements.machine_menu import MachineMenu
 from gameplay.scorekeeper import _safe_show_popup
@@ -270,6 +271,11 @@ class UI(object):
         self.log = log
         #replay button
         self.replay_btn = None
+        
+        # Initialize enhanced predictor and imperfect CNN display
+        self.enhanced_predictor = EnhancedPredictor()
+        self.imperfect_cnn = ImperfectCNNDisplay(self.enhanced_predictor, accuracy_rate=0.5)
+        
         if suggest:
             self.machine_interface = HeuristicInterface(self.root, w, h)
         #  Add buttons and logo
@@ -402,6 +408,28 @@ class UI(object):
             print("Game viewers (left and right) placed")
         except Exception as e:
             print("Exception placing game viewers (left and right):", e)
+            
+        # Add imperfect CNN text labels above images
+        try:
+            # Get imperfect predictions for display
+            left_image_path = os.path.join(self.data_fp, self.image_left.Filename)
+            right_image_path = os.path.join(self.data_fp, self.image_right.Filename)
+            
+            left_text = self.imperfect_cnn.get_display_text(left_image_path, "LEFT")
+            right_text = self.imperfect_cnn.get_display_text(right_image_path, "RIGHT")
+            
+            # Create text labels above images
+            self.left_cnn_label = tk.Label(self.root, text=left_text, font=("Arial", 12), 
+                                         bg="black", fg="yellow", wraplength=image_width-10)
+            self.right_cnn_label = tk.Label(self.root, text=right_text, font=("Arial", 12), 
+                                          bg="black", fg="yellow", wraplength=image_width-10)
+            
+            # Place labels above images
+            self.left_cnn_label.place(x=center_x - offset, y=y_top - 40)
+            self.right_cnn_label.place(x=center_x - offset + image_width + horizontal_gap, y=y_top - 40)
+            print("Imperfect CNN labels placed")
+        except Exception as e:
+            print("Exception placing imperfect CNN labels:", e)
         self.root.bind("<Delete>", self.game_viewer_left.delete_photo)
         self.root.bind("<Delete>", self.game_viewer_right.delete_photo)
         # Display the countdown
@@ -938,6 +966,24 @@ class UI(object):
                 fp_right = os.path.join(data_fp, self.image_right.Filename)
                 self.game_viewer_left.create_photo(fp_left)
                 self.game_viewer_right.create_photo(fp_right)
+                
+                # Update imperfect CNN labels for new images
+                try:
+                    if hasattr(self, 'left_cnn_label') and hasattr(self, 'right_cnn_label'):
+                        # Use correct image paths by joining with data_fp
+                        left_image_path = os.path.join(self.data_fp, self.image_left.Filename)
+                        right_image_path = os.path.join(self.data_fp, self.image_right.Filename)
+                        
+                        left_text = self.imperfect_cnn.get_display_text(left_image_path, "LEFT")
+                        right_text = self.imperfect_cnn.get_display_text(right_image_path, "RIGHT")
+                        
+                        self.left_cnn_label.config(text=left_text)
+                        self.right_cnn_label.config(text=right_text)
+                        print("Imperfect CNN labels updated for new images")
+                    else:
+                        print("CNN labels not found, skipping update")
+                except Exception as e:
+                    print("Exception updating imperfect CNN labels:", e)
 
         # Disable buttons that would exceed time limit
         if remaining > 0 and remaining_time > 0:

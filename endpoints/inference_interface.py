@@ -12,7 +12,7 @@ from gameplay.scorekeeper import ScoreKeeper
 from gameplay.humanoid import Humanoid
 
 from models.PPO import ActorCritic, PPO
-from endpoints.heuristic_interface import Predictor
+# Predictor class removed from heuristic_interface
 
 from gym import Env, spaces
 from endpoints.data_parser import DataParser
@@ -51,7 +51,7 @@ class RLPredictor(object):
     
 class InferInterface(Env):
     def __init__(self, root, w, h, data_parser, scorekeeper, 
-                 classifier_model_file=os.path.join('models', 'baseline.pth'), 
+                 classifier_model_file=os.path.join('models', 'transfer_status_baseline.pth'), 
                  rl_model_file=os.path.join('models', 'baselineRL.pth'), 
                  img_data_root='data', display=False):
         """
@@ -83,9 +83,11 @@ class InferInterface(Env):
 
         self.action_space = spaces.Discrete(self.environment_params['num_actions'])
         
-        # Initialize predictors
-        self.prob_predictor = Predictor(classes=self.environment_params['num_classes'], 
-                                      model_file=classifier_model_file)
+                # Initialize enhanced predictor (replaces old Predictor)
+        self.enhanced_predictor = EnhancedPredictor(
+            status_model_file=classifier_model_file,
+            occupation_model_file='models/optimized_4class_occupation.pth'
+        )
         self.action_predictor = RLPredictor(actions=self.environment_params['num_actions'],
                                           model_file=rl_model_file)
         
@@ -145,14 +147,25 @@ class InferInterface(Env):
             pil_img_left = Image.open(img_path_left)
             pil_img_right = Image.open(img_path_right)
             
-            self.current_humanoid_probs_left = self.prob_predictor.get_probs(pil_img_left)
-            self.current_humanoid_probs_right = self.prob_predictor.get_probs(pil_img_right)
+            # Use enhanced predictor to get status and occupation predictions
+            left_prediction = self.enhanced_predictor.predict_combined(self.current_image_left.Filename)
+            right_prediction = self.enhanced_predictor.predict_combined(self.current_image_right.Filename)
+            
+            # Extract status and occupation indices for RL observation
+            self.current_humanoid_probs_left = np.array([
+                ['healthy', 'injured', 'zombie'].index(left_prediction['status']),
+                ['Civilian', 'Child', 'Doctor', 'Police'].index(left_prediction['occupation'])
+            ])
+            self.current_humanoid_probs_right = np.array([
+                ['healthy', 'injured', 'zombie'].index(right_prediction['status']),
+                ['Civilian', 'Child', 'Doctor', 'Police'].index(right_prediction['occupation'])
+            ])
             
         except Exception as e:
             print(f"Error loading images: {e}")
-            # Fallback to random probabilities
-            self.current_humanoid_probs_left = np.ones(self.environment_params['num_classes']) / self.environment_params['num_classes']
-            self.current_humanoid_probs_right = np.ones(self.environment_params['num_classes']) / self.environment_params['num_classes']
+            # Fallback to random status and occupation indices
+            self.current_humanoid_probs_left = np.array([0, 0])  # [status_idx, occupation_idx]
+            self.current_humanoid_probs_right = np.array([0, 0])  # [status_idx, occupation_idx]
     
     def get_observation_space(self):
         """
@@ -220,7 +233,11 @@ class InferInterface(Env):
                     # Update vehicle storage when saving
                     current_capacity = self.scorekeeper.get_current_capacity()
                     if current_capacity > 0 and current_capacity <= len(self.observation_space["vehicle_storage_class_probs"]):
-                        self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = self.current_humanoid_probs_left
+                        # Only store status as one-hot vector
+                        status_idx = int(self.current_humanoid_probs_left[0])
+                        one_hot = np.zeros(self.environment_params['num_classes'])
+                        one_hot[status_idx] = 1.0
+                        self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = one_hot
                         
             elif action_idx == 4:  # SAVE_RIGHT
                 if not (self.scorekeeper.remaining_time <= 0 or self.scorekeeper.at_capacity()):
@@ -228,7 +245,11 @@ class InferInterface(Env):
                     # Update vehicle storage when saving
                     current_capacity = self.scorekeeper.get_current_capacity()
                     if current_capacity > 0 and current_capacity <= len(self.observation_space["vehicle_storage_class_probs"]):
-                        self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = self.current_humanoid_probs_right
+                        # Only store status as one-hot vector
+                        status_idx = int(self.current_humanoid_probs_right[0])
+                        one_hot = np.zeros(self.environment_params['num_classes'])
+                        one_hot[status_idx] = 1.0
+                        self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = one_hot
                         
             elif action_idx == 5:  # SCRAM
                 self.scorekeeper.scram(self.current_image_left, self.current_image_right)
