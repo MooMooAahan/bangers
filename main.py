@@ -49,11 +49,11 @@ class Main(object):
                     # Fix: Use image.Filename instead of image.fp for Image objects
                     action = simon.get_model_suggestion(image, self.scorekeeper.at_capacity())
                     if action == ActionCost.SKIP:
-                        self.scorekeeper.skip(image)
+                        self.scorekeeper.skip(image, image_left=image, image_right=image)
                     elif action == ActionCost.SQUISH:
-                        self.scorekeeper.squish(image)
+                        self.scorekeeper.squish(image, image_left=image, image_right=image)
                     elif action == ActionCost.SAVE:
-                        self.scorekeeper.save(image)
+                        self.scorekeeper.save(image, image_left=image, image_right=image)
                     elif action == ActionCost.SCRAM:
                         # Pass image for both left and right (or duplicate if only one side in heuristic mode)
                         self.scorekeeper.scram(image, image)

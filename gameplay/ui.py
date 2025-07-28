@@ -813,8 +813,7 @@ class UI(object):
         if remaining == 0 or remaining_time <= 0:
             self.update_ui(scorekeeper)  # Ensure clock and UI are updated before game end
             if self.log:
-                # End-of-game: log scram for all remaining, then write log and increment run id
-                scorekeeper.end_scram(route_position=self.movement_count)
+                # End-of-game: write log and increment run id
                 scorekeeper.save_log(final=True)
             self.capacity_meter.update_fill(0)
             self.game_viewer_left.delete_photo(None)
@@ -900,6 +899,9 @@ class UI(object):
             # Only load new images if route is not complete
             if not self.route_complete:
                 self.image_left, self.image_right = data_parser.get_random(side='left'), data_parser.get_random(side='right')
+                # Reset inspection state for new scenario
+                self.scorekeeper.inspected_left = False
+                self.scorekeeper.inspected_right = False
   
                 # self.humanoid_left, self.humanoid_right, scenario_number, scenario_desc, self.scenario_humanoid_attributes = data_parser.get_scenario()
                 # print(f"[UI DEBUG] Scenario {scenario_number}: left={scenario_desc[0]}, right={scenario_desc[1]}")
@@ -946,9 +948,9 @@ class UI(object):
         remaining_time = scorekeeper.remaining_time
         if remaining_time <= 0:
             # Disable all buttons when time runs out
-            self.button_menu.disable_buttons(0, 0, True)
-            self.left_button_menu.disable_buttons(0, 0, True)
-            self.right_button_menu.disable_buttons(0, 0, True)
+            self.button_menu.disable_buttons(0, 0, True, 0, 0, 1, 1)
+            self.left_button_menu.disable_buttons(0, 0, True, 0, 0, 1, 1)
+            self.right_button_menu.disable_buttons(0, 0, True, 0, 0, 1, 1)
             if hasattr(self, 'machine_menu'):
                 self.machine_menu.disable_buttons(0, 0, True)
             # Safely disable menu buttons if they exist
@@ -993,13 +995,22 @@ class UI(object):
         if hasattr(self, 'route_complete') and self.route_complete:
             return
             
+        # Get humanoid counts for capacity checking
+        left_humanoid_count = getattr(self.image_left, 'datarow', {}).get('HumanoidCount', 1) if hasattr(self, 'image_left') and self.image_left else 1
+        right_humanoid_count = getattr(self.image_right, 'datarow', {}).get('HumanoidCount', 1) if hasattr(self, 'image_right') and self.image_right else 1
+        current_capacity = len(self.scorekeeper.ambulance_people)
+        ambulance_capacity = self.scorekeeper.capacity
+        
         # Use the existing ButtonMenu.disable_buttons method
         # Note: ButtonMenu now handles Skip (index 0), Inspect (index 1), Squish (index 2), Save (index 3)
-        self.button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity)
+        self.button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity, 
+                                       current_capacity, ambulance_capacity, left_humanoid_count, right_humanoid_count)
         
         # Also disable the left and right button menus with the same logic
-        self.left_button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity)
-        self.right_button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity)
+        self.left_button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity,
+                                            current_capacity, ambulance_capacity, left_humanoid_count, right_humanoid_count)
+        self.right_button_menu.disable_buttons(remaining_time, remaining_humanoids, at_capacity,
+                                             current_capacity, ambulance_capacity, left_humanoid_count, right_humanoid_count)
         
             
     def reset_game(self, data_parser, data_fp):
@@ -1158,8 +1169,7 @@ class UI(object):
         self.route_complete = True  # Set flag to prevent new images from loading
         self.update_ui(self.scorekeeper)  # Ensure clock and UI are updated before end screen
         if self.log:
-            # End-of-game: log scram for all remaining, then write log and increment run id
-            self.scorekeeper.end_scram(route_position=self.movement_count)
+            # End-of-game: write log and increment run id
             self.scorekeeper.save_log(final=True)
         self.capacity_meter.update_fill(0)
         self.game_viewer_left.delete_photo(None)
