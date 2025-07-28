@@ -114,14 +114,34 @@ class IntroScreen:
         popup.transient(self.root)
         popup.grab_set()
         
-        # Create main frame
-        main_frame = tk.Frame(popup, padx=20, pady=20)
-        main_frame.pack(expand=True, fill="both")
+        # Create a canvas to hold the background image and UI elements
+        canvas = tk.Canvas(popup, width=800, height=600, highlightthickness=0)
+        canvas.pack(fill="both", expand=True)
         
-        # Title label
-        title_label = tk.Label(main_frame, text="Game Instructions", 
-                              font=("Arial", 18, "bold"), fg="#2E86AB")
-        title_label.pack(pady=(0, 20))
+        # Load and resize the city background image
+        try:
+            image_path = "images/city_background.png"
+            original_image = Image.open(image_path)
+            
+            # Resize image to fit the window (800x600)
+            resized_image = original_image.resize((800, 600), Image.Resampling.LANCZOS)
+            self.bg_image_instructions = ImageTk.PhotoImage(resized_image)  # Store reference
+            
+            # Place the background image on the canvas
+            canvas.create_image(0, 0, image=self.bg_image_instructions, anchor="nw")
+            
+            # Add a semi-transparent overlay to make text more readable
+            canvas.create_rectangle(0, 0, 800, 600, fill="black", stipple="gray50")
+            
+        except Exception as e:
+            print(f"Could not load city background image: {e}")
+            # Fallback to a solid color background
+            canvas.configure(bg="darkblue")
+        
+        # Title label with start screen styling
+        canvas.create_text(400, 40, text="Game Instructions", 
+                          font=("Helvetica", 24, "bold"), 
+                          fill="white", anchor="center")
         
         # Instructions text - using the same comprehensive text as show_rules
         instructions_text = (
@@ -160,30 +180,32 @@ class IntroScreen:
         )
         
         # Create a scrollable text widget for instructions
-        text_frame = tk.Frame(main_frame)
-        text_frame.pack(expand=True, fill="both", pady=(0, 20))
+        text_frame = tk.Frame(canvas, bg="#1a1a1a")
+        text_frame.place(relx=0.5, rely=0.5, anchor="center", width=700, height=400)
         
         # Create text widget with scrollbar
-        text_widget = tk.Text(text_frame, wrap="word", font=("Arial", 11),
-                             bg="#F8F9FA", fg="#2C3E50", relief="solid", bd=1,
-                             padx=15, pady=15)
+        text_widget = tk.Text(text_frame, wrap="word", font=("Arial", 12), 
+                             bg="#1a1a1a", fg="white", relief="flat",
+                             padx=20, pady=20, state="normal")
         scrollbar = tk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
         text_widget.configure(yscrollcommand=scrollbar.set)
         
-        # Pack text widget and scrollbar
+        # Pack the text widget and scrollbar
         text_widget.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
         
-        # Insert instructions text
+        # Insert the instructions text
         text_widget.insert("1.0", instructions_text)
-        text_widget.config(state="disabled")  # Make text read-only
+        text_widget.config(state="disabled")  # Make read-only
         
-        # Close button
-        close_btn = tk.Button(main_frame, text="Close", 
-                             command=popup.destroy,
-                             font=("Arial", 12), bg="#3498DB", fg="white",
-                             relief="raised", bd=2, padx=20, pady=5)
-        close_btn.pack()
+        # Add a close button with start screen styling
+        close_button = tk.Button(canvas, text="Close", 
+                               font=("Helvetica", 16, "bold"), 
+                               width=12, height=1,
+                               bg="#5B7B7A", fg="white",  # Green background, white text
+                               relief="raised", bd=3,
+                               command=popup.destroy)
+        canvas.create_window(400, 550, window=close_button, anchor="center")
     
     def run(self):
         self.root.mainloop()
@@ -618,7 +640,35 @@ class UI(object):
         self.clear_main_ui()
         # Set the root background to black
         self.root.configure(bg="black")
-        tk.Label(self.root, text="Game Rules", font=("Arial", 24, "bold"), fg="white", bg="black").pack(pady=20)
+        
+        # Create a canvas to hold the background image and UI elements
+        canvas = tk.Canvas(self.root, width=1280, height=800, highlightthickness=0)
+        canvas.pack(fill="both", expand=True)
+        
+        # Load and resize the city background image
+        try:
+            image_path = "images/city_background.png"
+            original_image = Image.open(image_path)
+            
+            # Resize image to fit the window (1280x800)
+            resized_image = original_image.resize((1280, 800), Image.Resampling.LANCZOS)
+            self.bg_image_rules = ImageTk.PhotoImage(resized_image)  # Store reference
+            
+            # Place the background image on the canvas
+            canvas.create_image(0, 0, image=self.bg_image_rules, anchor="nw")
+            
+            # Add a semi-transparent overlay to make text more readable
+            canvas.create_rectangle(0, 0, 1280, 800, fill="black", stipple="gray50")
+            
+        except Exception as e:
+            print(f"Could not load city background image: {e}")
+            # Fallback to a solid color background
+            canvas.configure(bg="darkblue")
+        
+        # Title with start screen styling
+        canvas.create_text(640, 60, text="Game Rules", 
+                          font=("Helvetica", 28, "bold"), 
+                          fill="white", anchor="center")
         
         rules_text = (
             "Welcome to Team Splice (SGAI 2025)!\n\n"
@@ -655,10 +705,32 @@ class UI(object):
             "• Remember: You can only save one set per scenario!"
         )
 
-        tk.Label(self.root, text=rules_text, font=("Arial", 12), justify="left", padx=20, fg="white", bg="black").pack()
+        # Create a scrollable text widget for rules
+        text_frame = tk.Frame(canvas, bg="#1a1a1a")
+        canvas.create_window(640, 400, window=text_frame, anchor="center", width=1000, height=500)
+        
+        # Create text widget with scrollbar
+        text_widget = tk.Text(text_frame, wrap="word", font=("Arial", 14), 
+                             bg="#1a1a1a", fg="white", relief="flat",
+                             padx=30, pady=30, state="normal")
+        scrollbar = tk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
+        text_widget.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack the text widget and scrollbar
+        text_widget.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Insert the rules text
+        text_widget.insert("1.0", rules_text)
+        text_widget.config(state="disabled")  # Make read-only
 
-        tk.Button(self.root, text="Back to Game", font=("Arial", 14), fg="black", bg="white",
-              command=self.restore_main_ui).pack(pady=30)
+        # Back button with start screen styling
+        back_button = tk.Button(canvas, text="Back to Game", 
+                               font=("Helvetica", 16, "bold"), 
+                               fg="white", bg="#5B7B7A",  # Green background like start screen
+                               relief="raised", bd=3, width=15, height=1,
+                               command=self.restore_main_ui)
+        canvas.create_window(640, 700, window=back_button, anchor="center")
 
     def update_ui(self, scorekeeper):     
         # Use elapsed time to drive the clock forward
@@ -1148,20 +1220,50 @@ class UI(object):
         self.clear_main_ui()
         # Set the root background to black
         self.root.configure(bg="black")
-
-    # Title
-        tk.Label(self.root, text="Upgrade Shop", font=("Arial", 24, "bold"), fg="white", bg="black").pack(pady=20)
-
-    # Money display
-        money = self.scorekeeper.upgrade_manager.get_money()
-        money_label = tk.Label(self.root, text=f"Money: ${money}", font=("Arial", 16), fg="white", bg="black")
-        money_label.pack(pady=10)
-
-    # Each upgrade
-        colors = ["#ff6666", "#66ff66", "#6666ff"]  # Red, Green, Blue
-        color_index = 0
         
-        for name, info in self.scorekeeper.upgrade_manager.upgrades.items():
+        # Create a canvas to hold the background image and UI elements
+        canvas = tk.Canvas(self.root, width=1280, height=800, highlightthickness=0)
+        canvas.pack(fill="both", expand=True)
+        
+        # Load and resize the city background image
+        try:
+            image_path = "images/city_background.png"
+            original_image = Image.open(image_path)
+            
+            # Resize image to fit the window (1280x800)
+            resized_image = original_image.resize((1280, 800), Image.Resampling.LANCZOS)
+            self.bg_image_upgrades = ImageTk.PhotoImage(resized_image)  # Store reference
+            
+            # Place the background image on the canvas
+            canvas.create_image(0, 0, image=self.bg_image_upgrades, anchor="nw")
+            
+            # Add a semi-transparent overlay to make text more readable
+            canvas.create_rectangle(0, 0, 1280, 800, fill="black", stipple="gray50")
+            
+        except Exception as e:
+            print(f"Could not load city background image: {e}")
+            # Fallback to a solid color background
+            canvas.configure(bg="darkblue")
+
+        # Title with start screen styling
+        canvas.create_text(640, 60, text="Upgrade Shop", 
+                          font=("Helvetica", 28, "bold"), 
+                          fill="white", anchor="center")
+
+        # Money display with start screen styling
+        money = self.scorekeeper.upgrade_manager.get_money()
+        money_label = tk.Label(canvas, text=f"Money: ${money}", 
+                              font=("Helvetica", 18, "bold"), 
+                              fg="white", bg="#1a1a1a")
+        canvas.create_window(640, 120, window=money_label, anchor="center")
+
+        # Create a frame for upgrades with dark background
+        upgrades_frame = tk.Frame(canvas, bg="#1a1a1a")
+        canvas.create_window(640, 400, window=upgrades_frame, anchor="center")
+
+        # Each upgrade with start screen styling in a grid layout
+        upgrades_list = list(self.scorekeeper.upgrade_manager.upgrades.items())
+        for i, (name, info) in enumerate(upgrades_list):
             upgrade_label = name.replace("_", " ").title()
             level = info["level"]
             cost = info["cost"]
@@ -1179,19 +1281,30 @@ class UI(object):
             btn_text = f"{upgrade_label} (Level {level})"
             if level >= self.scorekeeper.upgrade_manager.upgrades[name]["max"]:
                 btn_text += " (MAX)"
-                btn = tk.Button(self.root, text=btn_text, font=("Arial", 12),
-                            state='disabled', bg="#dddddd", disabledforeground="gray")
+                btn = tk.Button(upgrades_frame, text=btn_text, 
+                               font=("Helvetica", 14, "bold"),
+                               state='disabled', bg="#4A6B6A", fg="gray",
+                               relief="raised", bd=3, width=20, height=2)
             else:
                 btn_text += f" - ${cost}"
-                btn = tk.Button(self.root, text=btn_text, font=("Arial", 12), command=make_purchase, 
-                               fg="black", bg=colors[color_index % len(colors)])
+                btn = tk.Button(upgrades_frame, text=btn_text, 
+                               font=("Helvetica", 14, "bold"),
+                               command=make_purchase, 
+                               fg="white", bg="#5B7B7A",  # Green background like start screen
+                               relief="raised", bd=3, width=20, height=2)
 
-            btn.pack(pady=5)
-            color_index += 1
+            # Arrange in a 2-column grid
+            row = i // 2
+            col = i % 2
+            btn.grid(row=row, column=col, padx=20, pady=10, sticky="ew")
 
-    # Back button
-        tk.Button(self.root, text="Back to Game", font=("Arial", 14), fg="black", bg="white",
-                command=self.restore_main_ui).pack(pady=30)
+        # Back button with start screen styling
+        back_button = tk.Button(canvas, text="Back to Game", 
+                               font=("Helvetica", 16, "bold"), 
+                               fg="white", bg="#5B7B7A",  # Green background like start screen
+                               relief="raised", bd=3, width=15, height=1,
+                               command=self.restore_main_ui)
+        canvas.create_window(640, 700, window=back_button, anchor="center")
 
     def print_scenario_side_attributes(self, side):
 
