@@ -58,13 +58,14 @@ class GameViewer(object):
 
 
     def display_score(self, score,final_score=None, accuracy=None):
-        tk.Label(self.canvas, text="FINAL SCORE", font=("Arial", 30)).pack(anchor=tk.NW)
-        tk.Label(self.canvas, text="Killed {}".format(score["killed"]), font=("Arial", 15)).pack(anchor=tk.NW)
-        tk.Label(self.canvas, text="Saved {}".format(score["saved"]), font=("Arial", 15)).pack(anchor=tk.NW)
+        from ui_elements.theme import FINAL_FONT_HEADER, FINAL_FONT_SUB
+        tk.Label(self.canvas, text="FINAL SCORE", font=FINAL_FONT_HEADER).pack(anchor=tk.NW)
+        tk.Label(self.canvas, text="Killed {}".format(score["killed"]), font=FINAL_FONT_SUB).pack(anchor=tk.NW)
+        tk.Label(self.canvas, text="Saved {}".format(score["saved"]), font=FINAL_FONT_SUB).pack(anchor=tk.NW)
         if final_score is not None:
-            tk.Label(self.canvas, text="Final Score: {}".format(final_score), font=("Arial", 15)).pack(anchor=tk.NW)
+            tk.Label(self.canvas, text="Final Score: {}".format(final_score), font=FINAL_FONT_SUB).pack(anchor=tk.NW)
         if accuracy is not None:
-            tk.Label(self.canvas, text="Accuracy: {:.2f}%".format(accuracy), font=("Arial", 15)).pack(anchor=tk.NW)
+            tk.Label(self.canvas, text="Accuracy: {:.2f}%".format(accuracy), font=FINAL_FONT_SUB).pack(anchor=tk.NW)
 
 
 def display_photo(img_path, w, h):

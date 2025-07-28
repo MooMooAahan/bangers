@@ -59,14 +59,17 @@ class IntroScreen:
             # Fallback to a solid color background
             self.canvas.configure(bg="darkblue")
         
+        # Import theme fonts
+        from ui_elements.theme import UPGRADE_FONT, TITLE_FONT_FOR_CURRENT_TIME
+        
         # Add the title text directly on the canvas (truly transparent)
         self.canvas.create_text(300, 60, text="Team Splice (SGAI 2025)",
-                               font=("Helvetica", 20, "bold"), 
+                               font=TITLE_FONT_FOR_CURRENT_TIME, 
                                fill="white", anchor="center")
         
         # Add the start button directly on the canvas (positioned to the left)
         self.start_button = tk.Button(self.canvas, text="Start Game", 
-                                    font=("Helvetica", 16, "bold"), 
+                                    font=UPGRADE_FONT, 
                                     width=12, height=1,
                                     bg="#5B7B7A", fg="white",  # Green background, white text
                                     relief="raised", bd=3,
@@ -75,7 +78,7 @@ class IntroScreen:
         
         # Add the instructions button directly on the canvas (positioned to the right)
         self.instructions_button = tk.Button(self.canvas, text="Instructions", 
-                                           font=("Helvetica", 16, "bold"), 
+                                           font=UPGRADE_FONT, 
                                            width=12, height=1,
                                            bg="#5B7B7A", fg="white",  # Green background, white text
                                            relief="raised", bd=3,
@@ -97,8 +100,9 @@ class IntroScreen:
     
     def show_loading(self):
         # Add loading text at the bottom of the screen
+        from ui_elements.theme import UPGRADE_FONT
         self.loading_text = self.canvas.create_text(300, 325, text="Loading...",
-                                                   font=("Helvetica", 14, "bold"), 
+                                                   font=UPGRADE_FONT, 
                                                    fill="white", anchor="center")
         
         # Force update to show the loading text immediately
@@ -141,8 +145,9 @@ class IntroScreen:
             canvas.configure(bg="darkblue")
         
         # Title label with start screen styling
+        from ui_elements.theme import TITLE_FONT_FOR_CURRENT_TIME
         canvas.create_text(400, 40, text="Game Instructions", 
-                          font=("Helvetica", 24, "bold"), 
+                          font=TITLE_FONT_FOR_CURRENT_TIME, 
                           fill="white", anchor="center")
         
         # Instructions text - using the same comprehensive text as show_rules
@@ -186,7 +191,8 @@ class IntroScreen:
         text_frame.place(relx=0.5, rely=0.5, anchor="center", width=700, height=400)
         
         # Create text widget with scrollbar
-        text_widget = tk.Text(text_frame, wrap="word", font=("Arial", 12), 
+        from ui_elements.theme import LABEL_FONT
+        text_widget = tk.Text(text_frame, wrap="word", font=LABEL_FONT, 
                              bg="#1a1a1a", fg="white", relief="flat",
                              padx=20, pady=20, state="normal")
         scrollbar = tk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
@@ -202,7 +208,7 @@ class IntroScreen:
         
         # Add a close button with start screen styling
         close_button = tk.Button(canvas, text="Close", 
-                               font=("Helvetica", 16, "bold"), 
+                               font=UPGRADE_FONT, 
                                width=12, height=1,
                                bg="#5B7B7A", fg="white",  # Green background, white text
                                relief="raised", bd=3,
@@ -236,19 +242,19 @@ class UI(object):
         self.root.resizable(False, False)
         
         # Create ambulance view as underlay FIRST
-        try:
-            print("Creating ambulance view")
-            self.ambulance_overlay = AmbulanceOverlay(self.root, w, h)
-            self.ambulance_overlay.place(0, 0)  # Place at the very bottom layer
-            print("Ambulance view created and placed")
-        except Exception as e:
-            print("Exception creating ambulance view:", e)
+        # try:
+        #     print("Creating ambulance view")
+        #     self.ambulance_overlay = AmbulanceOverlay(self.root, w, h)
+        #     self.ambulance_overlay.place(0, 0)  # Place at the very bottom layer
+        #     print("Ambulance view created and placed")
+        # except Exception as e:
+        #     print("Exception creating ambulance view:", e)
         
         # Create menu bar AFTER overlay so it appears on top
         self.create_menu_bar()
         self.false_saves = 0 
         # Time management variables
-        self.total_time = 960  # 16 hours in minutes
+        self.total_time = 720  # 12 hours in minutes
         # self.elapsed_time removed; time is managed by ScoreKeeper
         self.scorekeeper = scorekeeper  # Store scorekeeper reference
         
@@ -399,7 +405,7 @@ class UI(object):
         self.root.bind("<Delete>", self.game_viewer_left.delete_photo)
         self.root.bind("<Delete>", self.game_viewer_right.delete_photo)
         # Display the countdown
-        init_h = 12
+        init_h = 8
         init_m = 0
         try:
             print("Creating clock")
@@ -498,13 +504,13 @@ class UI(object):
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
         
         # Recreate ambulance view as underlay FIRST
-        try:
-            print("Recreating ambulance view")
-            self.ambulance_overlay = AmbulanceOverlay(self.root, w, h)
-            self.ambulance_overlay.place(0, 0)  # Place at the very bottom layer
-            print("Ambulance view recreated and placed")
-        except Exception as e:
-            print("Exception recreating ambulance view:", e)
+        # try:
+        #     print("Recreating ambulance view")
+        #     self.ambulance_overlay = AmbulanceOverlay(self.root, w, h)
+        #     self.ambulance_overlay.place(0, 0)  # Place at the very bottom layer
+        #     print("Ambulance view recreated and placed")
+        # except Exception as e:
+        #     print("Exception recreating ambulance view:", e)
         
         # Recreate the menu bar AFTER overlay so it appears on top
         self.create_menu_bar()
@@ -559,7 +565,7 @@ class UI(object):
         self.game_viewer_right.canvas.place(x=center_x - offset + image_width + horizontal_gap, y=y_top)
         
         # Recreate clock
-        init_h = 12
+        init_h = 8
         init_m = 0
         self.clock = Clock(self.root, w, h, init_h, init_m)
         
@@ -650,19 +656,22 @@ class UI(object):
         main_frame = tk.Frame(popup, padx=20, pady=20)
         main_frame.pack(expand=True, fill="both")
         
+        # Import theme fonts
+        from ui_elements.theme import UPGRADE_FONT, LABEL_FONT
+        
         # Title label
         if action_name == "Save":
             title_label = tk.Label(main_frame, text=f"Saving", 
-                              font=("Arial", 16, "bold"), fg="#2E86AB")
+                              font=UPGRADE_FONT, fg="#2E86AB")
             title_label.pack(pady=(0, 15))
         else:
             title_label = tk.Label(main_frame, text=f"{action_name}ing", 
-                              font=("Arial", 16, "bold"), fg="#2E86AB")
+                              font=UPGRADE_FONT, fg="#2E86AB")
             title_label.pack(pady=(0, 15))
         
         # Instructions text with highlighting
         instructions_label = tk.Label(main_frame, text=instructions_text, 
-                                    justify="center", anchor="center", font=("Arial", 12),
+                                    justify="center", anchor="center", font=LABEL_FONT,
                                     fg="#E74C3C", bg="#FDF2E9", 
                                     relief="solid", bd=1, padx=15, pady=15)
         instructions_label.pack(expand=True, fill="both", pady=(0, 15))
@@ -670,7 +679,7 @@ class UI(object):
         # Close button
         close_btn = tk.Button(main_frame, text="Close", 
                              command=popup.destroy,
-                             font=("Arial", 12), bg="#3498DB", fg="white",
+                             font=LABEL_FONT, bg="#3498DB", fg="white",
                              relief="raised", bd=2, padx=20, pady=5)
         close_btn.pack()
 
@@ -706,7 +715,7 @@ class UI(object):
         
         # Title with start screen styling
         canvas.create_text(640, 60, text="Game Rules", 
-                          font=("Helvetica", 28, "bold"), 
+                          font=("Arial", 18, "bold"), 
                           fill="white", anchor="center")
         
         rules_text = (
@@ -749,7 +758,7 @@ class UI(object):
         canvas.create_window(640, 400, window=text_frame, anchor="center", width=1000, height=500)
         
         # Create text widget with scrollbar
-        text_widget = tk.Text(text_frame, wrap="word", font=("Arial", 14), 
+        text_widget = tk.Text(text_frame, wrap="word", font=("Arial", 13), 
                              bg="#1a1a1a", fg="white", relief="flat",
                              padx=30, pady=30, state="normal")
         scrollbar = tk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
@@ -765,7 +774,7 @@ class UI(object):
 
         # Back button with start screen styling
         back_button = tk.Button(canvas, text="Back to Game", 
-                               font=("Helvetica", 16, "bold"), 
+                               font=("Arial", 14, "bold"), 
                                fg="white", bg="#5B7B7A",  # Green background like start screen
                                relief="raised", bd=3, width=15, height=1,
                                command=self.restore_main_ui)
@@ -822,9 +831,10 @@ class UI(object):
             # 'Game Complete' label 
             if route_complete:
                 final_score = self.scorekeeper.get_final_score(route_complete=True)
-                game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40), fg="white", bg="black", highlightthickness=0)
+                from ui_elements.theme import FINAL_FONT_HEADER, FINAL_FONT_SUB
+                game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=FINAL_FONT_HEADER, fg="white", bg="black", highlightthickness=0)
                 game_complete_label.pack(pady=(10, 5))
-                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16), fg="white", bg="black", highlightthickness=0)
+                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=FINAL_FONT_SUB, fg="white", bg="black", highlightthickness=0)
                 final_score_label.pack(pady=(5, 2))
                 # Disable all left side buttons and hide the map on game end
                 self.left_button_menu.disable_buttons(0, 0, True)
@@ -838,9 +848,9 @@ class UI(object):
                 self.draw_grid_map() # Redraw the map to hide it
             else:
                 final_score = self.scorekeeper.get_final_score(route_complete=False)
-                game_complete_label = tk.Label(self.final_score_frame, text="Game Complete", font=("Arial", 40), fg="white", bg="black", highlightthickness=0)
+                game_complete_label = tk.Label(self.final_score_frame, text="Game Complete", font=FINAL_FONT_HEADER, fg="white", bg="black", highlightthickness=0)
                 game_complete_label.pack(pady=(10, 5))
-                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16), fg="white", bg="black", highlightthickness=0)
+                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=FINAL_FONT_SUB, fg="white", bg="black", highlightthickness=0)
                 final_score_label.pack(pady=(5, 2))
                 # Disable all left side buttons and hide the map on game end
                 self.left_button_menu.disable_buttons(0, 0, True)
@@ -853,12 +863,13 @@ class UI(object):
                 self.map_canvas.place_forget()
                 self.draw_grid_map() # Redraw the map to hide it
             # Scoring details
-            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
+            from ui_elements.theme import LABEL_FONT
+            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
             killed_label.pack()
-            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
+            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
             saved_label.pack()
             
-            zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
+            zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
             zombie_ambu.pack()
 
             # accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
@@ -1102,7 +1113,8 @@ class UI(object):
         x = c * self.cell_size + 10 + self.cell_size // 2
         y = r * self.cell_size + 10 + self.cell_size // 2
         self.map_canvas.create_oval(x-14, y-14, x+14, y+14, fill="#fff", outline="#3498db", width=3)
-        self.map_canvas.create_text(x, y, text="🚑", font=("Arial", 14))
+        from ui_elements.theme import LABEL_FONT
+        self.map_canvas.create_text(x, y, text="🚑", font=LABEL_FONT)
 
     def move_ambulance_by_cell(self):
         # Don't move if route is already complete
@@ -1160,23 +1172,26 @@ class UI(object):
         # Create a new frame for the final score block
         self.final_score_frame = tk.Frame(self.root, width=300, height=300,bg="black",highlightthickness=0)
         self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
+        # Import theme fonts
+        from ui_elements.theme import FINAL_FONT_HEADER, FINAL_FONT_SUB, LABEL_FONT
+        
         # 'Route Complete' label
-        game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40),fg="white",bg="black",highlightthickness=0)
+        game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=FINAL_FONT_HEADER,fg="white",bg="black",highlightthickness=0)
         game_complete_label.pack(pady=(10, 5))
         # 'Final Score' label
-        final_score_label = tk.Label(self.final_score_frame, text=f"FINAL SCORE: {final_score}", font=("Arial", 16),fg="white",bg="black",highlightthickness=0)
+        final_score_label = tk.Label(self.final_score_frame, text=f"FINAL SCORE: {final_score}", font=FINAL_FONT_SUB,fg="white",bg="black",highlightthickness=0)
         final_score_label.pack(pady=(5, 2))
         # Scoring details
-        killed_label = tk.Label(self.final_score_frame, text=f"Killed {self.scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=("Arial", 12),fg="white",bg="black",highlightthickness=0)
+        killed_label = tk.Label(self.final_score_frame, text=f"Killed {self.scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=LABEL_FONT,fg="white",bg="black",highlightthickness=0)
         killed_label.pack()
-        saved_label = tk.Label(self.final_score_frame, text=f"Saved {self.scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=("Arial", 12),fg="white",bg="black",highlightthickness=0)
+        saved_label = tk.Label(self.final_score_frame, text=f"Saved {self.scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=LABEL_FONT,fg="white",bg="black",highlightthickness=0)
         saved_label.pack()
-        zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
+        zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
         zombie_ambu.pack()
 
         zombies_saved_score_label = tk.Label(self.final_score_frame,
             text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
-            font=("Arial", 12),
+            font=LABEL_FONT,
             fg="white",
             bg="black",
             highlightthickness=0)
@@ -1192,7 +1207,7 @@ class UI(object):
         # )
         # accuracy_label.pack()
         # Replay button (only one)
-        self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(self.data_parser, self.data_fp))
+        self.replay_btn = tk.Button(self.final_score_frame, text="Replay", font=UPGRADE_FONT, command=lambda: self.reset_game(self.data_parser, self.data_fp))
         self.replay_btn.pack(pady=(10, 0))
         self.replay_btn.lift()  # Ensure the replay button is visible on top
         self.replay_btn.config(state='normal')
@@ -1291,14 +1306,15 @@ class UI(object):
             canvas.configure(bg="darkblue")
 
         # Title with start screen styling
+        from ui_elements.theme import TITLE_FONT_FOR_CURRENT_TIME, UPGRADE_FONT
         canvas.create_text(640, 60, text="Upgrade Shop", 
-                          font=("Helvetica", 28, "bold"), 
+                          font=TITLE_FONT_FOR_CURRENT_TIME, 
                           fill="white", anchor="center")
 
         # Money display with start screen styling
         money = self.scorekeeper.upgrade_manager.get_money()
         money_label = tk.Label(canvas, text=f"Money: ${money}", 
-                              font=("Helvetica", 18, "bold"), 
+                              font=UPGRADE_FONT, 
                               fg="white", bg="#1a1a1a")
         canvas.create_window(640, 120, window=money_label, anchor="center")
 
@@ -1326,22 +1342,22 @@ class UI(object):
             if level >= self.scorekeeper.upgrade_manager.upgrades[name]["max"]:
                 btn_text += " (MAX)"
                 btn = tk.Button(upgrades_frame, text=btn_text, 
-                               font=("Helvetica", 14, "bold"),
+                               font=UPGRADE_FONT,
                                state='disabled', bg="#4A6B6A", fg="gray",
-                               relief="raised", bd=3, width=30, height=2)
+                               relief="raised", bd=3, width=50, height=2)
             else:
                 btn_text += f" - ${cost}"
                 btn = tk.Button(upgrades_frame, text=btn_text, 
-                               font=("Helvetica", 14, "bold"),
+                               font=UPGRADE_FONT,
                                command=make_purchase, 
                                fg="white", bg="#5B7B7A",  # Green background like start screen
-                               relief="raised", bd=3, width=30, height=2)
+                               relief="raised", bd=3, width=50, height=2)
 
             btn.pack(pady=5)
 
         # Back button with start screen styling
         back_button = tk.Button(canvas, text="Back to Game", 
-                               font=("Helvetica", 16, "bold"), 
+                               font=UPGRADE_FONT, 
                                fg="white", bg="#5B7B7A",  # Green background like start screen
                                relief="raised", bd=3, width=15, height=1,
                                command=self.restore_main_ui)
@@ -1392,7 +1408,8 @@ class UI(object):
 
         canvas.delete('all')
         canvas.create_rectangle(1, 1, canvas.winfo_reqwidth() - 2, canvas.winfo_reqheight() - 2, outline="black", width=2)
-        canvas.create_text(10, 10, anchor='nw', text=text, font=("Arial", 12))
+        from ui_elements.theme import LABEL_FONT
+        canvas.create_text(10, 10, anchor='nw', text=text, font=LABEL_FONT)
 
     def add_elapsed_time(self, minutes):
         self.scorekeeper.remaining_time -= minutes
@@ -1402,15 +1419,15 @@ class UI(object):
         self.menu_bar.place(x=0, y=0, width=1280, height=50)
 
     # Styled buttons
-        btn_font = ("Helvetica", 14, "bold")
+        from ui_elements.theme import UPGRADE_FONT, RULES_FONT
 
-        self.upgrade_btn = tk.Button(self.menu_bar, text="Upgrades", font=btn_font, bg="#ffffff", fg="#2E86AB",
+        self.upgrade_btn = tk.Button(self.menu_bar, text="Upgrades", font=UPGRADE_FONT, bg="#ffffff", fg="#2E86AB",
               relief="raised", padx=10, pady=5, command=self.show_upgrade_shop)
         self.upgrade_btn.pack(side="left", padx=1)
 
-        self.rules_btn = tk.Button(self.menu_bar, text="Rules", font=btn_font, bg="#ffffff", fg="#2E86AB",
+        self.rules_btn = tk.Button(self.menu_bar, text="Rules", font=RULES_FONT, bg="#ffffff", fg="#2E86AB",
               relief="raised", padx=10, pady=5, command=self.show_rules)
         self.rules_btn.pack(side="left", padx=1)
 
-        tk.Button(self.menu_bar, text="Exit", font=btn_font, bg="#ffffff", fg="#AA0000",
+        tk.Button(self.menu_bar, text="Exit", font=UPGRADE_FONT, bg="#ffffff", fg="#AA0000",
               relief="raised", padx=10, pady=5, command=self.root.quit).pack(side="left", padx=1)
