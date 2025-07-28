@@ -18,6 +18,15 @@ class Main(object):
     Base class for the SGAI 2023 game
     """
     def __init__(self, mode, log):
+        # Clear log.csv at game initialization (preserve headers)
+        if os.path.exists("log.csv"):
+            # Read the first line (headers) and write it back
+            with open("log.csv", "r") as f:
+                first_line = f.readline().strip()
+            with open("log.csv", "w") as f:
+                f.write(first_line + "\n")  # Write back only the headers
+            print("log.csv cleared at game initialization (headers preserved)")
+        
         self.data_fp = os.getenv("SGAI_DATA", default='data')
         self.data_parser = DataParser(self.data_fp)
 
@@ -40,11 +49,11 @@ class Main(object):
                     # Fix: Use image.Filename instead of image.fp for Image objects
                     action = simon.get_model_suggestion(image, self.scorekeeper.at_capacity())
                     if action == ActionCost.SKIP:
-                        self.scorekeeper.skip(image)
+                        self.scorekeeper.skip(image, image_left=image, image_right=image)
                     elif action == ActionCost.SQUISH:
-                        self.scorekeeper.squish(image)
+                        self.scorekeeper.squish(image, image_left=image, image_right=image)
                     elif action == ActionCost.SAVE:
-                        self.scorekeeper.save(image)
+                        self.scorekeeper.save(image, image_left=image, image_right=image)
                     elif action == ActionCost.SCRAM:
                         # Pass image for both left and right (or duplicate if only one side in heuristic mode)
                         self.scorekeeper.scram(image, image)
