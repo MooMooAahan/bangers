@@ -16,7 +16,7 @@ import warnings
 
 
 class Predictor(object):
-    def __init__(self, classes=21, model_file=os.path.join('models', 'transfer_status_baseline.pth')):
+    def __init__(self, classes=3, model_file=os.path.join('models', 'transfer_status_baseline.pth')):
         self.classes = classes
         self.net = None
         self.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
@@ -24,29 +24,19 @@ class Predictor(object):
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
-        self.is_model_loaded: bool = self._load_model(model_file)
+        self.is_model_loaded: bool = self._load_model(model_file, classes)
         if not self.is_model_loaded:
             warnings.warn("Model not loaded, resorting to random prediction")
 
-    def _load_model(self, weights_path, num_classes=21):
+    def _load_model(self, weights_path, num_classes=3):
         try:
-            # Load state dict first to determine FC layer size
+            # Load the TransferStatusCNN model (3-class system)
+            self.net = TransferStatusCNN(num_classes=3)
             state_dict = torch.load(weights_path, map_location=self.device)
-            
-            # Extract FC layer dimensions from saved model  
-            fc_input_size = state_dict['fc.weight'].shape[1]
-            
-            # Create model and initialize FC layer with correct size
-            self.net = DefaultCNN(num_classes, input_size=512)
-            self.net.fc = torch.nn.Linear(fc_input_size, num_classes)
-            self.net.feature_size = fc_input_size
-            
-            # Load the state dict
             self.net.load_state_dict(state_dict)
             self.net.to(self.device)
             self.net.eval()
-            print("✅ Loaded enhanced 21-class CNN model successfully")
-            print(f"   FC layer expects {fc_input_size} features")
+            print("✅ Loaded TransferStatusCNN model successfully (3-class system)")
             return True
         except Exception as e:
             print(f"❌ Failed to load CNN model: {e}")
@@ -88,17 +78,18 @@ class Predictor(object):
         predicted_idx = np.argmax(probs)
         confidence = probs[predicted_idx]
         
-        # Get enhanced class name
-        enhanced_class = Humanoid.int_to_enhanced_class(predicted_idx)
+        # Map 3-class indices to status
+        status_classes = ['healthy', 'injured', 'zombie']
+        status = status_classes[predicted_idx] if predicted_idx < len(status_classes) else 'healthy'
         
-        # Parse to status and occupation
-        status, occupation = Humanoid.parse_enhanced_class(enhanced_class)
+        # For now, assume civilian occupation (can be enhanced later with occupation CNN)
+        occupation = 'civilian'
         
         return {
             'status': status,
             'occupation': occupation, 
             'confidence': confidence,
-            'enhanced_class': enhanced_class,
+            'enhanced_class': f"{status}_{occupation}",
             'all_probs': probs
         }
     
@@ -145,6 +136,10 @@ class HeuristicInterface(object):
             print(f"   Device: {self.device}")
             self.model = None
             warnings.warn("Model not loaded, resorting to random prediction")
+        
+        # Initialize predictor for enhanced predictions
+        self.predictor = Predictor(classes=3, model_file=model_file)
+        self.img_data_root = 'data/modified_dataset'  # Set the correct image data root
 
     def _load_model(self, weights_path, num_classes=4):
         try:
