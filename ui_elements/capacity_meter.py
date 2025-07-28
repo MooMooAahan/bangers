@@ -25,9 +25,9 @@ class CapacityMeter(object):
         self.bg_image = Image.open(image_path)
         canvas_width = int(self.canvas.winfo_width())
         canvas_height = int(self.canvas.winfo_height())
-        # Scale image by 1.20x but keep aspect ratio
-        max_width = int(canvas_width * 1.20)
-        max_height = int(canvas_height * 1.20)
+        # Scale image by 1.45x but keep aspect ratio
+        max_width = int(canvas_width * 1.45)
+        max_height = int(canvas_height * 1.45)
         img_w, img_h = self.bg_image.size
         scale = min(max_width / img_w, max_height / img_h)
         new_w = int(img_w * scale)
@@ -45,6 +45,9 @@ class CapacityMeter(object):
         
         # Enable clicks after a short delay to prevent initialization dialogs
         self.canvas.after(1000, self._enable_clicks)
+        
+        # Bind click event to the canvas
+        self.canvas.bind("<Button-1>", self.on_ambulance_click)
 
     def on_ambulance_click(self, event=None):
         # Only show dialog if this is a real user click (not during initialization)
@@ -106,7 +109,7 @@ class CapacityMeter(object):
         canvas_width = int(self.canvas.winfo_width())
         # Dynamically center the circles horizontally
         total_circles_width = (cols * size) + ((cols - 1) * x_gap)
-        x_start = 70
+        x_start = 74
         y_start = 120  # Keep dots below the label and ambulance
         idx = 0
         for row in range(rows):

@@ -96,9 +96,11 @@ class Predictor(object):
 
 
 class HeuristicInterface(object):
-    def __init__(self, root=None, w=800, h=600, display=False, 
-                 model_file='models/transfer_status_baseline.pth', img_data_root='data'):
-        """
+  
+    def __init__(self, root, w, h, display=False, model_file=os.path.join('models', 'baseline.pth'),
+                 img_data_root='data'):
+    
+                """
         Heuristic interface that properly simulates the real game
         Uses both status and occupation CNNs via EnhancedPredictor
         """
