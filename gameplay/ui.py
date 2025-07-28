@@ -3,6 +3,7 @@ import tkinter as tk
 from ui_elements.button_menu import ButtonMenu, LeftButtonMenu, RightButtonMenu
 from ui_elements.capacity_meter import CapacityMeter
 from ui_elements.clock import Clock
+from ui_elements.ambulance_overlay import AmbulanceOverlay
 from endpoints.heuristic_interface import HeuristicInterface
 from ui_elements.game_viewer import GameViewer
 from ui_elements.machine_menu import MachineMenu
@@ -225,7 +226,6 @@ class UI(object):
         w, h = 1280, 800
         self.root = root  # Use the passed root instead of creating a new one
         self.root.configure(bg="black")
-        self.create_menu_bar()
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
@@ -233,6 +233,18 @@ class UI(object):
         y = (screen_height // 2) - (h // 2)
         self.root.geometry(f"{w}x{h}+{x}+{y}")
         self.root.resizable(False, False)
+        
+        # Create ambulance view as underlay FIRST
+        try:
+            print("Creating ambulance view")
+            self.ambulance_overlay = AmbulanceOverlay(self.root, w, h)
+            self.ambulance_overlay.place(0, 0)  # Place at the very bottom layer
+            print("Ambulance view created and placed")
+        except Exception as e:
+            print("Exception creating ambulance view:", e)
+        
+        # Create menu bar AFTER overlay so it appears on top
+        self.create_menu_bar()
         self.false_saves = 0 
         # Time management variables
         self.total_time = 720  # 12 hours in minutes
@@ -473,13 +485,22 @@ class UI(object):
         
         self.clear_main_ui()
         
-        # Recreate the menu bar
-        self.create_menu_bar()
-        
         # Recreate the main game components
         w, h = 1280, 800
         self.root.configure(bg="black")
         self.root.title("Beaverworks SGAI 2025 - Team Splice")
+        
+        # Recreate ambulance view as underlay FIRST
+        try:
+            print("Recreating ambulance view")
+            self.ambulance_overlay = AmbulanceOverlay(self.root, w, h)
+            self.ambulance_overlay.place(0, 0)  # Place at the very bottom layer
+            print("Ambulance view recreated and placed")
+        except Exception as e:
+            print("Exception recreating ambulance view:", e)
+        
+        # Recreate the menu bar AFTER overlay so it appears on top
+        self.create_menu_bar()
         
         # Recreate button menu
         self.button_menu = ButtonMenu(self.root, self.user_buttons)
