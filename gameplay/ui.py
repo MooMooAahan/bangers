@@ -431,7 +431,7 @@ class UI(object):
         self.grid_rows = len(self.map_array)
         self.grid_cols = len(self.map_array[0])
         self.cell_size = 35  # Small for better fit
-        self.grid_origin = (985, 495)  # location of map
+        self.grid_origin = (1015, 525)  # location of map (moved 30px right and 30px down)
         self.create_grid_map_canvas()  # Create the canvas first
         self.reset_map()               # Now it's safe to call reset_map()
         self.draw_grid_map()           # Draw the map with background image
@@ -476,11 +476,9 @@ class UI(object):
             widget.destroy()
      
     def rebuild_main_ui(self):
-    # Simply destroy the root window and restart the game
-        self.root.destroy()
-        # Create a new root window for the intro screen
-        new_root = tk.Tk()
-        IntroScreen(lambda: UI(self.data_parser, self.scorekeeper, self.data_fp, suggest=False, log=self.log, root=new_root), new_root)   
+    # Instead of destroying and recreating the root window, clear and reuse it
+        self.clear_main_ui()
+        IntroScreen(lambda: UI(self.data_parser, self.scorekeeper, self.data_fp, suggest=False, log=self.log, root=self.root), self.root)
     
     def restore_main_ui(self):
         """Restore the main game UI without restarting the game"""
@@ -581,7 +579,7 @@ class UI(object):
         
         # Recreate movement label
         self.movement_label = tk.Label(self.root, text=f"Route Progress: {self.movement_count}/20", 
-                                      font=("Arial", 12), bg="#000000", fg="#2E86AB",
+                                      font=("Arial", 12), bg="#404b44", fg="#2E86AB",
                                       relief="solid", bd=1, padx=10, pady=5)
         self.movement_label.place(x=1050, y=460)
         

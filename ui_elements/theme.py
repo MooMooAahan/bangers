@@ -1,12 +1,17 @@
+from tkinter import font
+
 # General layout
 BG_COLOR = "#f5f5f5"             # Light neutral background
-BORDER_COLOR = "#444444"         # Widget border color
+BORDER_COLOR = "#444444"
+
+# General Label Font
+LABEL_FONT = font.Font(family="Fixedsys", size=14)
 
 # Clock & Time
 BG_COLOR_FOR_CLOCK = "#000000"
-BG_COLOR_FOR_CLOCK_TITLE = "#000000"
+BG_COLOR_FOR_CLOCK_TITLE = "#5B7B7A"
 FG_COLOR_FOR_TIME = "#0D56F4"
-FG_COLOR_FOR_CURRENT_TIME = "#C22D2D"
+FG_COLOR_FOR_CURRENT_TIME = "#FFFFFF"
 TITLE_FONT_FOR_CURRENT_TIME = ("Arial", 18, "bold")
 TIME_FONT = ("Arial", 30, "bold")
 
