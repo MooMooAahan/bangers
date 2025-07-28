@@ -334,8 +334,11 @@ class UI(object):
         def update_button_texts():
             # Button order: Scram, Inspect, Squish, Save, Skip
             if hasattr(self, 'button_menu') and self.button_menu:
-                self.button_menu.buttons[1].config(text=f"Inspect ({get_inspect_cost()} mins)")
-                self.button_menu.buttons[0].config(text=get_scram_text())
+                self.button_menu.buttons[0].config(text=get_scram_text())  # Scram
+                self.button_menu.buttons[1].config(text=f"Inspect ({get_inspect_cost()} mins)")  # Inspect
+                self.button_menu.buttons[2].config(text="Squish (5 mins)")  # Squish
+                self.button_menu.buttons[3].config(text="Save (30 mins)")  # Save
+                self.button_menu.buttons[4].config(text="Skip (15 mins)")  # Skip
         self.update_button_texts = update_button_texts
 
         # Call update_button_texts after every UI update
