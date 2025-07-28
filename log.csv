@@ -1,1 +1,21 @@
 timestamp,local_run_id,route_position,humanoid_class,capacity,remaining_time,role,inspected,action,action_side
+2025-07-28T12:45:44.202637,11,0,"(healthy, corpse)","(0,10)",720,"(Civilian, Doctor)",NN,squish,right
+2025-07-28T12:45:45.299664,11,1,"(healthy, healthy, corpse)","(0,10)",715,"(Militant, Child, Child)",NN,squish,right
+2025-07-28T12:45:46.271527,11,2,"(healthy, corpse)","(0,10)",710,"(Child, Doctor)",NN,squish,right
+2025-07-28T12:45:49.001288,11,3,"(healthy, zombie)","(0,10)",705,"(Civilian, Civilian)",NN,squish,right
+2025-07-28T12:45:50.544026,11,4,"(corpse, healthy)","(0,10)",700,"(Doctor, Police)",NN,squish,right
+2025-07-28T12:45:52.002923,11,5,"(zombie, zombie, healthy)","(0,10)",695,"(Police, Police, Child)",NN,squish,right
+2025-07-28T12:45:53.401003,11,6,"(injured, healthy, healthy)","(0,10)",690,"(Civilian, Doctor, Child)",NN,squish,right
+2025-07-28T12:45:54.829081,11,7,"(healthy, healthy, healthy)","(0,10)",685,"(Police, Child, Police)",NN,squish,right
+2025-07-28T12:45:56.196464,11,8,"(zombie, healthy, healthy, healthy)","(0,10)",680,"(Doctor, Child, Civilian, Child)",NN,squish,right
+2025-07-28T12:45:58.649074,11,9,"(healthy, injured)","(0,10)",675,"(Civilian, Civilian)",NN,squish,right
+2025-07-28T12:46:00.163146,11,10,"(healthy, corpse)","(0,10)",670,"(Civilian, Police)",NN,squish,right
+2025-07-28T12:46:01.566875,11,11,"(, zombie, healthy)","(0,10)",665,"(, Police, Civilian)",NN,squish,right
+2025-07-28T12:46:02.808555,11,12,"(healthy, healthy, corpse)","(0,10)",660,"(Civilian, Civilian, Doctor)",NN,squish,right
+2025-07-28T12:46:04.180904,11,13,"(healthy, healthy, zombie)","(0,10)",655,"(Militant, Civilian, Doctor)",NN,squish,right
+2025-07-28T12:46:05.785822,11,14,"(healthy, )","(0,10)",650,"(Child, )",NN,squish,right
+2025-07-28T12:46:08.202990,11,15,"(healthy, healthy, healthy)","(0,10)",645,"(Child, Doctor, Civilian)",NN,squish,right
+2025-07-28T12:46:09.690865,11,16,"(zombie, zombie, healthy)","(0,10)",640,"(Police, Civilian, Civilian)",NN,squish,right
+2025-07-28T12:46:11.012511,11,17,"(zombie, healthy)","(0,10)",635,"(Police, Civilian)",NN,squish,right
+2025-07-28T12:46:12.985779,11,18,"(zombie, zombie)","(0,10)",630,"(Civilian, Militant)",NN,squish,right
+2025-07-28T12:46:14.829464,11,19,"(corpse, zombie)","(0,10)",625,"(Civilian, Police)",NN,squish,right
