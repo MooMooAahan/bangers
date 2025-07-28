@@ -15,6 +15,7 @@ import os
 from data_uploader import DataUploader
 
 
+
 class IntroScreen:
     def __init__(self, on_start_callback, root):
         self.root = tk.Toplevel(root)
@@ -44,6 +45,7 @@ class IntroScreen:
 
 class UI(object):
     def __init__(self, data_parser, scorekeeper, data_fp, suggest, log, root):
+
         # Initialize data uploader
         self.data_uploader = DataUploader()
         
@@ -469,7 +471,9 @@ class UI(object):
 
     def show_rules(self):
         self.clear_main_ui()
-        tk.Label(self.root, text="Game Rules", font=("Arial", 24, "bold")).pack(pady=20)
+        # Set the root background to black
+        self.root.configure(bg="black")
+        tk.Label(self.root, text="Game Rules", font=("Arial", 24, "bold"), fg="white", bg="black").pack(pady=20)
         
         rules_text = (
             "Game Rules:\n"
@@ -491,9 +495,9 @@ class UI(object):
             "- This is where we can add more rules in case we need to. \n\n"
         )
 
-        tk.Label(self.root, text=rules_text, font=("Arial", 12), justify="left", padx=20).pack()
+        tk.Label(self.root, text=rules_text, font=("Arial", 12), justify="left", padx=20, fg="white", bg="black").pack()
 
-        tk.Button(self.root, text="Back to Game", font=("Arial", 14),
+        tk.Button(self.root, text="Back to Game", font=("Arial", 14), fg="black", bg="white",
               command=self.restore_main_ui).pack(pady=30)
 
     def update_ui(self, scorekeeper):     
@@ -549,57 +553,58 @@ class UI(object):
             if hasattr(self, 'final_score_frame') and self.final_score_frame:
                 self.final_score_frame.destroy()
             # Create a new frame for the final score block
-            self.final_score_frame = tk.Frame(self.root, width=300, height=300)
+            self.final_score_frame = tk.Frame(self.root, width=300, height=300, bg="black", highlightthickness=0)
             self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
             # 'Game Complete' label 
             if route_complete:
                 final_score = self.scorekeeper.get_final_score(route_complete=True)
-                game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40))
+                game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40), fg="white", bg="black", highlightthickness=0)
                 game_complete_label.pack(pady=(10, 5))
-                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16))
+                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16), fg="white", bg="black", highlightthickness=0)
                 final_score_label.pack(pady=(5, 2))
-                self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
-                self.replay_btn.pack(pady=(10, 0))
-                self.replay_btn.lift()
-                self.replay_btn.config(state='normal')
+                # Disable all left side buttons and hide the map on game end
                 self.left_button_menu.disable_buttons(0, 0, True)
                 self.right_button_menu.disable_buttons(0, 0, True)
                 self.button_menu.disable_buttons(0, 0, True)
+                # Force disable all buttons to ensure they stay disabled
+                self.button_menu.force_disable_all_buttons()
+                self.left_button_menu.force_disable_all_buttons()
+                self.right_button_menu.force_disable_all_buttons()
                 self.map_canvas.place_forget()
-                self.draw_grid_map()
+                self.draw_grid_map() # Redraw the map to hide it
             else:
                 final_score = self.scorekeeper.get_final_score(route_complete=False)
-                game_complete_label = tk.Label(self.final_score_frame, text="Game Complete", font=("Arial", 40))
+                game_complete_label = tk.Label(self.final_score_frame, text="Game Complete", font=("Arial", 40), fg="white", bg="black", highlightthickness=0)
                 game_complete_label.pack(pady=(10, 5))
-                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16))
+                final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=("Arial", 16), fg="white", bg="black", highlightthickness=0)
                 final_score_label.pack(pady=(5, 2))
-                self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(data_parser, data_fp))
-                self.replay_btn.pack(pady=(10, 0))
-                self.replay_btn.lift()
-                self.replay_btn.config(state='normal')
+                # Disable all left side buttons and hide the map on game end
                 self.left_button_menu.disable_buttons(0, 0, True)
                 self.right_button_menu.disable_buttons(0, 0, True)
                 self.button_menu.disable_buttons(0, 0, True)
+                # Force disable all buttons to ensure they stay disabled
+                self.button_menu.force_disable_all_buttons()
+                self.left_button_menu.force_disable_all_buttons()
+                self.right_button_menu.force_disable_all_buttons()
                 self.map_canvas.place_forget()
-                self.draw_grid_map()
-            # 'Final Score' label
+                self.draw_grid_map() # Redraw the map to hide it
             # Scoring details
-            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=("Arial", 12))
+            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
             killed_label.pack()
-            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=("Arial", 12))
+            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
             saved_label.pack()
             
-        
-            score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12))
-            score_label.pack()
+            zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
+            zombie_ambu.pack()
 
-        
-
-            accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12))
-            accuracy_label.pack()
+            # accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
+            # accuracy_label.pack()
             zombies_saved_score_label = tk.Label(self.final_score_frame,
                 text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
-                font=("Arial", 12))
+                font=("Arial", 12),
+                fg="white",
+                bg="black",
+                highlightthickness=0)
             zombies_saved_score_label.pack()
 
             # Replay button
@@ -610,6 +615,10 @@ class UI(object):
             self.left_button_menu.disable_buttons(0, 0, True)
             self.right_button_menu.disable_buttons(0, 0, True)
             self.button_menu.disable_buttons(0, 0, True)
+            # Force disable all buttons to ensure they stay disabled
+            self.button_menu.force_disable_all_buttons()
+            self.left_button_menu.force_disable_all_buttons()
+            self.right_button_menu.force_disable_all_buttons()
             self.map_canvas.place_forget()
             self.draw_grid_map() # Redraw the map to hide it
         else:
@@ -654,13 +663,26 @@ class UI(object):
                 self.game_viewer_right.create_photo(fp_right)
 
         # Disable buttons that would exceed time limit
-        self.disable_buttons_if_insufficient_time(remaining_time, remaining, scorekeeper.at_capacity())
+        if remaining > 0 and remaining_time > 0:
+            self.disable_buttons_if_insufficient_time(remaining_time, remaining, scorekeeper.at_capacity())
 
     def check_game_end(self, data_fp, data_parser, scorekeeper):
         """Check if game should end due to time running out"""
         remaining_time = scorekeeper.remaining_time
         if remaining_time <= 0:
+            # Disable all buttons when time runs out
+            self.button_menu.disable_buttons(0, 0, True)
+            self.left_button_menu.disable_buttons(0, 0, True)
+            self.right_button_menu.disable_buttons(0, 0, True)
+            if hasattr(self, 'machine_menu'):
+                self.machine_menu.disable_buttons(0, 0, True)
+            # Safely disable menu buttons if they exist
+            if hasattr(self, 'rules_btn'):
+                self.rules_btn.config(state='disabled')
+            if hasattr(self, 'upgrade_btn'):
+                self.upgrade_btn.config(state='disabled')
             self.trigger_end_screen()
+
             # Upload data and clear log
             self.upload_data_and_clear_log()
 
@@ -872,32 +894,33 @@ class UI(object):
         game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=("Arial", 40),fg="white",bg="black",highlightthickness=0)
         game_complete_label.pack(pady=(10, 5))
         # 'Final Score' label
-        final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE", font=("Arial", 16),fg="white",bg="black",highlightthickness=0)
+        final_score_label = tk.Label(self.final_score_frame, text=f"FINAL SCORE: {final_score}", font=("Arial", 16),fg="white",bg="black",highlightthickness=0)
         final_score_label.pack(pady=(5, 2))
         # Scoring details
         killed_label = tk.Label(self.final_score_frame, text=f"Killed {self.scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=("Arial", 12),fg="white",bg="black",highlightthickness=0)
         killed_label.pack()
         saved_label = tk.Label(self.final_score_frame, text=f"Saved {self.scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=("Arial", 12),fg="white",bg="black",highlightthickness=0)
         saved_label.pack()
-        score_label = tk.Label(self.final_score_frame, text=f"Final Score: {final_score}", font=("Arial", 12),fg="white",bg="black",highlightthickness=0)
-        score_label.pack()
-        zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=("Arial", 12))
+        zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
         zombie_ambu.pack()
 
         zombies_saved_score_label = tk.Label(self.final_score_frame,
             text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
-            font=("Arial", 12))
-        zombies_saved_score_label.pack()
-
-        accuracy_label = tk.Label(
-            self.final_score_frame,
-            text=f"Accuracy: {accuracy:.2f}%",
             font=("Arial", 12),
             fg="white",
             bg="black",
-            highlightthickness=0
-        )
-        accuracy_label.pack()
+            highlightthickness=0)
+        zombies_saved_score_label.pack()
+
+        # accuracy_label = tk.Label(
+        #     self.final_score_frame,
+        #     text=f"Accuracy: {accuracy:.2f}%",
+        #     font=("Arial", 12),
+        #     fg="white",
+        #     bg="black",
+        #     highlightthickness=0
+        # )
+        # accuracy_label.pack()
         # Replay button (only one)
         self.replay_btn = tk.Button(self.final_score_frame, text="Replay", command=lambda: self.reset_game(self.data_parser, self.data_fp))
         self.replay_btn.pack(pady=(10, 0))
@@ -970,25 +993,35 @@ class UI(object):
 
     def show_upgrade_shop(self):
         self.clear_main_ui()
+        # Set the root background to black
+        self.root.configure(bg="black")
 
     # Title
-        tk.Label(self.root, text="Upgrade Shop", font=("Arial", 24, "bold")).pack(pady=20)
+        tk.Label(self.root, text="Upgrade Shop", font=("Arial", 24, "bold"), fg="white", bg="black").pack(pady=20)
 
     # Money display
         money = self.scorekeeper.upgrade_manager.get_money()
-        tk.Label(self.root, text=f"Money: ${money}", font=("Arial", 16)).pack(pady=10)
+        money_label = tk.Label(self.root, text=f"Money: ${money}", font=("Arial", 16), fg="white", bg="black")
+        money_label.pack(pady=10)
 
     # Each upgrade
+        colors = ["#ff6666", "#66ff66", "#6666ff"]  # Red, Green, Blue
+        color_index = 0
+        
         for name, info in self.scorekeeper.upgrade_manager.upgrades.items():
             upgrade_label = name.replace("_", " ").title()
             level = info["level"]
             cost = info["cost"]
 
             def make_purchase(n=name):
+                print(f"Attempting to purchase: {n}")
                 if self.scorekeeper.upgrade_manager.purchase(n):
-                    if n == "ambulance_capacity":
-                        self.capacity_meter.render(self.scorekeeper.capacity, self.capacity_meter.unit_size)
+                    print(f"Purchase successful: {n}")
+                    # Force immediate UI update and refresh for all upgrades
+                    self.root.update_idletasks()
                     self.show_upgrade_shop()  # Refresh the shop view
+                else:
+                    print(f"Purchase failed: {n}")
 
             btn_text = f"{upgrade_label} (Level {level})"
             if level >= self.scorekeeper.upgrade_manager.upgrades[name]["max"]:
@@ -997,12 +1030,14 @@ class UI(object):
                             state='disabled', bg="#dddddd", disabledforeground="gray")
             else:
                 btn_text += f" - ${cost}"
-                btn = tk.Button(self.root, text=btn_text, font=("Arial", 12), command=make_purchase)
+                btn = tk.Button(self.root, text=btn_text, font=("Arial", 12), command=make_purchase, 
+                               fg="black", bg=colors[color_index % len(colors)])
 
             btn.pack(pady=5)
+            color_index += 1
 
     # Back button
-        tk.Button(self.root, text="Back to Game", font=("Arial", 14),
+        tk.Button(self.root, text="Back to Game", font=("Arial", 14), fg="black", bg="white",
                 command=self.restore_main_ui).pack(pady=30)
 
     def print_scenario_side_attributes(self, side):
