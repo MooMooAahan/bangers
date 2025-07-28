@@ -65,7 +65,7 @@ def create_buttons(canvas, items):
             canvas,
             text=text,
             height=2,
-            width=15,
+            width=17,
             command=action,
             font=BUTTON_FONT,
             bg=color,
@@ -100,7 +100,7 @@ class LeftButtonMenu(object):
                 root,
                 text="L",
                 height=1,
-                width=7,
+                width=8,
                 font=BUTTON_FONT,
                 bg=color,
                 fg=FG_COLOR_FOR_BUTTON_TEXT,
@@ -144,7 +144,7 @@ class LeftButtonMenu(object):
 class RightButtonMenu(object):
     def __init__(self, root, items):
         self.buttons = []
-        x = 91            # Adjust horizontally to right side of main buttons
+        x = 101            # Adjust horizontally to right side of main buttons
         y_start = 190      # Match LeftButtonMenu start (below Inspect)
         y_gap = 80         # Match spacing of main buttons
 
@@ -161,7 +161,7 @@ class RightButtonMenu(object):
                 root,
                 text="R",
                 height=1,
-                width=7,
+                width=8,
                 font=BUTTON_FONT,
                 bg=color,
                 fg=FG_COLOR_FOR_BUTTON_TEXT,
