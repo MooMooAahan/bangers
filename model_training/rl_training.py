@@ -16,35 +16,23 @@ from gameplay.scorekeeper import ScoreKeeper
 from models.PPO import PPO
 
 
-def create_environment(data_root='data', model_file=os.path.join('models', 'baseline.pth')):
-    """
-    Creates and returns the RL training environment
-    """
-    # Initialize data parser and scorekeeper
-    data_parser = DataParser(data_root)
-    scorekeeper = ScoreKeeper(shift_len=480, capacity=10)  # 8 hour shift, 10 person capacity
+def create_environment():
+    """Create the training environment"""
+    from endpoints.training_interface import TrainInterface
     
-    # Create training interface
-    env = TrainInterface(
-        root=None,  # No display for training
-        data_parser=data_parser,
-        scorekeeper=scorekeeper,
-        classifier_model_file=model_file,
-        img_data_root=data_root,
-        display=False
-    )
-    
+    # Use the correct status model
+    env = TrainInterface(classifier_model_file='models/transfer_status_baseline.pth')
     return env
 
 
-def train(env=None, data_root='data', model_file=os.path.join('models', 'baseline.pth')):
-    print("============================================================================================")
+def train():
+    """Main training function"""
+    print("=" * 80)
     print("Starting RL Training for Zombie Apocalypse Decision Game")
-    print("============================================================================================")
-
-    # Create environment if not provided
-    if env is None:
-        env = create_environment(data_root, model_file)
+    print("=" * 80)
+    
+    # Create environment with correct model
+    env = TrainInterface(classifier_model_file='models/transfer_status_baseline.pth')
 
     env_name = "ZombieRL"
     
@@ -211,6 +199,10 @@ def train(env=None, data_root='data', model_file=os.path.join('models', 'baselin
             log_running_reward += current_ep_reward
             log_running_episodes += 1
             i_episode += 1
+            
+            # Debug: Print episode score at end of each episode
+            episode_score = env.scorekeeper.get_final_score()
+            print(f"Episode {i_episode-1} Final Score: {episode_score}")
 
     except KeyboardInterrupt:
         print("\nTraining interrupted by user")

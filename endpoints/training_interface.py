@@ -12,6 +12,7 @@ from gameplay.scorekeeper import ScoreKeeper
 from gameplay.humanoid import Humanoid
 from models.DefaultCNN import DefaultCNN
 from endpoints.heuristic_interface import Predictor
+from endpoints.enhanced_predictor import EnhancedPredictor
 
 from gym import Env, spaces
 from endpoints.data_parser import DataParser
@@ -19,7 +20,7 @@ from endpoints.data_parser import DataParser
 
 class TrainInterface(Env):
     def __init__(self, root=None, w=800, h=600, data_parser=None, scorekeeper=None, 
-                 classifier_model_file=os.path.join('models', 'baseline.pth'), 
+                 classifier_model_file=os.path.join('models', 'transfer_status_baseline.pth'), 
                  img_data_root='data', display=False):
         """
         initializes RL training interface
@@ -30,7 +31,7 @@ class TrainInterface(Env):
         """
         self.img_data_root = img_data_root
         self.data_parser = data_parser if data_parser else DataParser(img_data_root)
-        self.scorekeeper = scorekeeper if scorekeeper else ScoreKeeper(shift_len=480, capacity=10)
+        self.scorekeeper = scorekeeper if scorekeeper else ScoreKeeper(shift_len=480, capacity=10, display=display)
         self.display = display
 
         self.environment_params = {
@@ -41,24 +42,35 @@ class TrainInterface(Env):
         
         # Initialize observation space structure
         # Variables: [time_ratio, reward_scaled, capacity_ratio, zombie_ratio]
+        # Simplified: humanoid_class_probs now includes status + occupation for each side
+        # Left: [status(1), occupation(1)] + Right: [status(1), occupation(1)] = 4 total
         self.observation_space = {
             "variables": np.zeros(4),
             "vehicle_storage_class_probs": np.zeros((self.environment_params['car_capacity'], self.environment_params['num_classes'])),
-            "humanoid_class_probs": np.zeros(self.environment_params['num_classes'] * 2),  # Both left and right
+            "humanoid_class_probs": np.zeros(4),  # Simplified: 4 values (2 per side: status + occupation)
             "doable_actions": np.ones(self.environment_params['num_actions'], dtype=np.int64),
         }
 
         self.action_space = spaces.Discrete(self.environment_params['num_actions'])
         
-        # Initialize CNN predictor for observations
+        # Initialize enhanced CNN predictor for observations (status + occupation)
+        self.enhanced_predictor = EnhancedPredictor(
+            status_model_file=classifier_model_file,
+            occupation_model_file='models/optimized_4class_occupation.pth'
+        )
+        # Keep old predictor for backward compatibility
         self.predictor = Predictor(classes=self.environment_params['num_classes'], 
                                  model_file=classifier_model_file)
         
         # Initialize state
         self.current_image_left = None
         self.current_image_right = None
-        self.current_humanoid_probs_left = np.ones(self.environment_params['num_classes']) / self.environment_params['num_classes']
-        self.current_humanoid_probs_right = np.ones(self.environment_params['num_classes']) / self.environment_params['num_classes']
+        # Simplified: Store status and occupation for each side
+        self.current_humanoid_probs_left = np.array([0, 0])  # [status_idx, occupation_idx]
+        self.current_humanoid_probs_right = np.array([0, 0])  # [status_idx, occupation_idx]
+        # For backward compatibility
+        self.current_status_probs_left = np.ones(self.environment_params['num_classes']) / self.environment_params['num_classes']
+        self.current_status_probs_right = np.ones(self.environment_params['num_classes']) / self.environment_params['num_classes']
         
         self.reset()
 
@@ -76,11 +88,11 @@ class TrainInterface(Env):
         resets game for a new episode to run.
         returns observation space
         """
-        # Reset observation space - maintain consistent 4-element structure
+        # Reset observation space - simplified with status + occupation
         self.observation_space = {
             "variables": np.zeros(4),  # [time_ratio, reward_scaled, capacity_ratio, zombie_ratio]
             "vehicle_storage_class_probs": np.zeros((self.environment_params['car_capacity'], self.environment_params['num_classes'])),
-            "humanoid_class_probs": np.zeros(self.environment_params['num_classes'] * 2),  # Both left and right
+            "humanoid_class_probs": np.zeros(4),  # Simplified: 4 values (2 per side: status + occupation)
             "doable_actions": np.ones(self.environment_params['num_actions'], dtype=np.int64),
         }
         
@@ -115,17 +127,30 @@ class TrainInterface(Env):
             img_path_left = os.path.join(self.img_data_root, get_image_path(self.current_image_left))
             img_path_right = os.path.join(self.img_data_root, get_image_path(self.current_image_right))
             
-            pil_img_left = Image.open(img_path_left)
-            pil_img_right = Image.open(img_path_right)
+            # Get simplified predictions (status + occupation for both sides)
+            left_pred = self.enhanced_predictor.predict_combined(img_path_left, return_probabilities=True)
+            right_pred = self.enhanced_predictor.predict_combined(img_path_right, return_probabilities=True)
             
-            self.current_humanoid_probs_left = self.predictor.get_probs(pil_img_left)
-            self.current_humanoid_probs_right = self.predictor.get_probs(pil_img_right)
+            # Extract status and occupation indices (simplified: just the predicted class)
+            left_status_idx = np.argmax(left_pred['status_probabilities'])
+            left_occupation_idx = np.argmax(left_pred['occupation_probabilities'])
+            right_status_idx = np.argmax(right_pred['status_probabilities'])
+            right_occupation_idx = np.argmax(right_pred['occupation_probabilities'])
+            
+            self.current_humanoid_probs_left = np.array([left_status_idx, left_occupation_idx])
+            self.current_humanoid_probs_right = np.array([right_status_idx, right_occupation_idx])
+            
+            # For backward compatibility, keep status-only probabilities
+            self.current_status_probs_left = left_pred['status_probabilities']
+            self.current_status_probs_right = right_pred['status_probabilities']
             
         except Exception as e:
             print(f"Error loading images: {e}")
-            # Fallback to random probabilities
-            self.current_humanoid_probs_left = np.ones(self.environment_params['num_classes']) / self.environment_params['num_classes']
-            self.current_humanoid_probs_right = np.ones(self.environment_params['num_classes']) / self.environment_params['num_classes']
+            # Fallback to random indices
+            self.current_humanoid_probs_left = np.array([0, 0])  # [status_idx, occupation_idx]
+            self.current_humanoid_probs_right = np.array([0, 0])  # [status_idx, occupation_idx]
+            self.current_status_probs_left = np.ones(self.environment_params['num_classes']) / self.environment_params['num_classes']
+            self.current_status_probs_right = np.ones(self.environment_params['num_classes']) / self.environment_params['num_classes']
     
     def get_observation_space(self):
         """
@@ -133,10 +158,10 @@ class TrainInterface(Env):
         """        
         self.observation_space["doable_actions"] = np.array(self.scorekeeper.available_action_space(), dtype=np.int64)
         
-        # Include both left and right humanoid probabilities
-        # Concatenate left and right probs to give agent full scenario information
-        combined_probs = np.concatenate([self.current_humanoid_probs_left, self.current_humanoid_probs_right])
-        self.observation_space["humanoid_class_probs"] = combined_probs
+        # Include both left and right humanoid info (simplified: status + occupation)
+        # Concatenate left and right info to give agent full scenario information
+        combined_info = np.concatenate([self.current_humanoid_probs_left, self.current_humanoid_probs_right])
+        self.observation_space["humanoid_class_probs"] = combined_info
         
         # Update vehicle storage probabilities based on current ambulance contents
         current_capacity = self.scorekeeper.get_current_capacity()
@@ -225,20 +250,25 @@ class TrainInterface(Env):
     def _calculate_shaped_reward(self, action_idx):
         """
         Calculate immediate shaped reward based on action and game state
+        Enhanced with occupation-based bonuses to incentivize learning occupation effects
         Provides much better learning signal than sparse score differences
         """
         reward = 0.0
         
-        # Get CNN predictions for both sides
-        left_pred_idx = np.argmax(self.current_humanoid_probs_left)
-        right_pred_idx = np.argmax(self.current_humanoid_probs_right)
-        left_confidence = self.current_humanoid_probs_left[left_pred_idx]
-        right_confidence = self.current_humanoid_probs_right[right_pred_idx]
+        # Get CNN predictions for both sides (status indices only)
+        left_status_idx = self.current_humanoid_probs_left[0]  # First value is status index
+        right_status_idx = self.current_humanoid_probs_right[0]  # First value is status index
+        left_occupation_idx = self.current_humanoid_probs_left[1]
+        right_occupation_idx = self.current_humanoid_probs_right[1]
         
         # Map predictions to states for easier logic
         states = ['zombie', 'healthy', 'injured', 'corpse']
-        left_predicted = states[left_pred_idx]
-        right_predicted = states[right_pred_idx]
+        left_predicted = states[left_status_idx]
+        right_predicted = states[right_status_idx]
+        
+        # Use fixed confidence for now (can be enhanced later)
+        left_confidence = 1.0
+        right_confidence = 1.0
         
         # Base rewards for different actions on different entity types
         action_rewards = {
@@ -377,7 +407,11 @@ class TrainInterface(Env):
         return False, "unknown_error"
     
     def _update_vehicle_storage(self, humanoid_probs):
-        """Update vehicle storage tracking when saving someone"""
+        """Update vehicle storage tracking when saving someone (store status as one-hot)"""
         current_capacity = self.scorekeeper.get_current_capacity()
         if current_capacity > 0 and current_capacity <= len(self.observation_space["vehicle_storage_class_probs"]):
-            self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = humanoid_probs 
+            # Only store status as one-hot vector
+            status_idx = int(humanoid_probs[0])
+            one_hot = np.zeros(self.environment_params['num_classes'])
+            one_hot[status_idx] = 1.0
+            self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = one_hot 

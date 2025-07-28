@@ -10,12 +10,13 @@ from torchvision import transforms
 from gameplay.enums import ActionCost, State
 from gameplay.humanoid import Humanoid
 from models.DefaultCNN import DefaultCNN
+from models.TransferStatusCNN import TransferStatusCNN
 
 import warnings
 
 
 class Predictor(object):
-    def __init__(self, classes=21, model_file=os.path.join('models', 'baseline.pth')):
+    def __init__(self, classes=21, model_file=os.path.join('models', 'transfer_status_baseline.pth')):
         self.classes = classes
         self.net = None
         self.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
@@ -126,23 +127,24 @@ class Predictor(object):
 
 
 class HeuristicInterface(object):
-    def __init__(self, root, w, h, display=False, model_file=os.path.join('models', 'baseline.pth'),
-                 img_data_root='data'):
-        self.text = ""
-        self.display = display
-        self.img_data_root = img_data_root
-
-        # load 
-        self.predictor = Predictor(model_file=model_file)
-
-        if self.display:
-            self.canvas = tk.Canvas(root, width=math.floor(0.2 * w), height=math.floor(0.1 * h))
-            self.canvas.place(x=math.floor(0.75 * w), y=math.floor(0.75 * h))
-            self.label = tk.Label(self.canvas, text="Simon says...", font=("Arial", 20))
-            self.label.pack(side=tk.TOP)
-
-            self.suggestion = tk.Label(self.canvas, text=self.text, font=("Arial", 20))
-            self.suggestion.pack(side=tk.TOP)
+    def __init__(self, model_file='models/transfer_status_baseline.pth'):
+        self.model_file = model_file
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        # Load the status model
+        try:
+            self.model = TransferStatusCNN(num_classes=3)  # 3-class system
+            state_dict = torch.load(model_file, map_location=self.device)
+            self.model.load_state_dict(state_dict)
+            self.model.to(self.device)
+            self.model.eval()
+            print(f"✅ Status model loaded from {model_file}")
+        except Exception as e:
+            print(f"❌ Failed to load CNN model: {e}")
+            print(f"   Model path: {model_file}")
+            print(f"   Device: {self.device}")
+            self.model = None
+            warnings.warn("Model not loaded, resorting to random prediction")
 
     def _load_model(self, weights_path, num_classes=4):
         try:

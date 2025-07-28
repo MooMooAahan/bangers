@@ -42,9 +42,10 @@ class BaseModel(nn.Module):
         self.humanoid_classes = 4
         self.action_dim = 6  # [SKIP_BOTH, SQUISH_LEFT, SQUISH_RIGHT, SAVE_LEFT, SAVE_RIGHT, SCRAM]
         
-        # Total output: 4 + 8 + 4 + 6 = 22
+        # Simplified: 4 + 4 + 4 + 6 = 18 (humanoid_classes now 4: status+occupation for left+right)
+        self.humanoid_enhanced_classes = 4  # 4 values: [left_status, left_occ, right_status, right_occ]
         self.output_shape = self.external_variables+\
-                            (self.humanoid_classes * 2)+\
+                            self.humanoid_enhanced_classes+\
                             self.humanoid_classes+\
                             self.action_dim
     def forward(self, inputs):
@@ -65,9 +66,10 @@ class ActorCritic(nn.Module):
         self.has_continuous_action_space = has_continuous_action_space
         self.action_dim = 6  # Updated for new action space
         
-        # Updated input size: 4 + 8 + 4 + 6 = 22
-        # Variables(4) + HumanoidProbs(8) + VehicleStorage(4) + DoableActions(6)
-        input_size = 22
+        # Simplified input size: 4 + 4 + 4 + 6 = 18
+        # Variables(4) + HumanoidProbs(4) + VehicleStorage(4) + DoableActions(6)
+        # HumanoidProbs now includes status+occupation for left+right sides
+        input_size = 18
         
         self.actor = nn.Sequential(
                         BaseModel(),

@@ -51,7 +51,7 @@ class RLPredictor(object):
     
 class InferInterface(Env):
     def __init__(self, root, w, h, data_parser, scorekeeper, 
-                 classifier_model_file=os.path.join('models', 'baseline.pth'), 
+                 classifier_model_file=os.path.join('models', 'transfer_status_baseline.pth'), 
                  rl_model_file=os.path.join('models', 'baselineRL.pth'), 
                  img_data_root='data', display=False):
         """
@@ -219,7 +219,11 @@ class InferInterface(Env):
                     # Update vehicle storage when saving
                     current_capacity = self.scorekeeper.get_current_capacity()
                     if current_capacity > 0 and current_capacity <= len(self.observation_space["vehicle_storage_class_probs"]):
-                        self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = self.current_humanoid_probs_left
+                        # Only store status as one-hot vector
+                        status_idx = int(self.current_humanoid_probs_left[0])
+                        one_hot = np.zeros(self.environment_params['num_classes'])
+                        one_hot[status_idx] = 1.0
+                        self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = one_hot
                         
             elif action_idx == 4:  # SAVE_RIGHT
                 if not (self.scorekeeper.remaining_time <= 0 or self.scorekeeper.at_capacity()):
@@ -227,7 +231,11 @@ class InferInterface(Env):
                     # Update vehicle storage when saving
                     current_capacity = self.scorekeeper.get_current_capacity()
                     if current_capacity > 0 and current_capacity <= len(self.observation_space["vehicle_storage_class_probs"]):
-                        self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = self.current_humanoid_probs_right
+                        # Only store status as one-hot vector
+                        status_idx = int(self.current_humanoid_probs_right[0])
+                        one_hot = np.zeros(self.environment_params['num_classes'])
+                        one_hot[status_idx] = 1.0
+                        self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = one_hot
                         
             elif action_idx == 5:  # SCRAM
                 self.scorekeeper.scram(self.current_image_left, self.current_image_right)

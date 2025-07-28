@@ -1,140 +1,35 @@
 #!/usr/bin/env python3
 """
-Elegant Transfer Learning Status CNN
-Using ResNet18 pretrained backbone for 70%+ accuracy
-The smart, proven approach to computer vision
+Transfer Status CNN Training Script
+Trains a ResNet18-based model for 4-class status classification
 """
 
-import pandas as pd
 import os
 import sys
+sys.path.append('.')
+
 import torch
 import torch.nn as nn
-import torchvision.models as models
-import sklearn.preprocessing
-import sklearn.model_selection
-import sklearn.utils
-import sklearn.metrics
-from tqdm import tqdm
-import numpy as np
+import torch.nn.functional as F
+from torchvision import transforms, models
 from PIL import Image
-import torchvision.transforms as transforms
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+from tqdm import tqdm
 
-print("🎯 Elegant Transfer Learning Status CNN")
-print("📊 Using ResNet18 pretrained backbone for 70%+ accuracy")
-
-# Load and balance dataset
-full_df = pd.read_csv('../data/metadata.csv')
-single_person_df = full_df[full_df['HumanoidCount'] == 1].copy()
-
-# Create 4-class status labels
-def create_status_label(row):
-    class_val = row.get('Class', 'Default')
-    injured_val = row.get('Injured', 'False')
-    
-    if str(class_val).lower() == 'zombie':
-        return 'corpse' if str(injured_val).lower() == 'true' else 'zombie'
-    else:
-        return 'injured' if str(injured_val).lower() == 'true' else 'healthy'
-
-single_person_df['status'] = single_person_df.apply(create_status_label, axis=1)
-
-# Smart balancing
-status_counts = single_person_df['status'].value_counts()
-print(f"📊 Original status distribution:")
-print(status_counts)
-
-target_count = max(status_counts.values)
-balanced_dfs = []
-
-for status in status_counts.index:
-    status_df = single_person_df[single_person_df['status'] == status].copy()
-    current_count = len(status_df)
-    
-    if current_count < target_count:
-        multiplier = target_count // current_count
-        remainder = target_count % current_count
-        
-        replicated_dfs = [status_df] * multiplier
-        if remainder > 0:
-            replicated_dfs.append(status_df.sample(n=remainder, random_state=42))
-        
-        balanced_status_df = pd.concat(replicated_dfs, ignore_index=True)
-        print(f"  {status.capitalize()}: {current_count} → {len(balanced_status_df)}")
-    else:
-        balanced_status_df = status_df
-        print(f"  {status.capitalize()}: {current_count} (no change)")
-    
-    balanced_dfs.append(balanced_status_df)
-
-balanced_df = pd.concat(balanced_dfs, ignore_index=True)
-print(f"\n✅ Balanced dataset: {len(balanced_df)} images")
-
-# Encode status
-status_classes = ['healthy', 'injured', 'zombie', 'corpse']
-status_encoder = sklearn.preprocessing.LabelEncoder()
-status_encoder.classes_ = np.array(status_classes, dtype=object)
-balanced_df['status_encoded'] = status_encoder.transform(balanced_df['status'])
-
-# Train/test split
-train_df, test_df = sklearn.model_selection.train_test_split(
-    balanced_df, test_size=0.2, random_state=42, stratify=balanced_df['status'])
-
-print(f"📊 Train samples: {len(train_df)}")
-print(f"📊 Test samples: {len(test_df)}")
-
-# ImageNet-style transforms for transfer learning
-train_transform = transforms.Compose([
-    transforms.Resize((224, 224)),  # ResNet standard input size
-    transforms.RandomHorizontalFlip(p=0.5),
-    transforms.RandomRotation(degrees=15),
-    transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # ImageNet normalization
-])
-
-val_transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
-
-class StatusDataset(torch.utils.data.Dataset):
-    def __init__(self, df, transforms, base_dir="../data"):
-        self.df = df.reset_index(drop=True)
-        self.transforms = transforms
-        self.base_dir = base_dir
-        
-    def __len__(self):
-        return len(self.df)
-        
-    def __getitem__(self, i):
-        row = self.df.iloc[i]
-        img_path = row['Filename']
-        status_label = row['status_encoded']
-        
-        try:
-            image = Image.open(os.path.join(self.base_dir, img_path))
-            if image.mode != 'RGB':
-                image = image.convert('RGB')
-            image = self.transforms(image)
-            return image, torch.tensor(status_label).long()
-        except Exception as e:
-            print(f"Error loading {img_path}: {e}")
-            return torch.zeros(3, 224, 224), torch.tensor(0).long()
-
-# Transfer Learning Model
 class TransferStatusCNN(nn.Module):
     def __init__(self, num_classes=4):
         super(TransferStatusCNN, self).__init__()
-        # Load pretrained ResNet18
         self.backbone = models.resnet18(pretrained=True)
         
-        # Freeze early layers (optional - can unfreeze for fine-tuning)
-        for param in list(self.backbone.parameters())[:-20]:  # Freeze most layers
+        # Freeze early layers for transfer learning
+        for param in list(self.backbone.parameters())[:-20]:
             param.requires_grad = False
             
-        # Replace final classification layer
         num_features = self.backbone.fc.in_features
         self.backbone.fc = nn.Sequential(
             nn.Dropout(0.5),
@@ -147,149 +42,240 @@ class TransferStatusCNN(nn.Module):
     def forward(self, x):
         return self.backbone(x)
 
-# Setup
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-batch_size = 32  # Can use larger batch with efficient ResNet
-epochs = 25
+def create_status_label(row):
+    """Create status label from metadata"""
+    class_val = row.get('Class', 'Default')
+    injured_val = row.get('Injured', 'False')
+    
+    if str(class_val).lower() == 'zombie':
+        return 'zombie'  # All zombies are just 'zombie', regardless of injured status
+    else:
+        return 'injured' if str(injured_val).lower() == 'true' else 'healthy'
 
-train_ds = StatusDataset(train_df, train_transform)
-val_ds = StatusDataset(test_df, val_transform)
-train_loader = torch.utils.data.DataLoader(train_ds, batch_size=batch_size, shuffle=True, drop_last=True)
-val_loader = torch.utils.data.DataLoader(val_ds, batch_size=batch_size)
+class StatusDataset(torch.utils.data.Dataset):
+    def __init__(self, df, transform=None, base_dir='data'):
+        self.df = df
+        self.transform = transform
+        self.base_dir = base_dir
+        self.status_classes = ['healthy', 'injured', 'zombie']  # Only 3 classes
+        
+    def __len__(self):
+        return len(self.df)
+        
+    def __getitem__(self, idx):
+        row = self.df.iloc[idx]
+        
+        # Load image
+        img_path = os.path.join(self.base_dir, row['Filename'])
+        image = Image.open(img_path).convert('RGB')
+        
+        # Get status label
+        status = create_status_label(row)
+        label = self.status_classes.index(status)
+        
+        if self.transform:
+            image = self.transform(image)
+            
+        return image, torch.tensor(label).long()
 
-# Transfer learning model
-model = TransferStatusCNN(num_classes=4)
-model.to(device)
+def train_model(model, train_loader, val_loader, num_epochs=20, device='cpu'):
+    """Train the model"""
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+    
+    best_val_acc = 0.0
+    train_losses = []
+    val_accuracies = []
+    
+    print(f"🚀 Starting training for {num_epochs} epochs...")
+    
+    for epoch in range(num_epochs):
+        # Training phase
+        model.train()
+        running_loss = 0.0
+        train_correct = 0
+        train_total = 0
+        
+        for images, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
+            images, labels = images.to(device), labels.to(device)
+            
+            optimizer.zero_grad()
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            
+            running_loss += loss.item()
+            _, predicted = torch.max(outputs.data, 1)
+            train_total += labels.size(0)
+            train_correct += (predicted == labels).sum().item()
+        
+        scheduler.step()
+        
+        # Validation phase
+        model.eval()
+        val_correct = 0
+        val_total = 0
+        
+        with torch.no_grad():
+            for images, labels in val_loader:
+                images, labels = images.to(device), labels.to(device)
+                outputs = model(images)
+                _, predicted = torch.max(outputs.data, 1)
+                val_total += labels.size(0)
+                val_correct += (predicted == labels).sum().item()
+        
+        train_loss = running_loss / len(train_loader)
+        train_acc = 100 * train_correct / train_total
+        val_acc = 100 * val_correct / val_total
+        
+        train_losses.append(train_loss)
+        val_accuracies.append(val_acc)
+        
+        print(f"Epoch {epoch+1}: Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, Val Acc: {val_acc:.2f}%")
+        
+        # Save best model
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            torch.save(model.state_dict(), 'models/transfer_status_baseline.pth')
+            print(f"💾 New best model! Validation accuracy: {val_acc:.2f}%")
+    
+    return train_losses, val_accuracies
 
-print(f"🧠 Created transfer learning model with ResNet18 backbone")
-print(f"🔥 Training on {device} with batch size {batch_size}")
-
-# Optimized training setup
-class_weights = sklearn.utils.class_weight.compute_class_weight(
-    'balanced', classes=np.unique(train_df.status_encoded), y=train_df.status_encoded)
-class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
-
-# Lower learning rate for transfer learning
-optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
-criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
-
-# Learning rate scheduler
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode='min', factor=0.5, patience=3)
-
-def evaluate_model(model, val_loader):
+def evaluate_model(model, test_loader, device='cpu'):
+    """Evaluate the model"""
     model.eval()
-    total_loss = 0
-    correct = 0
-    total = 0
-    all_preds = []
+    all_predictions = []
     all_labels = []
     
     with torch.no_grad():
-        for images, labels in val_loader:
+        for images, labels in test_loader:
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
-            loss = criterion(outputs, labels)
-            
-            total_loss += loss.item()
             _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
             
-            all_preds.extend(predicted.cpu().numpy())
+            all_predictions.extend(predicted.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
     
-    accuracy = 100 * correct / total
-    avg_loss = total_loss / len(val_loader)
+    # Print classification report
+    status_classes = ['healthy', 'injured', 'zombie']
+    print("\n📋 Classification Report:")
+    print(classification_report(all_labels, all_predictions, target_names=status_classes))
     
-    return accuracy, avg_loss, all_preds, all_labels
+    # Create confusion matrix
+    cm = confusion_matrix(all_labels, all_predictions)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                xticklabels=status_classes, yticklabels=status_classes)
+    plt.title('Status Model Confusion Matrix')
+    plt.ylabel('True Label')
+    plt.xlabel('Predicted Label')
+    plt.tight_layout()
+    plt.savefig('model_training/status_model_test_results.png', dpi=300, bbox_inches='tight')
+    print("💾 Confusion matrix saved as 'model_training/status_model_test_results.png'")
 
-# Training loop
-print(f"\n🚀 Training transfer learning model...")
-best_accuracy = 0
-patience = 7
-patience_counter = 0
-
-for epoch in range(epochs):
-    model.train()
-    running_loss = 0.0
+def main():
+    print("🏥 Transfer Status CNN Training")
+    print("=" * 50)
     
-    for images, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}"):
-        images, labels = images.to(device), labels.to(device)
-        
-        optimizer.zero_grad()
-        outputs = model(images)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
-        
-        running_loss += loss.item()
+    # Set device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"🖥️ Using device: {device}")
     
-    # Validation
-    val_accuracy, val_loss, val_preds, val_labels = evaluate_model(model, val_loader)
-    scheduler.step(val_loss)
+    # Load metadata
+    metadata_path = 'data/metadata.csv'
+    if not os.path.exists(metadata_path):
+        print(f"❌ Metadata file not found: {metadata_path}")
+        return
     
-    avg_train_loss = running_loss / len(train_loader)
-    print(f"📊 Epoch {epoch+1}: Train_Loss={avg_train_loss:.4f}, "
-          f"Val_Loss={val_loss:.4f}, Val_Acc={val_accuracy:.1f}%")
+    df = pd.read_csv(metadata_path)
+    print(f"📊 Loaded {len(df)} samples from metadata")
     
-    # Save best model
-    if val_accuracy > best_accuracy:
-        best_accuracy = val_accuracy
-        torch.save(model.state_dict(), '../models/transfer_status_baseline.pth')
-        print(f"   ✅ New best model saved! Accuracy: {val_accuracy:.1f}%")
-        patience_counter = 0
-    else:
-        patience_counter += 1
-        
-    # Early stopping
-    if patience_counter >= patience:
-        print(f"   ⏹️ Early stopping triggered (patience={patience})")
-        break
+    # Filter out beaver images and empty entries
+    df_filtered = df[
+        (~df['Filename'].str.contains('beaver', case=False, na=False)) &
+        (df['Class'].notna()) &
+        (df['Class'] != '')
+    ].copy()
+    
+    print(f"📊 Filtered to {len(df_filtered)} samples")
+    
+    # Create status labels
+    df_filtered['status'] = df_filtered.apply(create_status_label, axis=1)
+    
+    # Check status distribution
+    status_counts = df_filtered['status'].value_counts()
+    print("\n📈 Status distribution:")
+    for status, count in status_counts.items():
+        print(f"  {status}: {count}")
+    
+    # Split data
+    train_df, temp_df = train_test_split(df_filtered, test_size=0.3, random_state=42, stratify=df_filtered['status'])
+    val_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=42, stratify=temp_df['status'])
+    
+    print(f"\n📊 Data split:")
+    print(f"  Train: {len(train_df)} samples")
+    print(f"  Validation: {len(val_df)} samples")
+    print(f"  Test: {len(test_df)} samples")
+    
+    # Define transforms
+    train_transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomRotation(degrees=10),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+    
+    val_transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+    
+    # Create datasets
+    train_dataset = StatusDataset(train_df, train_transform)
+    val_dataset = StatusDataset(val_df, val_transform)
+    test_dataset = StatusDataset(test_df, val_transform)
+    
+    # Create data loaders
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=16, shuffle=True)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=16, shuffle=False)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=16, shuffle=False)
+    
+    # Create model
+    model = TransferStatusCNN(num_classes=3) # Changed to 3 classes
+    model.to(device)
+    
+    # Train model
+    train_losses, val_accuracies = train_model(model, train_loader, val_loader, num_epochs=20, device=device)
+    
+    # Evaluate on test set
+    print("\n🧪 Evaluating on test set...")
+    evaluate_model(model, test_loader, device)
+    
+    # Plot training curves
+    plt.figure(figsize=(12, 4))
+    
+    plt.subplot(1, 2, 1)
+    plt.plot(train_losses)
+    plt.title('Training Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(val_accuracies)
+    plt.title('Validation Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy (%)')
+    
+    plt.tight_layout()
+    plt.savefig('model_training/status_training_curves.png', dpi=300, bbox_inches='tight')
+    print("💾 Training curves saved as 'model_training/status_training_curves.png'")
+    
+    print(f"\n✅ Training completed! Model saved as 'models/transfer_status_baseline.pth'")
 
-print(f"\n🎉 Training completed!")
-print(f"🏆 Best accuracy achieved: {best_accuracy:.1f}%")
-print(f"🎯 Target was 70% - {'✅ SUCCESS!' if best_accuracy >= 70 else '❌ Need improvement'}")
-
-# Final evaluation
-final_accuracy, _, final_preds, final_labels = evaluate_model(model, val_loader)
-
-# Detailed results
-print(f"\n📊 Final Detailed Results:")
-print(f"🎯 Final Accuracy: {final_accuracy:.1f}%")
-
-# Confusion matrix
-cm = sklearn.metrics.confusion_matrix(final_labels, final_preds)
-print(f"\n🔍 Confusion Matrix:")
-print("     Pred:", " ".join([f"{cls:>8}" for cls in status_classes]))
-for i, true_class in enumerate(status_classes):
-    print(f"True {true_class:>8}:", " ".join([f"{cm[i,j]:>8}" for j in range(len(status_classes))]))
-
-# Classification report
-report = sklearn.metrics.classification_report(
-    final_labels, final_preds, 
-    target_names=status_classes,
-    zero_division=0
-)
-print(f"\n📋 Classification Report:")
-print(report)
-
-# Per-class accuracy
-print(f"\n🎯 Per-Class Accuracy:")
-for i, class_name in enumerate(status_classes):
-    class_mask = np.array(final_labels) == i
-    if class_mask.sum() > 0:
-        class_acc = (np.array(final_preds)[class_mask] == i).mean() * 100
-        print(f"  {class_name.capitalize()}: {class_acc:.1f}%")
-
-print(f"\n💾 Transfer learning model saved as: models/transfer_status_baseline.pth")
-
-if best_accuracy >= 70:
-    print(f"\n🎉 MISSION ACCOMPLISHED! 🎉")
-    print(f"✅ Achieved {best_accuracy:.1f}% accuracy (target: 70%)")
-    print("🚀 Status detection mastered with transfer learning!")
-    print("📈 Ready for hierarchical expansion: Add occupation classifier next!")
-else:
-    print(f"\n⚠️ Still improving: {best_accuracy:.1f}% < 70% target")
-    print("💡 Transfer learning significantly better than custom CNN")
-    print("🔧 Consider: Fine-tuning more layers or different backbone") 
+if __name__ == "__main__":
+    main() 
