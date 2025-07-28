@@ -12,6 +12,8 @@ from PIL import Image, ImageTk
 import random
 from ui_elements.theme import COLOR_SAVE, COLOR_SKIP, COLOR_SCRAM, COLOR_SQUISH, COLOR_INSPECT
 import os
+from data_uploader import DataUploader
+
 
 
 class IntroScreen:
@@ -43,6 +45,9 @@ class IntroScreen:
 
 class UI(object):
     def __init__(self, data_parser, scorekeeper, data_fp, suggest, log, root):
+
+        # Initialize data uploader
+        self.data_uploader = DataUploader()
         
         # Base window setup
         self.data_parser = data_parser  # Store data_parser reference
@@ -678,6 +683,35 @@ class UI(object):
                 self.upgrade_btn.config(state='disabled')
             self.trigger_end_screen()
 
+            # Upload data and clear log
+            self.upload_data_and_clear_log()
+
+    def upload_data_and_clear_log(self):
+        """Upload data to Notion and clear the log file"""
+        try:
+            print("Uploading data to Notion...")
+            # Use the DataUploader class to upload data
+            success = self.data_uploader.upload_data()
+            
+            if success:
+                print("Data uploaded successfully!")
+            else:
+                print("Upload failed")
+        except Exception as e:
+            print(f"Error uploading data: {e}")
+        
+        # Clear the log file after upload (preserve headers)
+        try:
+            if os.path.exists("log.csv"):
+                # Read the first line (headers) and write it back
+                with open("log.csv", "r") as f:
+                    first_line = f.readline().strip()
+                with open("log.csv", "w") as f:
+                    f.write(first_line + "\n")  # Write back only the headers
+                print("log.csv cleared after data upload (headers preserved)")
+        except Exception as e:
+            print(f"Error clearing log.csv: {e}")
+
     def disable_buttons_if_insufficient_time(self, remaining_time, remaining_humanoids, at_capacity):
         """Disable buttons based on remaining time and other constraints"""
         # Don't re-enable buttons if the game is complete
@@ -912,6 +946,9 @@ class UI(object):
             self.rules_btn.config(state='disabled')
         if hasattr(self, 'upgrade_btn'):
             self.upgrade_btn.config(state='disabled')
+        
+        # Upload data and clear log
+        self.upload_data_and_clear_log()
 
     def move_map_left(self):
         self.move_ambulance_by_cell()

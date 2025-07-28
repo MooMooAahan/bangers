@@ -7,3 +7,4 @@ pyyaml
 torchvision
 gym==0.26.2
 timm
+notion-client

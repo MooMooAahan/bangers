@@ -18,6 +18,15 @@ class Main(object):
     Base class for the SGAI 2023 game
     """
     def __init__(self, mode, log):
+        # Clear log.csv at game initialization (preserve headers)
+        if os.path.exists("log.csv"):
+            # Read the first line (headers) and write it back
+            with open("log.csv", "r") as f:
+                first_line = f.readline().strip()
+            with open("log.csv", "w") as f:
+                f.write(first_line + "\n")  # Write back only the headers
+            print("log.csv cleared at game initialization (headers preserved)")
+        
         self.data_fp = os.getenv("SGAI_DATA", default='data')
         self.data_parser = DataParser(self.data_fp)
 
