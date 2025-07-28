@@ -58,21 +58,133 @@ class IntroScreen:
             self.canvas.configure(bg="darkblue")
         
         # Add the title text directly on the canvas (truly transparent)
-        self.canvas.create_text(300, 100, text="Team Splice (SGAI 2025)",
-                               font=("Helvetica", 18, "bold"), 
+        self.canvas.create_text(300, 60, text="Team Splice (SGAI 2025)",
+                               font=("Helvetica", 20, "bold"), 
                                fill="white", anchor="center")
         
-        # Add the start button directly on the canvas
-        start_button = tk.Button(self.canvas, text="Start Game", 
+        # Add the start button directly on the canvas (positioned to the left)
+        self.start_button = tk.Button(self.canvas, text="Start Game", 
                                     font=("Helvetica", 16, "bold"), 
-                                    width=15,
+                                    width=12, height=1,
                                     bg="#5B7B7A", fg="white",  # Green background, white text
                                     relief="raised", bd=3,
                                     command=self.start_game)
-        self.canvas.create_window(300, 200, window=start_button, anchor="center")
+        self.canvas.create_window(200, 105, window=self.start_button, anchor="center")
+        
+        # Add the instructions button directly on the canvas (positioned to the right)
+        self.instructions_button = tk.Button(self.canvas, text="Instructions", 
+                                           font=("Helvetica", 16, "bold"), 
+                                           width=12, height=1,
+                                           bg="#5B7B7A", fg="white",  # Green background, white text
+                                           relief="raised", bd=3,
+                                           command=self.show_instructions)
+        self.canvas.create_window(400, 105, window=self.instructions_button, anchor="center")
     def start_game(self):
+        # Change button appearance to pressed state
+        self.start_button.config(
+            bg="#4A6B6A",  # Darker green for pressed state
+            relief="sunken",  # Sunken relief to show pressed
+            state="disabled"  # Disable the button
+        )
+        
+        # Show loading text
+        self.show_loading()
+        
         # Don't destroy the intro screen here - let the callback handle it
         self.on_start_callback()
+    
+    def show_loading(self):
+        # Add loading text at the bottom of the screen
+        self.loading_text = self.canvas.create_text(300, 325, text="Loading...",
+                                                   font=("Helvetica", 14, "bold"), 
+                                                   fill="white", anchor="center")
+        
+        # Force update to show the loading text immediately
+        self.root.update_idletasks()
+    
+    def show_instructions(self):
+        """Show game instructions in a popup dialog"""
+        # Create popup window
+        popup = tk.Toplevel(self.root)
+        popup.title("Game Instructions - Team Splice")
+        popup.geometry("800x600")
+        popup.resizable(False, False)
+        
+        # Center the popup on the screen
+        popup.transient(self.root)
+        popup.grab_set()
+        
+        # Create main frame
+        main_frame = tk.Frame(popup, padx=20, pady=20)
+        main_frame.pack(expand=True, fill="both")
+        
+        # Title label
+        title_label = tk.Label(main_frame, text="Game Instructions", 
+                              font=("Arial", 18, "bold"), fg="#2E86AB")
+        title_label.pack(pady=(0, 20))
+        
+        # Instructions text - using the same comprehensive text as show_rules
+        instructions_text = (
+            "Welcome to Team Splice (SGAI 2025)!\n\n"
+            
+            "🎯 OBJECTIVE:\n"
+            "Complete the ambulance route (20 movements) while saving humans and eliminating zombies.\n\n"
+            
+            "🎮 GAMEPLAY:\n"
+            "• You'll encounter pairs of humanoids (humans and zombies)\n"
+            "• Choose your actions carefully - you can only save one set per scenario\n"
+            "• Complete your route before time runs out\n\n"
+            
+            "🔧 ACTIONS:\n"
+            "• SKIP: Pass on the current humanoids\n"
+            "• INSPECT: Get more information (costs time)\n"
+            "• SQUISH: Eliminate zombies (costs time)\n"
+            "• SAVE: Rescue humans (costs time and capacity)\n"
+            "• SCRAM: Return to base when capacity is full\n\n"
+            
+            "📊 SCORING:\n"
+            "• +Points: Saving humans, eliminating zombies\n"
+            "• -Points: Saving zombies, eliminating humans\n"
+            "• Money earned from saving humans can be used for upgrades\n\n"
+            
+            "⏰ TIME MANAGEMENT:\n"
+            "• You have 12 hours (720 minutes) to complete your route\n"
+            "• Route progress is shown in the center of your screen\n"
+            "• If you don't complete the route on time, you lose points\n\n"
+            
+            "💡 TIPS:\n"
+            "• Use INSPECT to gather information before making decisions\n"
+            "• Manage your capacity wisely - you can't save everyone\n"
+            "• Watch the clock and plan your route completion\n"
+            "• Remember: You can only save one set per scenario!"
+        )
+        
+        # Create a scrollable text widget for instructions
+        text_frame = tk.Frame(main_frame)
+        text_frame.pack(expand=True, fill="both", pady=(0, 20))
+        
+        # Create text widget with scrollbar
+        text_widget = tk.Text(text_frame, wrap="word", font=("Arial", 11),
+                             bg="#F8F9FA", fg="#2C3E50", relief="solid", bd=1,
+                             padx=15, pady=15)
+        scrollbar = tk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
+        text_widget.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack text widget and scrollbar
+        text_widget.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Insert instructions text
+        text_widget.insert("1.0", instructions_text)
+        text_widget.config(state="disabled")  # Make text read-only
+        
+        # Close button
+        close_btn = tk.Button(main_frame, text="Close", 
+                             command=popup.destroy,
+                             font=("Arial", 12), bg="#3498DB", fg="white",
+                             relief="raised", bd=2, padx=20, pady=5)
+        close_btn.pack()
+    
     def run(self):
         self.root.mainloop()
 
@@ -509,23 +621,38 @@ class UI(object):
         tk.Label(self.root, text="Game Rules", font=("Arial", 24, "bold"), fg="white", bg="black").pack(pady=20)
         
         rules_text = (
-            "Game Rules:\n"
-            "- The goal is to complete the ambulance route (20 movements).\n"
-            "- Choose an action: Skip if you want to skip this set of humanoids.\n"
-            "- Inspect if you want to inspect the humanoids.\n"
-            "- Squish if you want to squash the zombies.\n"
-            "- Save if you want to save the humanoids.\n"
-            "- Scram if your capacity is full.\n"
-            "- The goal is to save as many humans and squash the zombies.\n"
-            "- Saving humans gives you money for more upgrades when you scram.\n"
-            "- Your choices affect your score.\n"
-            "- Saving zombies or killing humans hurt your score, while saving humans and killing zombies adds to it."
-            "- The game ends when you complete the route or the day ends. \n"
-            "- If you don't complete your route on time, you lose points."
-            "- Route progress is shown in the middle of your screen. \n"
-            "- Remember: You can only save one set of humanoids, so pick wisely! \n"
-            #More rules if needed (make sure to add \n)
-            "- This is where we can add more rules in case we need to. \n\n"
+            "Welcome to Team Splice (SGAI 2025)!\n\n"
+            
+            "🎯 OBJECTIVE:\n"
+            "Complete the ambulance route (20 movements) while saving humans and eliminating zombies.\n\n"
+            
+            "🎮 GAMEPLAY:\n"
+            "• You'll encounter pairs of humanoids (humans and zombies)\n"
+            "• Choose your actions carefully - you can only save one set per scenario\n"
+            "• Complete your route before time runs out\n\n"
+            
+            "🔧 ACTIONS:\n"
+            "• SKIP: Pass on the current humanoids\n"
+            "• INSPECT: Get more information (costs time)\n"
+            "• SQUISH: Eliminate zombies (costs time)\n"
+            "• SAVE: Rescue humans (costs time and capacity)\n"
+            "• SCRAM: Return to base when capacity is full\n\n"
+            
+            "📊 SCORING:\n"
+            "• +Points: Saving humans, eliminating zombies\n"
+            "• -Points: Saving zombies, eliminating humans\n"
+            "• Money earned from saving humans can be used for upgrades\n\n"
+            
+            "⏰ TIME MANAGEMENT:\n"
+            "• You have 12 hours (720 minutes) to complete your route\n"
+            "• Route progress is shown in the center of your screen\n"
+            "• If you don't complete the route on time, you lose points\n\n"
+            
+            "💡 TIPS:\n"
+            "• Use INSPECT to gather information before making decisions\n"
+            "• Manage your capacity wisely - you can't save everyone\n"
+            "• Watch the clock and plan your route completion\n"
+            "• Remember: You can only save one set per scenario!"
         )
 
         tk.Label(self.root, text=rules_text, font=("Arial", 12), justify="left", padx=20, fg="white", bg="black").pack()
