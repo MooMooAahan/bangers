@@ -8,6 +8,7 @@ import torch
 import numpy as np
 from PIL import Image
 import random
+import os # Added for path handling
 
 # Manual transforms to avoid torchvision hanging issue
 class ManualTransforms:
@@ -98,6 +99,16 @@ class EnhancedPredictor:
     def preprocess_image(self, image_path):
         """Preprocess image for CNN input"""
         try:
+            # Handle both full paths and filenames
+            if not os.path.exists(image_path):
+                # If it's just a filename, construct the full path
+                if not image_path.startswith('data/'):
+                    # Check if filename already contains modified_dataset
+                    if 'modified_dataset' in image_path:
+                        image_path = os.path.join('data', image_path)
+                    else:
+                        image_path = os.path.join('data', 'modified_dataset', image_path)
+            
             image = Image.open(image_path).convert('RGB')
             image_tensor = self.manual_transforms.resize_and_normalize(image).to(self.device)
             return image_tensor

@@ -92,21 +92,21 @@ def train_model(model, train_loader, val_loader, num_epochs=20, device='cpu'):
     
     for epoch in range(num_epochs):
         # Training phase
-        model.train()
-        running_loss = 0.0
+    model.train()
+    running_loss = 0.0
         train_correct = 0
         train_total = 0
-        
+    
         for images, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs}"):
-            images, labels = images.to(device), labels.to(device)
-            
-            optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            
-            running_loss += loss.item()
+        images, labels = images.to(device), labels.to(device)
+        
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        
+        running_loss += loss.item()
             _, predicted = torch.max(outputs.data, 1)
             train_total += labels.size(0)
             train_correct += (predicted == labels).sum().item()
@@ -134,8 +134,8 @@ def train_model(model, train_loader, val_loader, num_epochs=20, device='cpu'):
         val_accuracies.append(val_acc)
         
         print(f"Epoch {epoch+1}: Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%, Val Acc: {val_acc:.2f}%")
-        
-        # Save best model
+    
+    # Save best model
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             torch.save(model.state_dict(), 'models/transfer_status_baseline.pth')

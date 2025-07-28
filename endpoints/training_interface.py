@@ -11,7 +11,7 @@ from gameplay.enums import ActionCost, State
 from gameplay.scorekeeper import ScoreKeeper
 from gameplay.humanoid import Humanoid
 from models.DefaultCNN import DefaultCNN
-from endpoints.heuristic_interface import Predictor
+from endpoints.heuristic_interface import HeuristicInterface
 from endpoints.enhanced_predictor import EnhancedPredictor
 
 from gym import Env, spaces

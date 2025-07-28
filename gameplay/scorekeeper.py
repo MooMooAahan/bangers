@@ -144,7 +144,7 @@ class ScoreKeeper(object):
             else:
                 action_side = 'unknown'  # Will be set by calling function
         
-        self.logger.append({
+        log_entry = {
             "timestamp": timestamp,
             "local_run_id": None,  # Will be filled in save_log
             "route_position": route_position,
@@ -155,7 +155,9 @@ class ScoreKeeper(object):
             "inspected": inspected,
             "action": action,
             "action_side": action_side
-        })
+        }
+        
+        self.logger.append(log_entry)
 
     def save_log(self, final=False):
         if not final:
