@@ -73,11 +73,11 @@ class InferInterface(Env):
             "num_actions" : 6,  # Updated: 6 actions like training interface
         }
         
-        # Initialize observation space matching training interface
+                # Initialize observation space EXACTLY matching training interface (18 dimensions total)
         self.observation_space = {
-            "variables": np.zeros(4),  # time, reward, capacity, zombie_count
-            "vehicle_storage_class_probs": np.zeros((self.environment_params['car_capacity'], self.environment_params['num_classes'])),
-            "humanoid_class_probs": np.zeros(self.environment_params['num_classes'] * 2),  # Both left and right
+            "variables": np.zeros(4),  # [time_ratio, reward_scaled, capacity_ratio, zombie_ratio]
+            "vehicle_storage_summary": np.zeros(4),  # [zombie_ratio, healthy_ratio, injured_ratio, corpse_ratio]
+            "humanoid_class_probs": np.zeros(4),  # 4 values: [left_status, left_occ, right_status, right_occ]
             "doable_actions": np.ones(self.environment_params['num_actions'], dtype=np.int64),
         }
 
@@ -116,9 +116,9 @@ class InferInterface(Env):
         returns observation space
         """
         self.observation_space = {
-            "variables": np.zeros(4),  # time, reward, capacity, zombie_count
-            "vehicle_storage_class_probs": np.zeros((self.environment_params['car_capacity'], self.environment_params['num_classes'])),
-            "humanoid_class_probs": np.zeros(self.environment_params['num_classes'] * 2),  # Both left and right
+            "variables": np.zeros(4),  # [time_ratio, reward_scaled, capacity_ratio, zombie_ratio]
+            "vehicle_storage_summary": np.zeros(4),  # [zombie_ratio, healthy_ratio, injured_ratio, corpse_ratio]
+            "humanoid_class_probs": np.zeros(4),  # 4 values: [left_status, left_occ, right_status, right_occ]
             "doable_actions": np.ones(self.environment_params['num_actions'], dtype=np.int64),
         }
         self.previous_cum_reward = 0
@@ -151,15 +151,27 @@ class InferInterface(Env):
             left_prediction = self.enhanced_predictor.predict_combined(self.current_image_left.Filename)
             right_prediction = self.enhanced_predictor.predict_combined(self.current_image_right.Filename)
             
-            # Extract status and occupation indices for RL observation
-            self.current_humanoid_probs_left = np.array([
-                ['healthy', 'injured', 'zombie'].index(left_prediction['status']),
-                ['Civilian', 'Child', 'Doctor', 'Police'].index(left_prediction['occupation'])
-            ])
-            self.current_humanoid_probs_right = np.array([
-                ['healthy', 'injured', 'zombie'].index(right_prediction['status']),
-                ['Civilian', 'Child', 'Doctor', 'Police'].index(right_prediction['occupation'])
-            ])
+            # Extract status and occupation indices for RL observation (EXACT training format)
+            try:
+                left_status_idx = ['healthy', 'injured', 'zombie'].index(left_prediction['status'])
+            except ValueError:
+                left_status_idx = 0  # Default to healthy
+            try:
+                left_occupation_idx = ['Civilian', 'Child', 'Doctor', 'Police'].index(left_prediction['occupation'])
+            except ValueError:
+                left_occupation_idx = 0  # Default to Civilian
+                
+            try:
+                right_status_idx = ['healthy', 'injured', 'zombie'].index(right_prediction['status'])
+            except ValueError:
+                right_status_idx = 0
+            try:
+                right_occupation_idx = ['Civilian', 'Child', 'Doctor', 'Police'].index(right_prediction['occupation'])
+            except ValueError:
+                right_occupation_idx = 0
+                
+            self.current_humanoid_probs_left = np.array([left_status_idx, left_occupation_idx])
+            self.current_humanoid_probs_right = np.array([right_status_idx, right_occupation_idx])
             
         except Exception as e:
             print(f"Error loading images: {e}")
@@ -174,30 +186,34 @@ class InferInterface(Env):
         # Normalize values for better RL training
         zombie_count_normalized = min(self.scorekeeper.ambulance.get("zombie", 0) / self.scorekeeper.capacity, 1.0)
         self.observation_space['variables'] = np.array([
-            self.scorekeeper.remaining_time / self.scorekeeper.shift_len,  # Normalize to [0,1]
-            self.previous_cum_reward / 100.0,  # Scale reward
-            sum(self.scorekeeper.ambulance.values()) / self.scorekeeper.capacity,  # Capacity ratio
-            zombie_count_normalized,  # Zombie ratio (important for police effect)
+            self.scorekeeper.remaining_time / self.scorekeeper.shift_len,  # Time ratio [0,1]
+            np.clip(self.previous_cum_reward / 100.0, -5.0, 5.0),  # Scaled reward (clipped for stability)
+            sum(self.scorekeeper.ambulance.values()) / self.scorekeeper.capacity,  # Capacity ratio [0,1]
+            zombie_count_normalized,  # Zombie ratio [0,1] (important for police effect)
         ])
         
         self.observation_space["doable_actions"] = np.array(self.scorekeeper.available_action_space(), dtype=np.int64)
         
-        # Include both left and right humanoid probabilities
-        combined_probs = np.concatenate([self.current_humanoid_probs_left, self.current_humanoid_probs_right])
-        self.observation_space["humanoid_class_probs"] = combined_probs
+        # Include both left and right humanoid info (EXACT training format)
+        # [left_status, left_occ, right_status, right_occ] = 4 values total
+        combined_info = np.concatenate([self.current_humanoid_probs_left, self.current_humanoid_probs_right])
+        self.observation_space["humanoid_class_probs"] = combined_info
         
-        # Update vehicle storage probabilities based on current ambulance contents
-        current_capacity = self.scorekeeper.get_current_capacity()
-        for i in range(current_capacity):
-            if i < len(self.observation_space["vehicle_storage_class_probs"]):
-                total_in_ambulance = sum(self.scorekeeper.ambulance.values())
-                if total_in_ambulance > 0:
-                    self.observation_space["vehicle_storage_class_probs"][i] = np.array([
-                        self.scorekeeper.ambulance.get("zombie", 0) / total_in_ambulance,
-                        self.scorekeeper.ambulance.get("healthy", 0) / total_in_ambulance, 
-                        self.scorekeeper.ambulance.get("injured", 0) / total_in_ambulance,
-                        0  # corpse placeholder
-                    ])
+        # Update vehicle storage summary (matching training interface format)
+        total_in_ambulance = sum(self.scorekeeper.ambulance.values())
+        if total_in_ambulance > 0:
+            # Aggregate ambulance composition into 4 values total
+            vehicle_summary = np.array([
+                self.scorekeeper.ambulance.get("zombie", 0) / max(1, total_in_ambulance),
+                self.scorekeeper.ambulance.get("healthy", 0) / max(1, total_in_ambulance), 
+                self.scorekeeper.ambulance.get("injured", 0) / max(1, total_in_ambulance),
+                0  # corpse placeholder
+            ])
+        else:
+            vehicle_summary = np.zeros(4)
+        
+        # Store as single summary vector 
+        self.observation_space["vehicle_storage_summary"] = vehicle_summary
         
         return self.observation_space
     

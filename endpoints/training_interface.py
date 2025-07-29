@@ -46,7 +46,7 @@ class TrainInterface(Env):
         # Left: [status(1), occupation(1)] + Right: [status(1), occupation(1)] = 4 total
         self.observation_space = {
             "variables": np.zeros(4),
-            "vehicle_storage_class_probs": np.zeros((self.environment_params['car_capacity'], self.environment_params['num_classes'])),
+            "vehicle_storage_summary": np.zeros(4),  # [zombie_ratio, healthy_ratio, injured_ratio, corpse_ratio]
             "humanoid_class_probs": np.zeros(4),  # Simplified: 4 values (2 per side: status + occupation)
             "doable_actions": np.ones(self.environment_params['num_actions'], dtype=np.int64),
         }
@@ -92,7 +92,7 @@ class TrainInterface(Env):
         # Reset observation space - simplified with status + occupation
         self.observation_space = {
             "variables": np.zeros(4),  # [time_ratio, reward_scaled, capacity_ratio, zombie_ratio]
-            "vehicle_storage_class_probs": np.zeros((self.environment_params['car_capacity'], self.environment_params['num_classes'])),
+            "vehicle_storage_summary": np.zeros(4),  # [zombie_ratio, healthy_ratio, injured_ratio, corpse_ratio]
             "humanoid_class_probs": np.zeros(4),  # Simplified: 4 values (2 per side: status + occupation)
             "doable_actions": np.ones(self.environment_params['num_actions'], dtype=np.int64),
         }
@@ -165,19 +165,25 @@ class TrainInterface(Env):
         combined_info = np.concatenate([self.current_humanoid_probs_left, self.current_humanoid_probs_right])
         self.observation_space["humanoid_class_probs"] = combined_info
         
-        # Update vehicle storage probabilities based on current ambulance contents
-        current_capacity = self.scorekeeper.get_current_capacity()
-        for i in range(current_capacity):
-            if i < len(self.observation_space["vehicle_storage_class_probs"]):
-                # For now, use simplified representation based on ambulance composition
-                total_in_ambulance = sum(self.scorekeeper.ambulance.values())
-                if total_in_ambulance > 0:
-                    self.observation_space["vehicle_storage_class_probs"][i] = np.array([
-                        self.scorekeeper.ambulance.get("zombie", 0) / total_in_ambulance,
-                        self.scorekeeper.ambulance.get("healthy", 0) / total_in_ambulance, 
-                        self.scorekeeper.ambulance.get("injured", 0) / total_in_ambulance,
-                        0  # corpse placeholder
-                    ])
+        # Update vehicle storage - sum across all slots for BaseModel (expects 4 dims, not 40)
+        total_in_ambulance = sum(self.scorekeeper.ambulance.values())
+        if total_in_ambulance > 0:
+            # Aggregate ambulance composition into 4 values total (not per slot)
+            vehicle_summary = np.array([
+                self.scorekeeper.ambulance.get("zombie", 0) / max(1, total_in_ambulance),
+                self.scorekeeper.ambulance.get("healthy", 0) / max(1, total_in_ambulance), 
+                self.scorekeeper.ambulance.get("injured", 0) / max(1, total_in_ambulance),
+                0  # corpse placeholder
+            ])
+        else:
+            vehicle_summary = np.zeros(4)
+        
+        # Store as single summary vector (BaseModel will use this directly)
+        self.observation_space["vehicle_storage_summary"] = vehicle_summary
+        
+        # Remove old format to prevent dimension confusion
+        if "vehicle_storage_class_probs" in self.observation_space:
+            del self.observation_space["vehicle_storage_class_probs"]
         
         # Strategic information: consistent 4-element variables array
         zombie_count_normalized = min(self.scorekeeper.ambulance.get("zombie", 0) / self.scorekeeper.capacity, 1.0)
@@ -331,9 +337,7 @@ class TrainInterface(Env):
             elif action_idx == 5:  # SCRAM
                 self.scorekeeper.scram(self.current_image_left, self.current_image_right)
                 # Clear vehicle storage when scramming
-                self.observation_space["vehicle_storage_class_probs"] = np.zeros(
-                    (self.environment_params['car_capacity'], self.environment_params['num_classes'])
-                )
+                self.observation_space["vehicle_storage_summary"] = np.zeros(4)
                 return True, "success"
                 
         except Exception as e:
@@ -343,11 +347,7 @@ class TrainInterface(Env):
         return False, "unknown_error"
     
     def _update_vehicle_storage(self, humanoid_probs):
-        """Update vehicle storage tracking when saving someone (store status as one-hot)"""
-        current_capacity = self.scorekeeper.get_current_capacity()
-        if current_capacity > 0 and current_capacity <= len(self.observation_space["vehicle_storage_class_probs"]):
-            # Only store status as one-hot vector
-            status_idx = int(humanoid_probs[0])
-            one_hot = np.zeros(self.environment_params['num_classes'])
-            one_hot[status_idx] = 1.0
-            self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = one_hot 
+        """Update vehicle storage tracking when saving someone (handled by get_observation_space)"""
+        # Vehicle storage summary is automatically updated in get_observation_space()
+        # based on actual scorekeeper.ambulance contents, so no manual update needed
+        pass 

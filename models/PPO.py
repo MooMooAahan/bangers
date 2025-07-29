@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import numpy as np
 from torch.distributions import MultivariateNormal
 from torch.distributions import Categorical
 
@@ -49,14 +50,29 @@ class BaseModel(nn.Module):
                             self.humanoid_classes+\
                             self.action_dim
     def forward(self, inputs):
-        x_v = inputs['variables']
-        x_p = inputs['humanoid_class_probs']  # Now contains both left and right (8 values)
-        x_s = inputs['vehicle_storage_class_probs']
-        x_a = inputs["doable_actions"]  # Now 6 values
+        x_v = inputs['variables']  # 4 values
+        x_p = inputs['humanoid_class_probs']  # 4 values: [left_status, left_occ, right_status, right_occ]
+        x_s = inputs.get('vehicle_storage_summary', inputs.get('vehicle_storage_class_probs', np.zeros(4)))  # 4 values
+        x_a = inputs["doable_actions"]  # 6 values
         
-        x_s = torch.sum(x_s,1) # simple: get sum of class probabilities along vehicle storage
+        # Ensure all tensors are 2D (batch_size, features) for concatenation
+        if len(x_v.shape) == 1:
+            x_v = x_v.unsqueeze(0)
+        if len(x_p.shape) == 1:
+            x_p = x_p.unsqueeze(0)
+        if len(x_a.shape) == 1:
+            x_a = x_a.unsqueeze(0)
+            
+        # Handle vehicle storage (could be matrix or vector)
+        if len(x_s.shape) > 2:
+            x_s = torch.sum(x_s, dim=1)  # Sum across vehicle storage slots
+        elif len(x_s.shape) == 1:
+            x_s = x_s.unsqueeze(0)
+        elif len(x_s.shape) == 2 and x_s.shape[1] > 4:
+            # Handle (batch, 10, 4) -> (batch, 4) by summing across slots
+            x_s = torch.sum(x_s, dim=1)
 
-        x = torch.concat([x_v,x_p,x_s,x_a],axis=1)
+        x = torch.concat([x_v, x_p, x_s, x_a], dim=1)  # 4+4+4+6 = 18 dimensions
         return x
 
 class ActorCritic(nn.Module):
@@ -234,7 +250,7 @@ class PPO:
         # convert list to tensor
 #         old_states = torch.squeeze(torch.stack(self.buffer.states, dim=0)).detach().to(device)
 #         print(self.buffer.states)
-        old_states = {"variables":[], "humanoid_class_probs":[],"vehicle_storage_class_probs": [],"doable_actions": []}
+        old_states = {"variables":[], "humanoid_class_probs":[],"vehicle_storage_summary": [],"doable_actions": []}
         for i in self.buffer.states:
             for key in old_states.keys():
                 old_states[key].append(i[key])
