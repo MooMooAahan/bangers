@@ -131,3 +131,14 @@ class CapacityMeter(object):
         # Draw a circle (oval) with center (x, y)
         r = size // 2
         return canvas.create_oval(x, y, x + size, y + size, fill="white", outline="gray", width=2)
+
+    def reset_capacity(self, new_capacity):
+        """
+        Reset the capacity meter to show a new capacity value.
+        This is used when upgrades are reset and the capacity returns to the base value.
+        """
+        # Re-render the capacity meter with the new capacity
+        self.render(new_capacity, self.unit_size)
+        # Reset the fill to show empty capacity
+        self.update_fill(0)
+        print(f"[DEBUG] Capacity meter reset to {new_capacity} slots")

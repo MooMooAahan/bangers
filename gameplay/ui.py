@@ -1108,6 +1108,17 @@ class UI(object):
         self.movement_label.config(text="Route Progress: 0/20")  # Reset movement label
         self.scorekeeper.reset()
         data_parser.reset()
+        
+        # Reset UI elements to reflect the reset upgrade values
+        # 1. Reset capacity meter to show 10 slots (base capacity)
+        if hasattr(self, 'capacity_meter'):
+            self.capacity_meter.reset_capacity(10)
+        
+        # 2. Reset button texts to reflect original times
+        # Scram time: 5 mins per route slot (base time)
+        # Inspect time: 15 mins (base time)
+        self.update_button_texts()
+        
         # 1. Fully reset the clock (including blink, time, force_pm)
         self.clock.blink = True
         self.clock.current_h = 8
@@ -1159,6 +1170,9 @@ class UI(object):
         if hasattr(self.scorekeeper, 'scram_time_reduction'):
             self.scorekeeper.scram_time_reduction = 0
         self.button_menu.buttons[4].config(text="Scram (5 mins)")
+        # 5. Update button texts to reflect reset upgrade values
+        # The upgrade manager reset should have already handled this, but let's make sure
+        self.update_button_texts()
         self.update_ui(self.scorekeeper)
         # Clear any widgets in both canvases
         for widget in self.game_viewer_left.canvas.pack_slaves():
