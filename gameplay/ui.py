@@ -885,10 +885,13 @@ class UI(object):
             # Create a new frame for the final score block
             self.final_score_frame = tk.Frame(self.root, width=300, height=300, bg="black", highlightthickness=0)
             self.final_score_frame.place(relx=0.5, rely=0.5, y=-100, anchor=tk.CENTER)  # Center in the whole window, shifted up 100px
+            
+            # Import fonts needed for both cases
+            from ui_elements.theme import FINAL_FONT_HEADER, FINAL_FONT_SUB
+            
             # 'Game Complete' label 
             if route_complete:
                 final_score = self.scorekeeper.get_final_score(route_complete=True)
-                from ui_elements.theme import FINAL_FONT_HEADER, FINAL_FONT_SUB
                 game_complete_label = tk.Label(self.final_score_frame, text="Route Complete", font=FINAL_FONT_HEADER, fg="white", bg="black", highlightthickness=0)
                 game_complete_label.pack(pady=(10, 5))
                 final_score_label = tk.Label(self.final_score_frame, text="FINAL SCORE: " + f" {final_score}", font=FINAL_FONT_SUB, fg="white", bg="black", highlightthickness=0)
@@ -921,9 +924,9 @@ class UI(object):
                 self.draw_grid_map() # Redraw the map to hide it
             # Scoring details
             from ui_elements.theme import LABEL_FONT
-            killed_label = tk.Label(self.final_score_frame, text=f"Humans Killed {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
+            killed_label = tk.Label(self.final_score_frame, text=f"Humans Killed: {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
             killed_label.pack()
-            saved_label = tk.Label(self.final_score_frame, text=f"Humans Saved {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
+            saved_label = tk.Label(self.final_score_frame, text=f"Humans Saved: {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
             saved_label.pack()
             
             zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance (Saved): {self.scorekeeper.false_saves}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
@@ -1302,15 +1305,15 @@ class UI(object):
         final_score_label = tk.Label(self.final_score_frame, text=f"FINAL SCORE: {final_score}", font=FINAL_FONT_SUB,fg="white",bg="black",highlightthickness=0)
         final_score_label.pack(pady=(5, 2))
         # Scoring details
-        killed_label = tk.Label(self.final_score_frame, text=f"Killed {self.scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=LABEL_FONT,fg="white",bg="black",highlightthickness=0)
+        killed_label = tk.Label(self.final_score_frame, text=f"Humans Killed: {self.scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=LABEL_FONT,fg="white",bg="black",highlightthickness=0)
         killed_label.pack()
-        saved_label = tk.Label(self.final_score_frame, text=f"Saved {self.scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=LABEL_FONT,fg="white",bg="black",highlightthickness=0)
+        saved_label = tk.Label(self.final_score_frame, text=f"Humans Saved: {self.scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=LABEL_FONT,fg="white",bg="black",highlightthickness=0)
         saved_label.pack()
         zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
         zombie_ambu.pack()
 
         zombies_saved_score_label = tk.Label(self.final_score_frame,
-            text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
+            text=f"Zombies in Ambulance (Saved): {self.scorekeeper.false_saves}",
             font=LABEL_FONT,
             fg="white",
             bg="black",
