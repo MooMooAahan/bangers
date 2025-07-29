@@ -921,18 +921,22 @@ class UI(object):
                 self.draw_grid_map() # Redraw the map to hide it
             # Scoring details
             from ui_elements.theme import LABEL_FONT
-            killed_label = tk.Label(self.final_score_frame, text=f"Killed {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
+            killed_label = tk.Label(self.final_score_frame, text=f"Humans Killed {scorekeeper.get_score(self.image_left, self.image_right)['killed']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
             killed_label.pack()
-            saved_label = tk.Label(self.final_score_frame, text=f"Saved {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
+            saved_label = tk.Label(self.final_score_frame, text=f"Humans Saved {scorekeeper.get_score(self.image_left, self.image_right)['saved']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
             saved_label.pack()
             
-            zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance: {self.scorekeeper.false_saves}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
+            zombie_ambu = tk.Label(self.final_score_frame, text=f"Zombies in Ambulance (Saved): {self.scorekeeper.false_saves}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
             zombie_ambu.pack()
+
+            # Add zombies killed display
+            zombies_killed_label = tk.Label(self.final_score_frame, text=f"Zombies Killed: {self.scorekeeper.scorekeeper['zombie_killed']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
+            zombies_killed_label.pack()
 
             # accuracy_label = tk.Label(self.final_score_frame, text=f"Accuracy: {accuracy:.2f}%", font=("Arial", 12), fg="white", bg="black", highlightthickness=0)
             # accuracy_label.pack()
             zombies_saved_score_label = tk.Label(self.final_score_frame,
-                text=f"Zombies Saved Score: {self.scorekeeper.false_saves}",
+                text=f"Zombies Saved: {self.scorekeeper.false_saves}",
                 font=("Arial", 12),
                 fg="white",
                 bg="black",
@@ -1312,6 +1316,10 @@ class UI(object):
             bg="black",
             highlightthickness=0)
         zombies_saved_score_label.pack()
+
+        # Add zombies killed display
+        zombies_killed_label = tk.Label(self.final_score_frame, text=f"Zombies Killed: {self.scorekeeper.scorekeeper['zombie_killed']}", font=LABEL_FONT, fg="white", bg="black", highlightthickness=0)
+        zombies_killed_label.pack()
 
         # accuracy_label = tk.Label(
         #     self.final_score_frame,
