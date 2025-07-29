@@ -129,22 +129,35 @@ class TrainInterface(Env):
             img_path_left = os.path.join(self.img_data_root, get_image_path(self.current_image_left))
             img_path_right = os.path.join(self.img_data_root, get_image_path(self.current_image_right))
             
-            # Get simplified predictions (status + occupation for both sides)
-            left_pred = self.enhanced_predictor.predict_combined(img_path_left, return_probabilities=True)
-            right_pred = self.enhanced_predictor.predict_combined(img_path_right, return_probabilities=True)
+            # 🎯 GROUND TRUTH: Use actual metadata instead of CNN predictions
+            def get_ground_truth_indices(image):
+                """Extract ground truth status and occupation indices from image metadata"""
+                if hasattr(image, 'humanoids') and image.humanoids and image.humanoids[0] is not None:
+                    humanoid = image.humanoids[0]  # First humanoid in the image
+                    
+                    # Status mapping: zombie=0, healthy=1, injured=2, corpse=3
+                    status_map = {"zombie": 0, "healthy": 1, "injured": 2, "corpse": 3}
+                    status_idx = status_map.get(humanoid.state, 1)  # Default to healthy if unknown
+                    
+                    # Occupation mapping: civilian=0, child=1, doctor=2, police=3, militant=4  
+                    occupation_map = {"civilian": 0, "child": 1, "doctor": 2, "police": 3, "militant": 4}
+                    occupation_idx = occupation_map.get(humanoid.role, 0)  # Default to civilian if unknown
+                    
+                    return status_idx, occupation_idx
+                else:
+                    return 1, 0  # Default: healthy civilian if no humanoid
             
-            # Extract status and occupation indices (simplified: just the predicted class)
-            left_status_idx = np.argmax(left_pred['status_probabilities'])
-            left_occupation_idx = np.argmax(left_pred['occupation_probabilities'])
-            right_status_idx = np.argmax(right_pred['status_probabilities'])
-            right_occupation_idx = np.argmax(right_pred['occupation_probabilities'])
+            left_status_idx, left_occupation_idx = get_ground_truth_indices(self.current_image_left)
+            right_status_idx, right_occupation_idx = get_ground_truth_indices(self.current_image_right)
             
             self.current_humanoid_probs_left = np.array([left_status_idx, left_occupation_idx])
             self.current_humanoid_probs_right = np.array([right_status_idx, right_occupation_idx])
             
-            # For backward compatibility, keep status-only probabilities
-            self.current_status_probs_left = left_pred['status_probabilities']
-            self.current_status_probs_right = right_pred['status_probabilities']
+            # For backward compatibility, create one-hot status probabilities from ground truth
+            self.current_status_probs_left = np.zeros(self.environment_params['num_classes'])
+            self.current_status_probs_left[left_status_idx] = 1.0
+            self.current_status_probs_right = np.zeros(self.environment_params['num_classes']) 
+            self.current_status_probs_right[right_status_idx] = 1.0
             
         except Exception as e:
             print(f"Error loading images: {e}")

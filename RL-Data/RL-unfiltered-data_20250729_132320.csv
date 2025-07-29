@@ -1,0 +1,42 @@
+timestamp,local_run_id,route_position,humanoid_class,capacity,remaining_time,role,inspected,action,action_side
+2025-07-29T13:23:21.598076,0,-1,"(, )","(0,10)",720,"(, )",NN,squish,unknown
+2025-07-29T13:23:21.598076,0,-1,"(zombie, healthy, corpse)","(0,10)",715,"(Doctor, Child, Doctor)",NN,squish,left
+2025-07-29T13:23:21.599078,0,-1,"(, )","(0,10)",715,"(, )",NN,save,unknown
+2025-07-29T13:23:21.600078,0,-1,"(healthy, healthy, healthy)","(2,10)",685,"(Civilian, Civilian, Child)",NN,save,left
+2025-07-29T13:23:21.601078,0,-1,"(, )","(2,10)",685,"(, )",NN,save,unknown
+2025-07-29T13:23:21.601078,0,-1,"(healthy, healthy)","(3,10)",655,"(Civilian, Militant)",NN,save,left
+2025-07-29T13:23:21.603078,0,-1,"(, )","(3,10)",655,"(, )",NN,squish,unknown
+2025-07-29T13:23:21.603078,0,-1,"(corpse, zombie)","(3,10)",650,"(Doctor, Civilian)",NN,squish,left
+2025-07-29T13:23:21.604515,0,-1,"(, )","(3,10)",650,"(, )",NN,squish,unknown
+2025-07-29T13:23:21.604515,0,-1,"(zombie, healthy, injured)","(3,10)",645,"(Civilian, Civilian, Doctor)",NN,squish,left
+2025-07-29T13:23:21.605636,0,-1,"(, )","(3,10)",645,"(, )",NN,squish,unknown
+2025-07-29T13:23:21.605636,0,-1,"(zombie, injured)","(3,10)",640,"(Police, Civilian)",NN,squish,left
+2025-07-29T13:23:21.607694,0,-1,"(, )","(3,10)",640,"(, )",NN,squish,unknown
+2025-07-29T13:23:21.607694,0,-1,"(healthy, corpse)","(3,10)",635,"(Child, Doctor)",NN,squish,right
+2025-07-29T13:23:21.608694,0,-1,"(, )","(3,10)",635,"(, )",NN,squish,unknown
+2025-07-29T13:23:21.608694,0,-1,"(zombie, corpse, zombie)","(3,10)",630,"(Doctor, Doctor, Civilian)",NN,squish,left
+2025-07-29T13:23:21.610122,0,-1,"(, )","(3,10)",630,"(, )",NN,save,unknown
+2025-07-29T13:23:21.610122,0,-1,"(healthy, healthy, healthy)","(5,10)",600,"(Child, Doctor, Doctor)",NN,save,left
+2025-07-29T13:23:21.611131,0,-1,"(healthy, healthy, zombie)","(5,10)",600,"(Police, Child, Civilian)",NN,scram,both
+2025-07-29T13:23:21.611131,0,-1,"(healthy, healthy, zombie)","(0,10)",480,"(Police, Child, Civilian)",NN,scram,both
+2025-07-29T13:23:21.612626,0,-1,"(, )","(0,10)",480,"(, )",NN,save,unknown
+2025-07-29T13:23:21.612626,0,-1,"(healthy, zombie)","(1,10)",450,"(Civilian, Civilian)",NN,save,left
+2025-07-29T13:23:21.614155,0,-1,"(, )","(1,10)",450,"(, )",NN,squish,unknown
+2025-07-29T13:23:21.614155,0,-1,"(corpse, healthy, corpse)","(1,10)",445,"(Civilian, Civilian, Child)",NN,squish,left
+2025-07-29T13:23:21.615169,0,-1,"(, )","(1,10)",445,"(, )",NN,squish,unknown
+2025-07-29T13:23:21.615169,0,-1,"(zombie, healthy, injured)","(1,10)",440,"(Child, Civilian, Doctor)",NN,squish,left
+2025-07-29T13:23:21.616180,0,-1,"(, )","(1,10)",440,"(, )",NN,save,unknown
+2025-07-29T13:23:21.616180,0,-1,"(healthy, healthy, zombie)","(2,10)",410,"(Militant, Doctor, Child)",NN,save,left
+2025-07-29T13:23:21.617287,0,-1,"(, )","(2,10)",410,"(, )",NN,save,unknown
+2025-07-29T13:23:21.617287,0,-1,"(healthy, zombie)","(3,10)",380,"(Civilian, Child)",NN,save,left
+2025-07-29T13:23:21.618293,0,-1,"(, )","(3,10)",380,"(, )",NN,squish,unknown
+2025-07-29T13:23:21.618293,0,-1,"(injured, corpse)","(3,10)",375,"(Civilian, Child)",NN,squish,right
+2025-07-29T13:23:21.619380,0,-1,"(, )","(3,10)",375,"(, )",NN,squish,unknown
+2025-07-29T13:23:21.619380,0,-1,"(healthy, corpse)","(3,10)",370,"(Militant, Child)",NN,squish,right
+2025-07-29T13:23:21.619380,0,-1,"(, )","(3,10)",370,"(, )",NN,save,unknown
+2025-07-29T13:23:21.619380,0,-1,"(healthy, healthy)","(4,10)",340,"(Civilian, Civilian)",NN,save,left
+2025-07-29T13:23:21.621903,0,-1,"(, )","(4,10)",340,"(, )",NN,squish,unknown
+2025-07-29T13:23:21.621903,0,-1,"(injured, healthy, healthy)","(4,10)",335,"(Civilian, Doctor, Civilian)",NN,squish,left
+2025-07-29T13:23:21.622913,0,-1,"(, )","(4,10)",335,"(, )",NN,save,unknown
+2025-07-29T13:23:22.684931,0,-1,"(healthy, healthy, zombie)","(6,10)",305,"(Child, Police, Militant)",NN,save,left
+2025-07-29T13:23:22.694344,0,20,FINAL_SCORE,"(6,10)",305,SCORE:341.0,ROUTE:COMPLETE,game_end,movements_20_20

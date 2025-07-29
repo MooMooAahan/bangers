@@ -21,7 +21,7 @@ import warnings
 
 class RLPredictor(object):
     def __init__(self,
-                 actions = 6,  # Updated: SKIP_BOTH, SQUISH_LEFT, SQUISH_RIGHT, SAVE_LEFT, SAVE_RIGHT, SCRAM
+                 actions = 6,  # Current system has 6 actions
                  model_file=os.path.join('models', 'baselineRL.pth'),
                  img_data_root='./data'):
         self.actions = actions
@@ -39,8 +39,8 @@ class RLPredictor(object):
             self.net = PPO(0,0,0,0,0,False,0.6)
             self.net.load(weights_path)
             return True
-        except Exception as e:  # file not found, maybe others?
-            print(e)
+        except Exception as e:  
+            print(f"Model loading error: {e}")
             return False
     def get_action(self, observation_space):
         if self.is_model_loaded:
@@ -52,7 +52,7 @@ class RLPredictor(object):
 class InferInterface(Env):
     def __init__(self, root, w, h, data_parser, scorekeeper, 
                  classifier_model_file=os.path.join('models', 'transfer_status_baseline.pth'), 
-                 rl_model_file=os.path.join('models', 'baselineRL.pth'), 
+                 rl_model_file=None,  # Now requires explicit model path
                  img_data_root='data', display=False):
         """
         initializes RL inference interface
@@ -88,6 +88,10 @@ class InferInterface(Env):
             status_model_file=classifier_model_file,
             occupation_model_file='models/optimized_4class_occupation.pth'
         )
+        # Require explicit model path - no more default fallback to wrong model
+        if rl_model_file is None:
+            raise ValueError("rl_model_file must be specified - no default model to avoid architecture mismatches")
+        
         self.action_predictor = RLPredictor(actions=self.environment_params['num_actions'],
                                           model_file=rl_model_file)
         
@@ -192,7 +196,8 @@ class InferInterface(Env):
             zombie_count_normalized,  # Zombie ratio [0,1] (important for police effect)
         ])
         
-        self.observation_space["doable_actions"] = np.array(self.scorekeeper.available_action_space(), dtype=np.int64)
+        # Use fixed 6-action space to match training (not dynamic scorekeeper actions)
+        self.observation_space["doable_actions"] = np.ones(self.environment_params['num_actions'], dtype=np.int64)
         
         # Include both left and right humanoid info (EXACT training format)
         # [left_status, left_occ, right_status, right_occ] = 4 values total
@@ -217,14 +222,47 @@ class InferInterface(Env):
         
         return self.observation_space
     
+    def _update_predictions_from_metadata(self):
+        """Update humanoid predictions using ground truth metadata instead of CNN"""
+        def get_ground_truth_indices(image):
+            """Extract ground truth status and occupation indices from image metadata"""
+            if hasattr(image, 'humanoids') and image.humanoids and image.humanoids[0] is not None:
+                humanoid = image.humanoids[0]  # First humanoid in the image
+                
+                # Status mapping: zombie=0, healthy=1, injured=2, corpse=3
+                status_map = {"zombie": 0, "healthy": 1, "injured": 2, "corpse": 3}
+                status_idx = status_map.get(humanoid.state, 1)  # Default to healthy if unknown
+                
+                # Occupation mapping: civilian=0, child=1, doctor=2, police=3, militant=4  
+                occupation_map = {"civilian": 0, "child": 1, "doctor": 2, "police": 3, "militant": 4}
+                occupation_idx = occupation_map.get(humanoid.role, 0)  # Default to civilian if unknown
+                
+                return status_idx, occupation_idx
+            else:
+                return 1, 0  # Default: healthy civilian if no humanoid
+        
+        # Get ground truth for both sides
+        left_status_idx, left_occupation_idx = get_ground_truth_indices(self.current_image_left)
+        right_status_idx, right_occupation_idx = get_ground_truth_indices(self.current_image_right)
+        
+        self.current_humanoid_probs_left = np.array([left_status_idx, left_occupation_idx])
+        self.current_humanoid_probs_right = np.array([right_status_idx, right_occupation_idx])
+    
     def act(self, humanoid=None):
         """
         Acts on the environment using RL agent decision-making
         Gets current left/right images and makes action based on observation state
         """
         try:
-            # Get current images and probabilities
-            self.get_current_images()
+            # Use provided humanoid or get random images if none provided
+            if humanoid is not None:
+                self.current_image_left = humanoid
+                self.current_image_right = self.data_parser.get_random(side='right')
+                # Use ground truth metadata instead of CNN predictions
+                self._update_predictions_from_metadata()
+            else:
+                # Fallback: Get current images and probabilities
+                self.get_current_images()
             
             # Get RL action based on current observation
             action_idx = self.action_predictor.get_action(self.get_observation_space())
@@ -234,43 +272,52 @@ class InferInterface(Env):
             if action_idx == 0:  # SKIP_BOTH
                 if not (self.scorekeeper.remaining_time <= 0):
                     self.scorekeeper.skip_both(self.current_image_left, self.current_image_right)
+                    # Log RL decision with CNN predictions and true classes
+                    self.scorekeeper.log_consolidated('skip_both', 
+                                                    image_left=self.current_image_left,
+                                                    image_right=self.current_image_right,
+                                                    action_side='both')
                     
             elif action_idx == 1:  # SQUISH_LEFT
                 if not (self.scorekeeper.remaining_time <= 0):
                     self.scorekeeper.squish(self.current_image_left)
+                    self.scorekeeper.log_consolidated('squish', 
+                                                    image_left=self.current_image_left,
+                                                    image_right=self.current_image_right,
+                                                    action_side='left')
                     
             elif action_idx == 2:  # SQUISH_RIGHT
                 if not (self.scorekeeper.remaining_time <= 0):
                     self.scorekeeper.squish(self.current_image_right)
+                    self.scorekeeper.log_consolidated('squish', 
+                                                    image_left=self.current_image_left,
+                                                    image_right=self.current_image_right,
+                                                    action_side='right')
                     
             elif action_idx == 3:  # SAVE_LEFT
                 if not (self.scorekeeper.remaining_time <= 0 or self.scorekeeper.at_capacity()):
                     self.scorekeeper.save(self.current_image_left)
-                    # Update vehicle storage when saving
-                    current_capacity = self.scorekeeper.get_current_capacity()
-                    if current_capacity > 0 and current_capacity <= len(self.observation_space["vehicle_storage_class_probs"]):
-                        # Only store status as one-hot vector
-                        status_idx = int(self.current_humanoid_probs_left[0])
-                        one_hot = np.zeros(self.environment_params['num_classes'])
-                        one_hot[status_idx] = 1.0
-                        self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = one_hot
+                    self.scorekeeper.log_consolidated('save', 
+                                                    image_left=self.current_image_left,
+                                                    image_right=self.current_image_right,
+                                                    action_side='left')
                         
             elif action_idx == 4:  # SAVE_RIGHT
                 if not (self.scorekeeper.remaining_time <= 0 or self.scorekeeper.at_capacity()):
                     self.scorekeeper.save(self.current_image_right)
-                    # Update vehicle storage when saving
-                    current_capacity = self.scorekeeper.get_current_capacity()
-                    if current_capacity > 0 and current_capacity <= len(self.observation_space["vehicle_storage_class_probs"]):
-                        # Only store status as one-hot vector
-                        status_idx = int(self.current_humanoid_probs_right[0])
-                        one_hot = np.zeros(self.environment_params['num_classes'])
-                        one_hot[status_idx] = 1.0
-                        self.observation_space["vehicle_storage_class_probs"][current_capacity-1] = one_hot
+                    self.scorekeeper.log_consolidated('save', 
+                                                    image_left=self.current_image_left,
+                                                    image_right=self.current_image_right,
+                                                    action_side='right')
                         
             elif action_idx == 5:  # SCRAM
                 self.scorekeeper.scram(self.current_image_left, self.current_image_right)
                 # Clear vehicle storage when scramming
-                self.observation_space["vehicle_storage_class_probs"] = np.zeros((self.environment_params['car_capacity'], self.environment_params['num_classes']))
+                self.observation_space["vehicle_storage_summary"] = np.zeros(4)
+                self.scorekeeper.log_consolidated('scram', 
+                                                image_left=self.current_image_left,
+                                                image_right=self.current_image_right,
+                                                action_side='both')
                 
             else:
                 print(f"Invalid action index: {action_idx}")
