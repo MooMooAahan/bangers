@@ -1,0 +1,22 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,22,SQUISHED corpse on LEFT side,corpse,Doctor,,,squish,left,0,715,N,N
+2,22,SAVED healthy on LEFT side,healthy,Civilian,,,save,left,0,685,N,N
+3,22,SQUISHED corpse|healthy on LEFT side,corpse|healthy,Civilian|Militant,healthy,Militant,squish,left,0,680,N,N
+4,22,"SKIP_BOTH - Left: healthy, Right: healthy",healthy,Child,healthy,Civilian,skip_both,both,0,680,N,N
+5,22,"SKIP_BOTH - Left: healthy, Right: healthy",healthy,Child,healthy,Civilian,skip_both,both,0,665,N,N
+6,22,SQUISHED zombie on LEFT side,zombie,Child,,,squish,left,0,660,N,N
+7,22,SQUISHED corpse on LEFT side,corpse,Doctor,healthy,Doctor,squish,left,0,655,N,N
+8,22,SAVED injured|healthy on LEFT side,injured|healthy,Doctor|Doctor,healthy,Civilian,save,left,1,625,N,N
+9,22,SAVED healthy on LEFT side,healthy,Civilian,zombie,Civilian,save,left,2,595,N,N
+10,22,SQUISHED zombie|corpse on LEFT side,zombie|corpse,Doctor|Militant,healthy,Civilian,squish,left,2,590,N,N
+11,22,SQUISHED corpse on LEFT side,corpse,Civilian,zombie,Police,squish,left,2,585,N,N
+12,22,SQUISHED corpse on RIGHT side,healthy,Child,corpse,Police,squish,right,2,580,N,N
+13,22,SQUISHED zombie|corpse on LEFT side,zombie|corpse,Child|Doctor,healthy,Civilian,squish,left,2,575,N,N
+14,22,SQUISHED corpse on RIGHT side,healthy,Civilian,corpse,Child,squish,right,2,570,N,N
+15,22,SQUISHED corpse on RIGHT side,healthy,Child,corpse,Police,squish,right,2,565,N,N
+16,22,SQUISHED zombie on LEFT side,zombie,Civilian,zombie,Doctor,squish,left,2,560,N,N
+17,22,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Child|Civilian,healthy,Child,squish,left,2,555,N,N
+18,22,SAVED healthy|healthy on LEFT side,healthy|healthy,Civilian|Doctor,healthy,Child,save,left,3,525,N,N
+19,22,SAVED healthy on LEFT side,healthy,Civilian,zombie,Militant,save,left,4,495,N,N
+20,22,SAVED healthy on LEFT side,healthy,Civilian,healthy,Doctor,save,left,5,465,N,N
+21,22,SQUISHED corpse on RIGHT side,corpse,Civilian,corpse,Child,squish,right,5,460,N,N

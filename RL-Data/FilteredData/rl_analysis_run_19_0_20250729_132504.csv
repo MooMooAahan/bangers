@@ -1,0 +1,21 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,19,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Child|Child,healthy,Civilian,squish,left,0,715,N,N
+2,19,SAVED healthy on LEFT side,healthy,Civilian,injured,Child,save,left,1,685,N,N
+3,19,SQUISHED zombie on LEFT side,zombie,Police,zombie,Militant,squish,left,1,680,N,N
+4,19,SQUISHED corpse on LEFT side,corpse,Civilian,healthy,Civilian,squish,left,1,675,N,N
+5,19,SAVED healthy|healthy on LEFT side,healthy|healthy,Police|Civilian,corpse,Doctor,save,left,2,645,N,N
+6,19,SQUISHED corpse on LEFT side,corpse,Civilian,healthy,Civilian,squish,left,2,640,N,N
+7,19,SQUISHED corpse|healthy on LEFT side,corpse|healthy,Civilian|Militant,healthy,Police,squish,left,2,635,N,N
+8,19,SQUISHED injured on LEFT side,injured,Civilian,corpse,Civilian,squish,left,2,630,N,N
+9,19,SQUISHED zombie|corpse on LEFT side,zombie|corpse,Child|Child,zombie,Civilian,squish,left,2,625,N,N
+10,19,SQUISHED corpse on LEFT side,corpse,Civilian,healthy,Doctor,squish,left,2,620,N,N
+11,19,SQUISHED corpse on LEFT side,corpse,Civilian,healthy,Police,squish,left,2,615,N,N
+12,19,SAVED healthy|healthy on LEFT side,healthy|healthy,Police|Child,zombie,Civilian,save,left,4,585,N,N
+13,19,SQUISHED corpse|zombie on LEFT side,corpse|zombie,Child|Civilian,healthy,Civilian,squish,left,4,580,N,N
+14,19,SQUISHED corpse on RIGHT side,healthy,Militant,corpse,Child,squish,right,4,575,N,N
+15,19,SAVED healthy|healthy on LEFT side,healthy|healthy,Civilian|Civilian,healthy,Doctor,save,left,6,545,N,N
+16,19,SAVED healthy on RIGHT side,injured,Civilian,healthy,Police,save,right,7,515,N,N
+17,19,SQUISHED corpse on LEFT side,corpse,Civilian,zombie,Child,squish,left,7,510,N,N
+18,19,SQUISHED corpse on RIGHT side,healthy,Civilian,corpse,Civilian,squish,right,7,505,N,N
+19,19,SQUISHED corpse|zombie on RIGHT side,healthy|healthy,Child|Police,corpse|zombie,Police|Civilian,squish,right,7,500,N,N
+20,19,SQUISHED corpse on LEFT side,corpse,Police,healthy,Civilian,squish,left,7,495,N,N

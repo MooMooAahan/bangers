@@ -1,0 +1,21 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,9,SAVED healthy on LEFT side,healthy,Police,,,save,left,0,690,N,N
+2,9,SAVED healthy on LEFT side,healthy,Militant,zombie,Civilian,save,left,1,660,N,N
+3,9,SQUISHED injured on LEFT side,injured,Civilian,healthy,Doctor,squish,left,1,655,N,N
+4,9,SQUISHED corpse on RIGHT side,corpse,Civilian,corpse,Child,squish,right,1,650,N,N
+5,9,SQUISHED corpse|healthy on LEFT side,corpse|healthy,Civilian|Militant,healthy,Child,squish,left,1,645,N,N
+6,9,SAVED healthy on LEFT side,healthy,Doctor,healthy,Police,save,left,2,615,N,N
+7,9,SQUISHED corpse|zombie on RIGHT side,healthy|healthy,Police|Child,corpse|zombie,Police|Civilian,squish,right,2,610,N,N
+8,9,SQUISHED zombie|injured on LEFT side,zombie|injured,Civilian|Civilian,healthy|zombie,Doctor|Child,squish,left,2,605,N,N
+9,9,SQUISHED zombie|zombie on LEFT side,zombie|zombie,Police|Police,corpse,Civilian,squish,left,2,600,N,N
+10,9,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Child|Civilian,healthy,Child,squish,left,2,595,N,N
+11,9,SQUISHED corpse on LEFT side,corpse,Civilian,injured,Civilian,squish,left,2,590,N,N
+12,9,SAVED healthy on LEFT side,healthy,Civilian,corpse,Child,save,left,2,560,N,N
+13,9,SAVED injured|healthy on LEFT side,injured|healthy,Civilian|Child,healthy,Civilian,save,left,3,530,N,N
+14,9,SAVED healthy on LEFT side,healthy,Civilian,zombie,Child,save,left,4,500,N,N
+15,9,SQUISHED zombie on LEFT side,zombie,Civilian,,,squish,left,4,495,N,N
+16,9,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Doctor|Child,zombie|healthy,Civilian|Civilian,squish,left,4,490,N,N
+17,9,SQUISHED zombie on LEFT side,zombie,Police,,,squish,left,4,485,N,N
+18,9,SAVED healthy|healthy on LEFT side,healthy|healthy,Civilian|Child,healthy,Child,save,left,6,455,N,N
+19,9,SAVED healthy on LEFT side,healthy,Police,healthy,Civilian,save,left,7,425,N,N
+20,9,SQUISHED zombie on LEFT side,zombie,Police,corpse,Doctor,squish,left,7,420,N,N

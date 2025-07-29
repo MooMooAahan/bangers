@@ -1,0 +1,22 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,2,SQUISHED corpse on RIGHT side,zombie,Police,corpse,Police,squish,right,0,715,N,N
+2,2,SQUISHED corpse on RIGHT side,healthy|zombie,Civilian|Doctor,corpse,Doctor,squish,right,0,710,N,N
+3,2,SAVED healthy on LEFT side,healthy,Doctor,healthy,Militant,save,left,1,680,N,N
+4,2,SAVED healthy on LEFT side,healthy,Civilian,healthy,Police,save,left,2,650,N,N
+5,2,SQUISHED injured on RIGHT side,corpse,Civilian,injured,Doctor,squish,right,2,645,N,N
+6,2,SAVED injured|healthy on LEFT side,injured|healthy,Civilian|Child,healthy,Civilian,save,left,3,615,N,N
+7,2,SAVED healthy on LEFT side,healthy,Child,,,save,left,4,585,N,N
+8,2,SQUISHED corpse|zombie on RIGHT side,healthy|zombie,Militant|Child,corpse|zombie,Doctor|Civilian,squish,right,4,580,N,N
+9,2,SQUISHED corpse on RIGHT side,healthy,Child,corpse,Child,squish,right,4,575,N,N
+10,2,SAVED healthy on LEFT side,healthy,Civilian,zombie,Child,save,left,5,545,N,N
+11,2,"SCRAM - Left: healthy, Right: zombie",healthy,Civilian,zombie,Child,scram,both,5,545,N,N
+12,2,"SCRAM - Left: healthy, Right: zombie",healthy,Civilian,zombie,Child,scram,both,0,425,N,N
+13,2,SAVED healthy on LEFT side,healthy,Child,healthy,Civilian,save,left,1,395,N,N
+14,2,SQUISHED corpse|injured on LEFT side,corpse|injured,Civilian|Child,healthy|corpse,Child|Child,squish,left,1,390,N,N
+15,2,SQUISHED corpse|zombie on LEFT side,corpse|zombie,Child|Civilian,corpse,Child,squish,left,1,385,N,N
+16,2,SAVED healthy on LEFT side,healthy,Child,zombie,Civilian,save,left,2,355,N,N
+17,2,SAVED healthy|healthy on LEFT side,healthy|healthy,Civilian|Doctor,zombie,Child,save,left,3,325,N,N
+18,2,SQUISHED zombie on LEFT side,zombie,Civilian,zombie,Civilian,squish,left,3,320,N,N
+19,2,SQUISHED injured on RIGHT side,healthy,Child,injured,Civilian,squish,right,3,315,N,N
+20,2,SQUISHED corpse on RIGHT side,healthy|healthy,Child|Doctor,corpse,Civilian,squish,right,3,310,N,N
+21,2,SAVED healthy|injured on LEFT side,healthy|injured,Civilian|Child,zombie,Child,save,left,4,280,N,N

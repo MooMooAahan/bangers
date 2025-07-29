@@ -1,0 +1,21 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,21,SQUISHED zombie on LEFT side,zombie,Child,healthy,Civilian,squish,left,0,715,N,N
+2,21,SQUISHED corpse on RIGHT side,zombie,Civilian,corpse,Child,squish,right,0,710,N,N
+3,21,SAVED healthy on LEFT side,healthy,Civilian,zombie,Civilian,save,left,1,680,N,N
+4,21,SAVED healthy on LEFT side,healthy,Child,healthy,Civilian,save,left,2,650,N,N
+5,21,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Civilian|Civilian,zombie|healthy,Police|Civilian,squish,left,2,645,N,N
+6,21,SAVED healthy|healthy on LEFT side,healthy|healthy,Civilian|Civilian,healthy|healthy,Child|Civilian,save,left,4,615,N,N
+7,21,SQUISHED zombie on LEFT side,zombie,Civilian,injured,Doctor,squish,left,4,610,N,N
+8,21,SQUISHED zombie on LEFT side,zombie,Civilian,,,squish,left,4,605,N,N
+9,21,SAVED healthy|healthy on LEFT side,healthy|healthy,Child|Doctor,healthy,Civilian,save,left,5,575,N,N
+10,21,SQUISHED zombie|corpse on LEFT side,zombie|corpse,Doctor|Militant,zombie,Doctor,squish,left,5,570,N,N
+11,21,SQUISHED corpse on RIGHT side,healthy,Doctor,corpse,Civilian,squish,right,5,565,N,N
+12,21,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Civilian|Doctor,healthy,Child,squish,left,5,560,N,N
+13,21,SQUISHED corpse on RIGHT side,healthy,Civilian,corpse,Doctor,squish,right,5,555,N,N
+14,21,SAVED corpse on RIGHT side,healthy|healthy,Militant|Civilian,corpse,Doctor,save,right,7,525,N,N
+15,21,SQUISHED corpse on LEFT side,corpse,Doctor,zombie,Militant,squish,left,7,520,N,N
+16,21,SQUISHED zombie|injured on LEFT side,zombie|injured,Civilian|Civilian,healthy,Child,squish,left,7,515,N,N
+17,21,SQUISHED corpse on RIGHT side,injured|corpse,Doctor|Child,corpse,Child,squish,right,7,510,N,N
+18,21,SQUISHED zombie on LEFT side,zombie,Child,corpse,Police,squish,left,7,505,N,N
+19,21,SAVED healthy on LEFT side,healthy,Civilian,healthy,Doctor,save,left,8,475,N,N
+20,21,SQUISHED corpse|zombie on LEFT side,corpse|zombie,Militant|Civilian,corpse,Child,squish,left,8,470,N,N

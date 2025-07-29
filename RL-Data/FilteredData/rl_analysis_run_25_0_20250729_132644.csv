@@ -1,0 +1,21 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,25,SQUISHED corpse on LEFT side,corpse,Doctor,injured,Child,squish,left,0,715,N,N
+2,25,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Child|Civilian,healthy,Child,squish,left,0,710,N,N
+3,25,SQUISHED corpse|zombie on LEFT side,corpse|zombie,Civilian|Police,healthy,Civilian,squish,left,0,705,N,N
+4,25,SQUISHED zombie|corpse on LEFT side,zombie|corpse,Doctor|Militant,corpse|zombie,Doctor|Civilian,squish,left,0,700,N,N
+5,25,SQUISHED zombie on LEFT side,zombie,Doctor,healthy,Doctor,squish,left,0,695,N,N
+6,25,SAVED healthy|zombie on LEFT side,healthy|zombie,Civilian|Civilian,corpse,Child,save,left,1,665,N,N
+7,25,SAVED healthy on LEFT side,healthy,Militant,zombie,Militant,save,left,2,635,N,N
+8,25,SQUISHED corpse on RIGHT side,healthy|healthy,Civilian|Civilian,corpse,Police,squish,right,2,630,N,N
+9,25,SAVED healthy on LEFT side,healthy,Civilian,corpse,Child,save,left,2,600,N,N
+10,25,SQUISHED corpse on RIGHT side,zombie|corpse,Doctor|Police,corpse,Civilian,squish,right,2,595,N,N
+11,25,SAVED healthy on LEFT side,healthy,Civilian,healthy,Doctor,save,left,3,565,N,N
+12,25,SQUISHED zombie on LEFT side,zombie,Civilian,injured,Doctor,squish,left,3,560,N,N
+13,25,SAVED healthy on LEFT side,healthy,Civilian,zombie,Civilian,save,left,4,530,N,N
+14,25,SQUISHED corpse|injured on LEFT side,corpse|injured,Civilian|Child,healthy,Civilian,squish,left,4,525,N,N
+15,25,SAVED healthy on LEFT side,healthy,Civilian,healthy,Police,save,left,5,495,N,N
+16,25,SAVED healthy on LEFT side,healthy,Child,injured,Doctor,save,left,6,465,N,N
+17,25,SAVED healthy|healthy on LEFT side,healthy|healthy,Child|Doctor,zombie,Doctor,save,left,8,435,N,N
+18,25,SQUISHED healthy on LEFT side,healthy,Child,injured,Civilian,squish,left,8,430,N,N
+19,25,SQUISHED zombie|injured on LEFT side,zombie|injured,Child|Civilian,corpse,Doctor,squish,left,8,425,N,N
+20,25,SAVED healthy on LEFT side,healthy,Child,zombie,Child,save,left,9,395,N,N

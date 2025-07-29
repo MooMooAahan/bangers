@@ -1,0 +1,21 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,26,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Civilian|Civilian,healthy,Police,squish,left,0,715,N,N
+2,26,SAVED corpse on RIGHT side,healthy|healthy,Civilian|Civilian,corpse,Child,save,right,2,685,N,N
+3,26,SAVED healthy|healthy on LEFT side,healthy|healthy,Civilian|Civilian,healthy,Police,save,left,4,655,N,N
+4,26,SQUISHED corpse on LEFT side,corpse,Police,injured,Civilian,squish,left,4,650,N,N
+5,26,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Civilian|Doctor,healthy,Civilian,squish,left,4,645,N,N
+6,26,SAVED healthy|healthy on LEFT side,healthy|healthy,Civilian|Child,healthy,Militant,save,left,6,615,N,N
+7,26,SAVED healthy on LEFT side,healthy,Militant,healthy,Police,save,left,7,585,N,N
+8,26,SAVED healthy on LEFT side,healthy,Child,healthy,Civilian,save,left,8,555,N,N
+9,26,SAVED healthy on LEFT side,healthy,Civilian,healthy,Civilian,save,left,10,525,N,N
+10,26,SQUISHED corpse on LEFT side,corpse,Civilian,injured,Child,squish,left,10,520,N,N
+11,26,SQUISHED zombie|injured on LEFT side,zombie|injured,Child|Civilian,healthy,Doctor,squish,left,10,515,N,N
+12,26,SQUISHED zombie on RIGHT side,healthy|corpse,Child|Child,zombie,Civilian,squish,right,10,510,N,N
+13,26,SQUISHED corpse on RIGHT side,injured,Civilian,corpse,Doctor,squish,right,10,505,N,N
+14,26,SQUISHED zombie on LEFT side,zombie,Doctor,healthy,Civilian,squish,left,10,500,N,N
+15,26,SQUISHED corpse on LEFT side,corpse,Child,,,squish,left,10,495,N,N
+16,26,"SCRAM - Left: healthy, Right: zombie",healthy,Civilian,zombie,Civilian,scram,both,10,495,N,N
+17,26,"SCRAM - Left: healthy, Right: zombie",healthy,Civilian,zombie,Civilian,scram,both,0,375,N,N
+18,26,SQUISHED corpse on RIGHT side,corpse,Doctor,corpse,Police,squish,right,0,370,N,N
+19,26,SAVED injured on LEFT side,injured,Doctor,healthy,Civilian,save,left,1,340,N,N
+20,26,SQUISHED zombie on LEFT side,zombie,Police,zombie,Police,squish,left,1,335,N,N

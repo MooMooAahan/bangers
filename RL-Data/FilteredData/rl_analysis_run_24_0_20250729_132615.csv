@@ -1,0 +1,22 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,24,SAVED healthy on LEFT side,healthy,Civilian,healthy,Civilian,save,left,1,690,N,N
+2,24,SQUISHED corpse on LEFT side,corpse,Civilian,zombie,Child,squish,left,1,685,N,N
+3,24,SQUISHED zombie on LEFT side,zombie,Child,healthy,Child,squish,left,1,680,N,N
+4,24,SQUISHED corpse on RIGHT side,corpse|corpse,Child|Police,corpse,Civilian,squish,right,1,675,N,N
+5,24,SQUISHED corpse on LEFT side,corpse,Civilian,healthy,Doctor,squish,left,1,670,N,N
+6,24,SAVED healthy|zombie on LEFT side,healthy|zombie,Civilian|Civilian,healthy,Civilian,save,left,2,640,N,N
+7,24,SQUISHED zombie|injured on LEFT side,zombie|injured,Child|Civilian,healthy,Police,squish,left,2,635,N,N
+8,24,SQUISHED zombie|corpse on LEFT side,zombie|corpse,Doctor|Militant,healthy,Civilian,squish,left,2,630,N,N
+9,24,SAVED healthy|healthy on LEFT side,healthy|healthy,Child|Child,healthy,Civilian,save,left,3,600,N,N
+10,24,SQUISHED corpse on RIGHT side,corpse,Child,corpse,Doctor,squish,right,3,595,N,N
+11,24,SQUISHED corpse on LEFT side,corpse,Civilian,injured,Doctor,squish,left,3,590,N,N
+12,24,SQUISHED zombie|zombie on LEFT side,zombie|zombie,Police|Police,zombie,Police,squish,left,3,585,N,N
+13,24,SAVED healthy|corpse on LEFT side,healthy|corpse,Civilian|Civilian,zombie|healthy,Militant|Militant,save,left,5,555,N,N
+14,24,SQUISHED zombie on LEFT side,zombie,Child,corpse,Child,squish,left,5,550,N,N
+15,24,SAVED healthy|zombie on LEFT side,healthy|zombie,Civilian|Police,healthy,Civilian,save,left,6,520,N,N
+16,24,SAVED healthy on LEFT side,healthy,Child,injured,Doctor,save,left,7,490,N,N
+17,24,SAVED healthy on LEFT side,healthy,Civilian,zombie,Doctor,save,left,8,460,N,N
+18,24,SAVED injured on RIGHT side,healthy,Police,injured,Doctor,save,right,9,430,N,N
+19,24,SQUISHED corpse on LEFT side,corpse,Civilian,,,squish,left,9,425,N,N
+20,24,"SCRAM - Left: healthy|zombie, Right: healthy",healthy|zombie,Civilian|Civilian,healthy,Civilian,scram,both,9,425,N,N
+21,24,"SCRAM - Left: healthy|zombie, Right: healthy",healthy|zombie,Civilian|Civilian,healthy,Civilian,scram,both,0,305,N,N

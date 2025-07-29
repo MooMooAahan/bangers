@@ -1,0 +1,22 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,10,SQUISHED corpse on LEFT side,corpse,Civilian,,,squish,left,0,715,N,N
+2,10,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Doctor|Child,healthy|healthy,Child|Civilian,squish,left,0,710,N,N
+3,10,SAVED healthy|healthy on LEFT side,healthy|healthy,Militant|Civilian,zombie,Doctor,save,left,2,680,N,N
+4,10,SQUISHED healthy|zombie on LEFT side,healthy|zombie,Civilian|Police,healthy,Civilian,squish,left,2,675,N,N
+5,10,SQUISHED zombie on LEFT side,zombie,Child,healthy,Doctor,squish,left,2,670,N,N
+6,10,SQUISHED corpse|zombie on LEFT side,corpse|zombie,Child|Civilian,zombie,Child,squish,left,2,665,N,N
+7,10,SQUISHED corpse|zombie on LEFT side,corpse|zombie,Civilian|Civilian,healthy,Civilian,squish,left,2,660,N,N
+8,10,SAVED healthy|corpse on LEFT side,healthy|corpse,Civilian|Civilian,healthy,Police,save,left,4,630,N,N
+9,10,SQUISHED zombie|corpse on LEFT side,zombie|corpse,Doctor|Doctor,zombie,Civilian,squish,left,4,625,N,N
+10,10,SQUISHED zombie|zombie on LEFT side,zombie|zombie,Police|Child,healthy,Child,squish,left,4,620,N,N
+11,10,SAVED healthy|healthy on LEFT side,healthy|healthy,Child|Doctor,healthy,Civilian,save,left,5,590,N,N
+12,10,SAVED healthy on RIGHT side,healthy|zombie,Militant|Child,healthy,Civilian,save,right,6,560,N,N
+13,10,SAVED healthy on LEFT side,healthy,Civilian,injured,Doctor,save,left,7,530,N,N
+14,10,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Civilian|Civilian,corpse,Child,squish,left,7,525,N,N
+15,10,SQUISHED zombie on LEFT side,zombie,Civilian,zombie,Child,squish,left,7,520,N,N
+16,10,SQUISHED corpse on RIGHT side,injured,Doctor,corpse,Child,squish,right,7,515,N,N
+17,10,SAVED healthy on LEFT side,healthy,Militant,zombie,Militant,save,left,8,485,N,N
+18,10,"SCRAM - Left: healthy|injured, Right: zombie",healthy|injured,Civilian|Child,zombie,Child,scram,both,8,485,N,N
+19,10,"SCRAM - Left: healthy|injured, Right: zombie",healthy|injured,Civilian|Child,zombie,Child,scram,both,0,365,N,N
+20,10,SQUISHED zombie on LEFT side,zombie,Child,healthy,Civilian,squish,left,0,360,N,N
+21,10,SAVED healthy|zombie on LEFT side,healthy|zombie,Militant|Militant,healthy,Militant,save,left,1,330,N,N

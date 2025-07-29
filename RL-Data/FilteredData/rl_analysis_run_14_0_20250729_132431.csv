@@ -1,0 +1,21 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,14,SQUISHED healthy on RIGHT side,corpse|injured,Civilian|Child,healthy,Doctor,squish,right,0,715,N,N
+2,14,SAVED injured on LEFT side,injured,Doctor,zombie,Doctor,save,left,1,685,N,N
+3,14,SAVED healthy on LEFT side,healthy,Child,healthy,Civilian,save,left,2,655,N,N
+4,14,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Police|Civilian,corpse,Doctor,squish,left,2,650,N,N
+5,14,SAVED healthy|healthy on RIGHT side,healthy|healthy,Civilian|Civilian,healthy|healthy,Child|Civilian,save,right,4,620,N,N
+6,14,SQUISHED corpse|injured on LEFT side,corpse|injured,Civilian|Child,zombie,Child,squish,left,4,615,N,N
+7,14,SQUISHED corpse on LEFT side,corpse,Civilian,injured,Civilian,squish,left,4,610,N,N
+8,14,SQUISHED zombie on LEFT side,zombie,Child,zombie,Doctor,squish,left,4,605,N,N
+9,14,SQUISHED corpse on RIGHT side,injured,Doctor,corpse,Police,squish,right,4,600,N,N
+10,14,SQUISHED corpse on LEFT side,corpse,Doctor,,,squish,left,4,595,N,N
+11,14,SQUISHED corpse on LEFT side,corpse,Civilian,healthy,Doctor,squish,left,4,590,N,N
+12,14,SQUISHED zombie|injured on LEFT side,zombie|injured,Child|Civilian,healthy,Civilian,squish,left,4,585,N,N
+13,14,SAVED healthy|healthy on LEFT side,healthy|healthy,Civilian|Civilian,healthy,Civilian,save,left,6,555,N,N
+14,14,SQUISHED  on RIGHT side,corpse,Police,,,squish,right,6,550,N,N
+15,14,SQUISHED zombie|zombie on LEFT side,zombie|zombie,Police|Police,zombie,Child,squish,left,6,545,N,N
+16,14,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Doctor|Child,healthy,Police,squish,left,6,540,N,N
+17,14,SQUISHED corpse|zombie on RIGHT side,corpse|healthy,Civilian|Militant,corpse|zombie,Child|Civilian,squish,right,6,535,N,N
+18,14,SQUISHED zombie on RIGHT side,healthy|corpse,Militant|Police,zombie,Civilian,squish,right,6,530,N,N
+19,14,SQUISHED corpse|healthy on LEFT side,corpse|healthy,Civilian|Doctor,healthy,Child,squish,left,6,525,N,N
+20,14,SQUISHED corpse on LEFT side,corpse,Civilian,injured,Doctor,squish,left,6,520,N,N

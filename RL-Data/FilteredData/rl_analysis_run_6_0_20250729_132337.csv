@@ -1,0 +1,21 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,6,SAVED healthy on LEFT side,healthy,Doctor,zombie,Civilian,save,left,1,690,N,N
+2,6,SQUISHED zombie|injured on LEFT side,zombie|injured,Child|Civilian,healthy,Civilian,squish,left,1,685,N,N
+3,6,SQUISHED zombie on LEFT side,zombie,Child,,,squish,left,1,680,N,N
+4,6,SQUISHED corpse on RIGHT side,injured,Doctor,corpse,Child,squish,right,1,675,N,N
+5,6,SAVED healthy|zombie on LEFT side,healthy|zombie,Police|Civilian,corpse,Child,save,left,2,645,N,N
+6,6,SAVED healthy on LEFT side,healthy,Civilian,healthy,Doctor,save,left,3,615,N,N
+7,6,SQUISHED corpse on LEFT side,corpse,Civilian,injured,Doctor,squish,left,3,610,N,N
+8,6,SQUISHED  on RIGHT side,corpse,Child,,,squish,right,3,605,N,N
+9,6,SAVED healthy on LEFT side,healthy,Child,healthy,Child,save,left,4,575,N,N
+10,6,SQUISHED zombie|injured on LEFT side,zombie|injured,Civilian|Civilian,corpse,Doctor,squish,left,4,570,N,N
+11,6,SAVED healthy|healthy on LEFT side,healthy|healthy,Civilian|Civilian,injured,Doctor,save,left,6,540,N,N
+12,6,SAVED healthy on RIGHT side,healthy,Child,healthy,Police,save,right,7,510,N,N
+13,6,SQUISHED zombie|corpse on LEFT side,zombie|corpse,Doctor|Militant,corpse,Child,squish,left,7,505,N,N
+14,6,SQUISHED corpse|healthy on LEFT side,corpse|healthy,Civilian|Militant,healthy,Child,squish,left,7,500,N,N
+15,6,SQUISHED zombie on LEFT side,zombie,Police,corpse,Doctor,squish,left,7,495,N,N
+16,6,SQUISHED zombie|zombie on LEFT side,zombie|zombie,Police|Police,corpse,Police,squish,left,7,490,N,N
+17,6,SQUISHED corpse|healthy on LEFT side,corpse|healthy,Civilian|Doctor,zombie,Child,squish,left,7,485,N,N
+18,6,SQUISHED healthy on RIGHT side,corpse|corpse,Civilian|Doctor,healthy,Civilian,squish,right,7,480,N,N
+19,6,SQUISHED zombie on LEFT side,zombie,Doctor,healthy,Civilian,squish,left,7,475,N,N
+20,6,SQUISHED corpse on LEFT side,corpse,Civilian,healthy,Doctor,squish,left,7,470,N,N

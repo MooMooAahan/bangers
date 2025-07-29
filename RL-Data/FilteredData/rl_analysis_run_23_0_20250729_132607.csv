@@ -1,0 +1,20 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,23,SAVED healthy on LEFT side,healthy,Doctor,healthy,Militant,save,left,1,690,N,N
+2,23,SQUISHED corpse on LEFT side,corpse,Civilian,healthy,Civilian,squish,left,1,685,N,N
+3,23,SQUISHED injured on LEFT side,injured,Civilian,injured,Doctor,squish,left,1,680,N,N
+4,23,SQUISHED corpse on LEFT side,corpse,Civilian,zombie,Civilian,squish,left,1,675,N,N
+5,23,SAVED healthy on LEFT side,healthy,Police,,,save,left,1,645,N,N
+6,23,SAVED healthy on LEFT side,healthy,Child,injured,Doctor,save,left,2,615,N,N
+7,23,SAVED injured on LEFT side,injured,Civilian,healthy,Child,save,left,3,585,N,N
+8,23,SQUISHED corpse on RIGHT side,corpse,Doctor,corpse,Police,squish,right,3,580,N,N
+9,23,SQUISHED corpse on RIGHT side,corpse,Civilian,corpse,Doctor,squish,right,3,575,N,N
+10,23,SAVED injured on LEFT side,injured,Doctor,healthy,Child,save,left,4,545,N,N
+11,23,SAVED healthy on LEFT side,healthy,Militant,healthy,Civilian,save,left,5,515,N,N
+12,23,SAVED healthy on LEFT side,healthy,Militant,,,save,left,5,485,N,N
+13,23,SAVED healthy on LEFT side,healthy,Civilian,zombie,Doctor,save,left,6,455,N,N
+14,23,SAVED healthy on LEFT side,healthy,Police,,,save,left,7,425,N,N
+15,23,SQUISHED zombie|zombie on LEFT side,zombie|zombie,Civilian|Civilian,healthy,Civilian,squish,left,7,420,N,N
+16,23,SQUISHED corpse on RIGHT side,healthy,Child,corpse,Police,squish,right,7,415,N,N
+17,23,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Doctor|Child,corpse,Doctor,squish,left,7,410,N,N
+18,23,SAVED healthy|zombie on LEFT side,healthy|zombie,Civilian|Civilian,corpse,Child,save,left,8,380,N,N
+19,23,SAVED healthy|healthy on LEFT side,healthy|healthy,Child|Doctor,healthy,Civilian,save,left,10,350,N,N

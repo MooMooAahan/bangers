@@ -1,0 +1,22 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,29,SQUISHED corpse|healthy on LEFT side,corpse|healthy,Civilian|Militant,zombie,Child,squish,left,0,715,N,N
+2,29,SQUISHED corpse on RIGHT side,corpse,Militant,corpse,Doctor,squish,right,0,710,N,N
+3,29,SQUISHED zombie on LEFT side,zombie,Doctor,zombie,Doctor,squish,left,0,705,N,N
+4,29,SQUISHED corpse|injured on LEFT side,corpse|injured,Militant|Civilian,injured|zombie,Child|Child,squish,left,0,700,N,N
+5,29,SAVED injured on LEFT side,injured,Doctor,healthy,Civilian,save,left,1,670,N,N
+6,29,SQUISHED corpse on LEFT side,corpse,Doctor,,,squish,left,1,665,N,N
+7,29,SQUISHED zombie on LEFT side,zombie,Doctor,injured,Civilian,squish,left,1,660,N,N
+8,29,SAVED healthy|healthy on LEFT side,healthy|healthy,Police|Civilian,corpse,Child,save,left,2,630,N,N
+9,29,SQUISHED corpse on RIGHT side,corpse,Civilian,corpse,Police,squish,right,2,625,N,N
+10,29,SAVED healthy on LEFT side,healthy,Civilian,zombie,Civilian,save,left,3,595,N,N
+11,29,SQUISHED corpse|zombie on LEFT side,corpse|zombie,Civilian|Militant,healthy,Militant,squish,left,3,590,N,N
+12,29,SAVED healthy|healthy on LEFT side,healthy|healthy,Police|Child,healthy,Civilian,save,left,5,560,N,N
+13,29,SQUISHED corpse on RIGHT side,healthy|corpse,Police|Child,corpse,Child,squish,right,5,555,N,N
+14,29,SAVED healthy|zombie on LEFT side,healthy|zombie,Child|Civilian,healthy,Civilian,save,left,6,525,N,N
+15,29,SAVED healthy|corpse on LEFT side,healthy|corpse,Civilian|Civilian,healthy,Doctor,save,left,8,495,N,N
+16,29,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Police|Doctor,healthy,Civilian,squish,left,8,490,N,N
+17,29,SQUISHED corpse on LEFT side,corpse,Civilian,healthy,Police,squish,left,8,485,N,N
+18,29,"SCRAM - Left: healthy, Right: healthy",healthy,Civilian,healthy,Child,scram,both,8,485,N,N
+19,29,"SCRAM - Left: healthy, Right: healthy",healthy,Civilian,healthy,Child,scram,both,0,365,N,N
+20,29,SQUISHED zombie on RIGHT side,healthy|corpse,Doctor|Doctor,zombie,Civilian,squish,right,0,360,N,N
+21,29,SAVED healthy|healthy on LEFT side,healthy|healthy,Child|Doctor,zombie,Child,save,left,2,330,N,N

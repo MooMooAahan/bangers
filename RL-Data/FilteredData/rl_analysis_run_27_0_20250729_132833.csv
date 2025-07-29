@@ -1,0 +1,22 @@
+Step,Run ID,Situation,Left Side Had,Left Side Roles,Right Side Had,Right Side Roles,RL Action,Action Side,People in Ambulance,Time Left (min),Left Inspected,Right Inspected
+1,27,SAVED healthy on LEFT side,healthy,Doctor,zombie,Police,save,left,1,690,N,N
+2,27,SQUISHED zombie on LEFT side,zombie,Child,healthy,Militant,squish,left,1,685,N,N
+3,27,SQUISHED zombie on LEFT side,zombie,Doctor,corpse,Police,squish,left,1,680,N,N
+4,27,SQUISHED zombie on LEFT side,zombie,Doctor,zombie,Child,squish,left,1,675,N,N
+5,27,SQUISHED corpse on RIGHT side,corpse,Civilian,corpse,Child,squish,right,1,670,N,N
+6,27,SQUISHED corpse|healthy on LEFT side,corpse|healthy,Child|Child,healthy,Civilian,squish,left,1,665,N,N
+7,27,SQUISHED corpse on RIGHT side,healthy,Police,corpse,Doctor,squish,right,1,660,N,N
+8,27,"SCRAM - Left: injured|zombie, Right: healthy",injured|zombie,Civilian|Civilian,healthy,Civilian,scram,both,1,660,N,N
+9,27,"SCRAM - Left: injured|zombie, Right: healthy",injured|zombie,Civilian|Civilian,healthy,Civilian,scram,both,0,540,N,N
+10,27,SQUISHED zombie on LEFT side,zombie,Doctor,healthy,Child,squish,left,0,535,N,N
+11,27,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Child|Civilian,zombie,Child,squish,left,0,530,N,N
+12,27,SAVED healthy on LEFT side,healthy,Civilian,healthy,Child,save,left,1,500,N,N
+13,27,SAVED healthy|zombie on LEFT side,healthy|zombie,Civilian|Civilian,healthy,Civilian,save,left,2,470,N,N
+14,27,SAVED healthy on LEFT side,healthy,Militant,zombie,Civilian,save,left,3,440,N,N
+15,27,SQUISHED zombie|healthy on LEFT side,zombie|healthy,Child|Civilian,corpse,Child,squish,left,3,435,N,N
+16,27,SQUISHED zombie|zombie on LEFT side,zombie|zombie,Child|Doctor,zombie|healthy,Police|Civilian,squish,left,3,430,N,N
+17,27,SQUISHED zombie on RIGHT side,healthy|corpse,Civilian|Doctor,zombie,Civilian,squish,right,3,425,N,N
+18,27,SAVED healthy on LEFT side,healthy,Doctor,zombie,Civilian,save,left,4,395,N,N
+19,27,SAVED healthy on RIGHT side,injured,Civilian,healthy,Police,save,right,5,365,N,N
+20,27,SAVED healthy on LEFT side,healthy,Civilian,healthy,Civilian,save,left,6,335,N,N
+21,27,SAVED healthy|healthy on LEFT side,healthy|healthy,Doctor|Civilian,healthy|healthy,Doctor|Child,save,left,8,305,N,N
