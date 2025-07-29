@@ -48,10 +48,11 @@ TIME_BONUS_FOR_SAVING_HUMAN = +15 #time bonus for saving a human
 
 
 class ScoreKeeper(object):
-    def __init__(self, shift_len, capacity, display=True):
+    def __init__(self, shift_len, capacity, display=True, log_path='log.csv'):
         
         self.shift_len = int(shift_len)  # minutes
         self.capacity = capacity
+        self.log_path = log_path  # Allow custom log file path
         
         self.actions = 4
         
@@ -159,6 +160,55 @@ class ScoreKeeper(object):
         
         self.logger.append(log_entry)
 
+    def log_final_score(self, final_score, movement_count, max_movements, route_complete):
+        """Log final score and game statistics to CSV"""
+        timestamp = datetime.now().isoformat()
+        
+        # Create final score entry
+        final_entry = {
+            "timestamp": timestamp,
+            "local_run_id": 0,  # Will be updated below
+            "route_position": movement_count,
+            "humanoid_class": "FINAL_SCORE",
+            "capacity": f"({sum(self.ambulance.values())},{self.capacity})",
+            "remaining_time": self.remaining_time,
+            "role": f"SCORE:{final_score}",
+            "inspected": f"ROUTE:{'COMPLETE' if route_complete else 'INCOMPLETE'}",
+            "action": "game_end",
+            "action_side": f"movements_{movement_count}_{max_movements}"
+        }
+        
+        # Convert to DataFrame
+        final_df = pd.DataFrame([final_entry])
+        
+        # Determine the current local_run_id by reading existing file
+        log_path = self.log_path
+        if os.path.exists(log_path):
+            try:
+                existing = pd.read_csv(log_path)
+                if 'local_run_id' in existing.columns and not existing.empty:
+                    current_run_id = existing['local_run_id'].max()
+                    final_df['local_run_id'] = current_run_id
+                else:
+                    final_df['local_run_id'] = 0
+            except Exception:
+                final_df['local_run_id'] = 0
+        else:
+            final_df['local_run_id'] = 0
+        
+        # Append to existing CSV
+        if os.path.exists(log_path):
+            try:
+                existing = pd.read_csv(log_path)
+                combined = pd.concat([existing, final_df], ignore_index=True)
+            except Exception:
+                combined = final_df
+        else:
+            combined = final_df
+        
+        combined.to_csv(log_path, index=False)
+        print(f"🏆 Final score {final_score} logged to {log_path}")
+
     def save_log(self, final=False):
         if not final:
             self.logger = []
@@ -182,7 +232,7 @@ class ScoreKeeper(object):
             new_log['route_position'] = new_log['route_position'].fillna(last_pos)
 
         # Determine the next local_run_id
-        log_path = 'log.csv'
+        log_path = self.log_path
         if os.path.exists(log_path):
             try:
                 existing = pd.read_csv(log_path)

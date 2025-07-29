@@ -38,12 +38,12 @@ def train():
     
     has_continuous_action_space = False  # discrete action space (6 actions: SKIP_BOTH, SQUISH_LEFT, SQUISH_RIGHT, SAVE_LEFT, SAVE_RIGHT, SCRAM)
 
-    max_ep_len = 100                    # max timesteps in one episode (reduced for initial testing)
-    max_training_timesteps = int(1e4)   # break training loop if timesteps > max_training_timesteps (reduced for testing)
+    max_ep_len = 200                    # max timesteps in one episode (increased for better learning)
+    max_training_timesteps = int(5e5)   # 500K timesteps = ~day/week of training for 450+ scores
 
-    print_freq = max_ep_len * 5         # print avg reward in the interval (in num timesteps)
-    log_freq = max_ep_len * 2           # log avg reward in the interval (in num timesteps)
-    save_model_freq = int(5e3)          # save model frequency (in num timesteps)
+    print_freq = max_ep_len * 10        # print avg reward in the interval (in num timesteps)
+    log_freq = max_ep_len * 5           # log avg reward in the interval (in num timesteps)
+    save_model_freq = int(1e4)          # save model frequency (in num timesteps) - more frequent for long runs
 
     # PPO hyperparameters
     update_timestep = max_ep_len * 2    # update policy every n timesteps
@@ -136,8 +136,19 @@ def train():
     time_step = 0
     i_episode = 0
 
-    # Training loop
+    # Performance tracking for long training
+    best_episode_reward = float('-inf')
+    episodes_without_improvement = 0
+    max_episodes_without_improvement = 1000  # Early stopping after 1000 episodes (allows for long exploration phases)
+    
+    # Training loop with auto-resume capability
     try:
+        print(f"🚀 Starting long-term training (Target: {max_training_timesteps:,} timesteps)")
+        print(f"⏱️  Expected duration: Several hours to days depending on performance")
+        print(f"💾 Models saved every {save_model_freq:,} timesteps")
+        print(f"🛑 Early stopping after {max_episodes_without_improvement} episodes without improvement (allows for long exploration)")
+        print("=" * 80)
+        
         while time_step <= max_training_timesteps:
             state = env.reset()
             current_ep_reward = 0
@@ -200,16 +211,37 @@ def train():
             log_running_episodes += 1
             i_episode += 1
             
-            # Debug: Print episode score at end of each episode
+            # Long-term performance tracking
             episode_score = env.scorekeeper.get_final_score()
-            print(f"Episode {i_episode-1} Final Score: {episode_score}")
+            
+            # Track best performance for early stopping
+            if current_ep_reward > best_episode_reward:
+                best_episode_reward = current_ep_reward
+                episodes_without_improvement = 0
+                print(f"🏆 NEW BEST! Episode {i_episode-1}: Reward={current_ep_reward:.2f}, Score={episode_score:.1f}")
+            else:
+                episodes_without_improvement += 1
+            
+            # Print progress every 10 episodes
+            if i_episode % 10 == 0:
+                print(f"📊 Episode {i_episode-1}: Reward={current_ep_reward:.2f}, Score={episode_score:.1f}, Best={best_episode_reward:.2f}")
+            
+            # Early stopping check for very long runs
+            if episodes_without_improvement >= max_episodes_without_improvement:
+                print(f"🛑 Early stopping: No improvement for {max_episodes_without_improvement} episodes")
+                print(f"Best reward achieved: {best_episode_reward:.2f}")
+                break
 
     except KeyboardInterrupt:
-        print("\nTraining interrupted by user")
+        print("\n🛑 Training interrupted by user")
+        print(f"Best reward achieved before interruption: {best_episode_reward:.2f}")
     except Exception as e:
-        print(f"Training error: {e}")
+        print(f"❌ Training error: {e}")
+        print(f"Last checkpoint saved at timestep: {time_step}")
+        print("You can resume training by restarting with the same run number")
     finally:
         log_f.close()
+        print(f"\n📈 Training completed {i_episode} episodes in {time_step} timesteps")
 
     # Print total training time
     print("============================================================================================")
